@@ -1,0 +1,5 @@
+{
+  "name": "Wibox Recipe Automation",
+  "description": "A dashboard for managing ingredient prices, standardizing recipes, and calculating dish costs and profit margins automatically.",
+  "requestFramePermissions": []
+}
