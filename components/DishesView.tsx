@@ -340,7 +340,7 @@ export const DishesView = () => {
   const { state, addDish, updateDish, deleteDish } = useAppContext();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1, priceIncludesVat: false });
+  const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1 });
 
   const handleAddDish = () => {
     if (!newDish.name) return;
@@ -351,9 +351,9 @@ export const DishesView = () => {
       directIngredients: [],
       sellingPrice: newDish.sellingPrice,
       portions: newDish.portions,
-      priceIncludesVat: newDish.priceIncludesVat,
+      priceIncludesVat: false,
     });
-    setNewDish({ name: '', sellingPrice: 0, portions: 1, priceIncludesVat: false });
+    setNewDish({ name: '', sellingPrice: 0, portions: 1 });
     setIsAdding(false);
   };
 
@@ -417,7 +417,7 @@ export const DishesView = () => {
       {isAdding && (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-medium mb-4">New Dish</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dish Name</label>
               <input
@@ -428,7 +428,7 @@ export const DishesView = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (€)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price excl. VAT (€)</label>
               <input
                 type="number"
                 step="0.01"
@@ -436,33 +436,6 @@ export const DishesView = () => {
                 value={newDish.sellingPrice || ''}
                 onChange={(e) => setNewDish({ ...newDish, sellingPrice: parseFloat(e.target.value) || 0 })}
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Price Type</label>
-              <div className="flex rounded-md border border-gray-300 overflow-hidden h-[42px]">
-                <button
-                  type="button"
-                  onClick={() => setNewDish({ ...newDish, priceIncludesVat: false })}
-                  className={`flex-1 text-sm font-medium transition-colors ${
-                    !newDish.priceIncludesVat
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  Excl. VAT
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setNewDish({ ...newDish, priceIncludesVat: true })}
-                  className={`flex-1 text-sm font-medium transition-colors ${
-                    newDish.priceIncludesVat
-                      ? 'bg-gray-900 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  Incl. VAT
-                </button>
-              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Portions</label>
@@ -494,8 +467,7 @@ export const DishesView = () => {
 
         {state.dishes.map((dish) => {
           const isExpanded = expandedId === dish.id;
-          const priceIncludesVat = dish.priceIncludesVat ?? false;
-          const vat = getVatBreakdown(dish.sellingPrice, priceIncludesVat);
+          const vat = getVatBreakdown(dish.sellingPrice, false);
 
           // Margins use price excl. VAT (net price)
           const dishForMetrics = { ...dish, sellingPrice: vat.priceWithoutVat };
@@ -561,9 +533,9 @@ export const DishesView = () => {
                 <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-6">
 
                   {/* ── Settings row ── */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Update Selling Price (€)</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Update Selling Price excl. VAT (€)</label>
                       <input
                         type="number"
                         step="0.01"
@@ -571,33 +543,6 @@ export const DishesView = () => {
                         value={dish.sellingPrice}
                         onChange={(e) => updateDish(dish.id, { sellingPrice: parseFloat(e.target.value) || 0 })}
                       />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Price Type (VAT)</label>
-                      <div className="flex rounded-md border border-gray-300 overflow-hidden h-[38px]">
-                        <button
-                          type="button"
-                          onClick={() => updateDish(dish.id, { priceIncludesVat: false })}
-                          className={`flex-1 text-sm font-medium transition-colors ${
-                            !priceIncludesVat
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-white text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          Excl. VAT
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => updateDish(dish.id, { priceIncludesVat: true })}
-                          className={`flex-1 text-sm font-medium transition-colors ${
-                            priceIncludesVat
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-white text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          Incl. VAT
-                        </button>
-                      </div>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Update Portions</label>
@@ -611,7 +556,7 @@ export const DishesView = () => {
                   </div>
 
                   {/* ── VAT breakdown ── */}
-                  <VatBreakdown sellingPrice={dish.sellingPrice} priceIncludesVat={priceIncludesVat} />
+                  <VatBreakdown sellingPrice={dish.sellingPrice} priceIncludesVat={false} />
 
                   {/* ── Margin calculator ── */}
                   <MarginCalculator costPerPortion={metrics.costPerPortion} />
