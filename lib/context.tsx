@@ -51,6 +51,7 @@ const defaultState: AppState = {
       recipes: [
         { id: '1', recipeId: '1', quantityInGrams: 80 }
       ],
+      directIngredients: [],
       sellingPrice: 3.50,
       portions: 1,
     }

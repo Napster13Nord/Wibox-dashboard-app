@@ -30,6 +30,8 @@ export const calculateRecipeWeight = (recipe: Recipe) => {
 
 export const calculateDishCost = (dish: Dish, recipes: Recipe[], ingredients: Ingredient[]) => {
   let totalCost = 0;
+
+  // Cost from recipe components
   for (const dr of dish.recipes) {
     const recipe = recipes.find(r => r.id === dr.recipeId);
     if (recipe) {
@@ -41,6 +43,19 @@ export const calculateDishCost = (dish: Dish, recipes: Recipe[], ingredients: In
       }
     }
   }
+
+  // Cost from direct ingredients
+  for (const di of (dish.directIngredients || [])) {
+    const ingredient = ingredients.find(i => i.id === di.ingredientId);
+    if (ingredient) {
+      if (ingredient.priceType === 'perUnit') {
+        totalCost += ingredient.pricePerKg * di.quantity;
+      } else {
+        totalCost += (ingredient.pricePerKg / 1000) * di.quantity;
+      }
+    }
+  }
+
   return totalCost;
 };
 

@@ -25,10 +25,17 @@ export type DishRecipe = {
   quantityInGrams: number;
 };
 
+export type DishIngredient = {
+  id: string;
+  ingredientId: string;
+  quantity: number;
+};
+
 export type Dish = {
   id: string;
   name: string;
   recipes: DishRecipe[];
+  directIngredients: DishIngredient[];
   sellingPrice: number;
   portions: number;
 };
