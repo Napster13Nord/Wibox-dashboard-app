@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import Image from 'next/image';
 import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,11 +53,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
   return (
     <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <ChefHat className="text-blue-600" />
-          Wibox
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">Recipe Automation</p>
+        <Image 
+          src="/assets/logo.webp" 
+          alt="Wibox Logo" 
+          width={180} 
+          height={60} 
+          className="object-contain" 
+          priority 
+        />
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
