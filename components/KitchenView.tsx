@@ -27,16 +27,20 @@ export const KitchenView = () => {
   const effectiveSF = scaleFactor ?? 1;
   const totalTargetWeight = baseWeight * effectiveSF;
 
-  // ── Safe quantity display (guards against NaN / undefined) ──
+  // ── Safe quantity display ──
+  // IMPORTANT: use toFixed (not toLocaleString) for type="number" inputs —
+  // toLocaleString uses system locale (e.g. PT uses commas: "0,1") which
+  // number inputs reject, showing blank.
   const safeNum = (v: unknown): number => {
     const n = Number(v);
-    return isFinite(n) ? n : 0;
+    return isFinite(n) && n > 0 ? n : 0;
   };
 
   const getDisplayQty = (riId: string, baseQty: unknown): string => {
     if (editingValues[riId] !== undefined) return editingValues[riId];
-    const q = safeNum(baseQty) * effectiveSF;
-    return q.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const base = safeNum(baseQty);
+    const q = base * effectiveSF;
+    return q.toFixed(1); // plain dot decimal — always valid in number inputs
   };
 
   // ── Calculate ──
@@ -319,11 +323,15 @@ export const KitchenView = () => {
                           const displayVal = getDisplayQty(ri.id, ri.quantityInGrams);
                           const isEditing = editingValues[ri.id] !== undefined;
                           const ready = scaleFactor !== null;
+                          const hasData = safeNum(ri.quantityInGrams) > 0;
 
                           return (
                             <tr key={ri.id} className="hover:bg-orange-50 transition-colors">
                               <td className="py-4 text-lg text-gray-900 font-medium">
                                 {ingredient?.name || 'Unknown'}
+                                {ready && !hasData && (
+                                  <span className="ml-2 text-xs text-red-400 font-normal">(quantity missing — edit in Recipes tab)</span>
+                                )}
                               </td>
                               <td className="py-4 text-right">
                                 <div className="flex items-center justify-end gap-1">
@@ -337,9 +345,11 @@ export const KitchenView = () => {
                                         ? 'border-transparent bg-transparent text-gray-300 cursor-default'
                                         : isEditing
                                           ? 'border-orange-400 bg-orange-50 text-orange-700'
-                                          : 'border-transparent bg-transparent text-orange-600 hover:border-gray-300 hover:bg-white cursor-pointer'
+                                          : hasData
+                                            ? 'border-transparent bg-transparent text-orange-600 hover:border-gray-300 hover:bg-white cursor-pointer'
+                                            : 'border-transparent bg-transparent text-red-300 hover:border-gray-300 hover:bg-white cursor-pointer'
                                     }`}
-                                    value={ready ? displayVal : '—'}
+                                    value={ready ? displayVal : ''}
                                     onChange={e => handleIngredientChange(ri.id, e.target.value)}
                                     onBlur={() => handleIngredientBlur(ri.id, ri.quantityInGrams)}
                                     onKeyDown={e => handleIngredientKeyDown(e, ri.id, ri.quantityInGrams)}
