@@ -2,6 +2,7 @@ export type Ingredient = {
   id: string;
   name: string;
   pricePerKg: number;
+  priceType: 'perKg' | 'perUnit';
 };
 
 export type RecipeIngredient = {

@@ -26,10 +26,10 @@ type AppContextType = {
 
 const defaultState: AppState = {
   ingredients: [
-    { id: '1', name: 'Flour', pricePerKg: 1.20 },
-    { id: '2', name: 'Sugar', pricePerKg: 0.90 },
-    { id: '3', name: 'Butter', pricePerKg: 6.50 },
-    { id: '4', name: 'Eggs', pricePerKg: 3.00 },
+    { id: '1', name: 'Flour', pricePerKg: 1.20, priceType: 'perKg' },
+    { id: '2', name: 'Sugar', pricePerKg: 0.90, priceType: 'perKg' },
+    { id: '3', name: 'Butter', pricePerKg: 6.50, priceType: 'perKg' },
+    { id: '4', name: 'Eggs', pricePerKg: 3.00, priceType: 'perUnit' },
   ],
   recipes: [
     {

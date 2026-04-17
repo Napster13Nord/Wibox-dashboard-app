@@ -5,8 +5,13 @@ export const calculateRecipeCost = (recipe: Recipe, ingredients: Ingredient[]) =
   for (const ri of recipe.ingredients) {
     const ingredient = ingredients.find(i => i.id === ri.ingredientId);
     if (ingredient) {
-      // pricePerKg / 1000 = price per gram
-      totalCost += (ingredient.pricePerKg / 1000) * ri.quantityInGrams;
+      if (ingredient.priceType === 'perUnit') {
+        // price per unit: treat quantityInGrams as number of units
+        totalCost += ingredient.pricePerKg * ri.quantityInGrams;
+      } else {
+        // pricePerKg / 1000 = price per gram
+        totalCost += (ingredient.pricePerKg / 1000) * ri.quantityInGrams;
+      }
     }
   }
   return totalCost;

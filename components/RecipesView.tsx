@@ -129,8 +129,8 @@ export const RecipesView = () => {
                 <div className="flex items-center gap-6">
                   <div className="text-right">
                     <p className="text-sm text-gray-500">Live Cost</p>
-                    <p className="text-lg font-bold text-blue-600">${totalCost.toFixed(2)}</p>
-                    <p className="text-xs text-gray-400">${costPerKg.toFixed(2)} / kg</p>
+                    <p className="text-lg font-bold text-blue-600">€{totalCost.toFixed(2)}</p>
+                    <p className="text-xs text-gray-400">€{costPerKg.toFixed(2)} / kg</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button 
@@ -188,12 +188,16 @@ const RecipeIngredientsEditor = ({ recipe, ingredients, onAdd, onRemove }: { rec
         <tbody className="divide-y divide-gray-100">
           {recipe.ingredients.map((ri: any) => {
             const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
-            const cost = ing ? (ing.pricePerKg / 1000) * ri.quantityInGrams : 0;
+            const cost = ing
+              ? ing.priceType === 'perUnit'
+                ? ing.pricePerKg * ri.quantityInGrams
+                : (ing.pricePerKg / 1000) * ri.quantityInGrams
+              : 0;
             return (
               <tr key={ri.id}>
                 <td className="py-2 text-sm">{ing?.name || 'Unknown'}</td>
                 <td className="py-2 text-sm">{ri.quantityInGrams}g</td>
-                <td className="py-2 text-sm">${cost.toFixed(2)}</td>
+                <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
                 <td className="py-2 text-right">
                   <button onClick={() => onRemove(ri.id)} className="text-red-500 hover:text-red-700">
                     <X className="w-4 h-4 inline" />
@@ -220,7 +224,7 @@ const RecipeIngredientsEditor = ({ recipe, ingredients, onAdd, onRemove }: { rec
           >
             <option value="">Select an ingredient...</option>
             {ingredients.map((i: any) => (
-              <option key={i.id} value={i.id}>{i.name} (${i.pricePerKg}/kg)</option>
+              <option key={i.id} value={i.id}>{i.name} (€{i.pricePerKg}/{i.priceType === 'perUnit' ? 'unit' : 'kg'})</option>
             ))}
           </select>
         </div>

@@ -1,13 +1,70 @@
 import React, { useState } from 'react';
 import { useAppContext } from '@/lib/context';
-import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Weight, Package } from 'lucide-react';
+
+type PriceType = 'perKg' | 'perUnit';
+
+const PriceTypeToggle = ({
+  value,
+  onChange,
+}: {
+  value: PriceType;
+  onChange: (v: PriceType) => void;
+}) => (
+  <div className="flex rounded-md border border-gray-300 overflow-hidden text-sm font-medium">
+    <button
+      type="button"
+      onClick={() => onChange('perKg')}
+      className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
+        value === 'perKg'
+          ? 'bg-blue-600 text-white'
+          : 'bg-white text-gray-600 hover:bg-gray-50'
+      }`}
+    >
+      <Weight className="w-3.5 h-3.5" />
+      per Kg
+    </button>
+    <button
+      type="button"
+      onClick={() => onChange('perUnit')}
+      className={`flex items-center gap-1.5 px-3 py-2 border-l border-gray-300 transition-colors ${
+        value === 'perUnit'
+          ? 'bg-blue-600 text-white'
+          : 'bg-white text-gray-600 hover:bg-gray-50'
+      }`}
+    >
+      <Package className="w-3.5 h-3.5" />
+      per Unit
+    </button>
+  </div>
+);
+
+const PriceTypeBadge = ({ priceType }: { priceType: PriceType }) =>
+  priceType === 'perUnit' ? (
+    <span className="inline-flex items-center gap-1 text-xs font-medium bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">
+      <Package className="w-3 h-3" /> Unit
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 text-xs font-medium bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+      <Weight className="w-3 h-3" /> Kg
+    </span>
+  );
 
 export const IngredientsView = () => {
   const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
   const [isAdding, setIsAdding] = useState(false);
-  const [newIngredient, setNewIngredient] = useState({ name: '', pricePerKg: 0 });
+  const [newIngredient, setNewIngredient] = useState<{
+    name: string;
+    pricePerKg: number;
+    priceType: PriceType;
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg' });
+
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', pricePerKg: 0 });
+  const [editForm, setEditForm] = useState<{
+    name: string;
+    pricePerKg: number;
+    priceType: PriceType;
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg' });
 
   const handleAdd = () => {
     if (!newIngredient.name) return;
@@ -15,14 +72,19 @@ export const IngredientsView = () => {
       id: Date.now().toString(),
       name: newIngredient.name,
       pricePerKg: newIngredient.pricePerKg,
+      priceType: newIngredient.priceType,
     });
-    setNewIngredient({ name: '', pricePerKg: 0 });
+    setNewIngredient({ name: '', pricePerKg: 0, priceType: 'perKg' });
     setIsAdding(false);
   };
 
   const startEdit = (ingredient: any) => {
     setEditingId(ingredient.id);
-    setEditForm({ name: ingredient.name, pricePerKg: ingredient.pricePerKg });
+    setEditForm({
+      name: ingredient.name,
+      pricePerKg: ingredient.pricePerKg,
+      priceType: ingredient.priceType ?? 'perKg',
+    });
   };
 
   const saveEdit = () => {
@@ -31,6 +93,8 @@ export const IngredientsView = () => {
       setEditingId(null);
     }
   };
+
+  const priceLabel = (pt: PriceType) => (pt === 'perUnit' ? '€/unit' : '€/Kg');
 
   return (
     <div className="space-y-6">
@@ -53,7 +117,8 @@ export const IngredientsView = () => {
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="p-4 font-medium text-gray-600">Ingredient Name</th>
-              <th className="p-4 font-medium text-gray-600">Price per Kg ($)</th>
+              <th className="p-4 font-medium text-gray-600">Pricing Type</th>
+              <th className="p-4 font-medium text-gray-600">Price (€)</th>
               <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
@@ -71,14 +136,26 @@ export const IngredientsView = () => {
                   />
                 </td>
                 <td className="p-4">
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    value={newIngredient.pricePerKg || ''}
-                    onChange={(e) => setNewIngredient({ ...newIngredient, pricePerKg: parseFloat(e.target.value) || 0 })}
+                  <PriceTypeToggle
+                    value={newIngredient.priceType}
+                    onChange={(v) => setNewIngredient({ ...newIngredient, priceType: v })}
                   />
+                </td>
+                <td className="p-4">
+                  <div className="flex items-center gap-1">
+                    <span className="text-gray-500 text-sm">€</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder={newIngredient.priceType === 'perKg' ? '0.00 / kg' : '0.00 / unit'}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={newIngredient.pricePerKg || ''}
+                      onChange={(e) =>
+                        setNewIngredient({ ...newIngredient, pricePerKg: parseFloat(e.target.value) || 0 })
+                      }
+                    />
+                  </div>
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-2">
@@ -92,10 +169,10 @@ export const IngredientsView = () => {
                 </td>
               </tr>
             )}
-            
+
             {state.ingredients.length === 0 && !isAdding && (
               <tr>
-                <td colSpan={3} className="p-8 text-center text-gray-500">
+                <td colSpan={4} className="p-8 text-center text-gray-500">
                   No ingredients found. Add one to get started.
                 </td>
               </tr>
@@ -114,14 +191,25 @@ export const IngredientsView = () => {
                       />
                     </td>
                     <td className="p-4">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        value={editForm.pricePerKg}
-                        onChange={(e) => setEditForm({ ...editForm, pricePerKg: parseFloat(e.target.value) || 0 })}
+                      <PriceTypeToggle
+                        value={editForm.priceType}
+                        onChange={(v) => setEditForm({ ...editForm, priceType: v })}
                       />
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500 text-sm">€</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={editForm.pricePerKg}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, pricePerKg: parseFloat(e.target.value) || 0 })
+                          }
+                        />
+                      </div>
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
@@ -137,7 +225,15 @@ export const IngredientsView = () => {
                 ) : (
                   <>
                     <td className="p-4 font-medium text-gray-900">{ingredient.name}</td>
-                    <td className="p-4 text-gray-600">${ingredient.pricePerKg.toFixed(2)}</td>
+                    <td className="p-4">
+                      <PriceTypeBadge priceType={(ingredient as any).priceType ?? 'perKg'} />
+                    </td>
+                    <td className="p-4 text-gray-600">
+                      €{ingredient.pricePerKg.toFixed(2)}
+                      <span className="text-gray-400 text-xs ml-1">
+                        / {(ingredient as any).priceType === 'perUnit' ? 'unit' : 'kg'}
+                      </span>
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={() => startEdit(ingredient)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md">

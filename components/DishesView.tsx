@@ -70,7 +70,7 @@ export const DishesView = () => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price ($)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Selling Price (€)</label>
               <input
                 type="number"
                 step="0.01"
@@ -122,9 +122,9 @@ export const DishesView = () => {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{dish.name}</h3>
                   <div className="flex gap-4 mt-1 text-sm text-gray-500">
-                    <span>Selling Price: ${dish.sellingPrice.toFixed(2)}</span>
+                    <span>Selling Price: €{dish.sellingPrice.toFixed(2)}</span>
                     <span>Portions: {dish.portions}</span>
-                    <span>Cost/Portion: ${metrics.costPerPortion.toFixed(2)}</span>
+                    <span>Cost/Portion: €{metrics.costPerPortion.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -158,7 +158,7 @@ export const DishesView = () => {
                 <div className="p-4 border-t border-gray-200 bg-gray-50">
                   <div className="mb-4 grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Update Selling Price ($)</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Update Selling Price (€)</label>
                       <input 
                         type="number" 
                         step="0.01"
@@ -235,7 +235,7 @@ const DishRecipesEditor = ({ dish, recipes, ingredients, onAdd, onRemove }: { di
               <tr key={dr.id}>
                 <td className="p-3 text-sm">{recipe?.name || 'Unknown'}</td>
                 <td className="p-3 text-sm">{dr.quantityInGrams}g</td>
-                <td className="p-3 text-sm">${cost.toFixed(2)}</td>
+                <td className="p-3 text-sm">€{cost.toFixed(2)}</td>
                 <td className="p-3 text-right">
                   <button onClick={() => onRemove(dr.id)} className="text-red-500 hover:text-red-700">
                     <X className="w-4 h-4 inline" />
@@ -266,7 +266,7 @@ const DishRecipesEditor = ({ dish, recipes, ingredients, onAdd, onRemove }: { di
               const totalWeight = calculateRecipeWeight(r);
               const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
               return (
-                <option key={r.id} value={r.id}>{r.name} (${costPerKg.toFixed(2)}/kg)</option>
+                <option key={r.id} value={r.id}>{r.name} (€{costPerKg.toFixed(2)}/kg)</option>
               )
             })}
           </select>
