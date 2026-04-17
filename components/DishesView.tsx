@@ -81,7 +81,7 @@ const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
         </div>
         <span className="text-blue-500 text-sm pb-1">→</span>
         <div>
-          <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Price (excl. VAT)</label>
+          <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Selling Price</label>
           <div
             className={`w-44 px-3 py-2 rounded-md text-sm font-semibold border ${
               suggestedPrice !== null
@@ -92,14 +92,6 @@ const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
             {suggestedPrice !== null ? `€${suggestedPrice.toFixed(2)}` : '—'}
           </div>
         </div>
-        {suggestedPrice !== null && (
-          <div>
-            <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Price (incl. VAT)</label>
-            <div className="w-44 px-3 py-2 rounded-md text-sm font-semibold border bg-white border-blue-300 text-blue-900">
-              €{(suggestedPrice * (1 + VAT_RATE)).toFixed(2)}
-            </div>
-          </div>
-        )}
         {suggestedPrice !== null && (
           <p className="text-xs text-blue-600 pb-1">
             Food cost: {((costPerPortion / suggestedPrice) * 100).toFixed(1)}%
