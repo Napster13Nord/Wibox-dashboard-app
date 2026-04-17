@@ -1,0 +1,120 @@
+{
+  "ingredients": [
+    {"id":"1","name":"Flour","pricePerKg":1.2,"priceType":"perKg","supplier":"LT","lastUpdate":"2026-04-17"},
+    {"id":"2","name":"Sugar","pricePerKg":0.9,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"3","name":"Butter","pricePerKg":6.5,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"4","name":"Eggs","pricePerKg":3,"priceType":"perUnit","supplier":"","lastUpdate":""},
+    {"id":"1776421035174","name":"Raspberry puree","pricePerKg":12,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421048948","name":"Vegan flora cream","pricePerKg":6,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421064436","name":"Sweet creams packtin","pricePerKg":100,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421074105","name":"Coconut fat","pricePerKg":3.8,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421280101","name":"Potato protein","pricePerKg":100,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421292585","name":"Dark chocolate","pricePerKg":14.8,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776421314625","name":"Gluten free flour","pricePerKg":7.75,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776422304162","name":"Capsular","pricePerKg":0.03,"priceType":"perUnit","supplier":"","lastUpdate":""},
+    {"id":"1776422339311","name":"Mirroir glaze","pricePerKg":3.8,"priceType":"perKg","supplier":"","lastUpdate":""},
+    {"id":"1776423133606","name":"Fresh blueberry","pricePerKg":15,"priceType":"perKg","supplier":"","lastUpdate":""}
+  ],
+  "recipes": [
+    {
+      "id":"1",
+      "name":"Basic Dough",
+      "ingredients":[
+        {"id":"1","ingredientId":"1","quantityInGrams":1000},
+        {"id":"2","ingredientId":"2","quantityInGrams":100},
+        {"id":"3","ingredientId":"3","quantityInGrams":200}
+      ],
+      "yieldPercentage":95,
+      "workTimeMinutes":15,
+      "presets":[
+        {"id":"p1","name":"Small Loaf (400g)","targetWeightGrams":400},
+        {"id":"p2","name":"Large Loaf (800g)","targetWeightGrams":800},
+        {"id":"p3","name":"Individual Roll (60g)","targetWeightGrams":60}
+      ]
+    },
+    {
+      "id":"1776421011078",
+      "name":"Vegan raspberry mousse",
+      "ingredients":[
+        {"id":"1776421105470","ingredientId":"1776421035174","quantityInGrams":1000},
+        {"id":"1776421112086","ingredientId":"1776421074105","quantityInGrams":300},
+        {"id":"1776421119805","ingredientId":"2","quantityInGrams":180},
+        {"id":"1776421128165","ingredientId":"1776421064436","quantityInGrams":26},
+        {"id":"1776421141351","ingredientId":"1776421048948","quantityInGrams":600}
+      ],
+      "yieldPercentage":100,
+      "workTimeMinutes":30,
+      "presets":[
+        {"id":"1776429508682","name":"Individual portion","targetWeightGrams":50},
+        {"id":"1776429526728","name":"24cm","targetWeightGrams":680},
+        {"id":"1776429535105","name":"18cm","targetWeightGrams":480},
+        {"id":"1776435558408","name":"30cm","targetWeightGrams":1280}
+      ]
+    },
+    {
+      "id":"1776421221001",
+      "name":"Vegan raspberry filling",
+      "ingredients":[
+        {"id":"1776421229151","ingredientId":"2","quantityInGrams":180},
+        {"id":"1776421235102","ingredientId":"1776421035174","quantityInGrams":1000},
+        {"id":"1776421253778","ingredientId":"1776421064436","quantityInGrams":18}
+      ],
+      "yieldPercentage":100,
+      "workTimeMinutes":15,
+      "presets":[]
+    },
+    {
+      "id":"1776421338620",
+      "name":"Vegan chocolate bottom",
+      "ingredients":[
+        {"id":"1776421396785","ingredientId":"2","quantityInGrams":200},
+        {"id":"1776421401656","ingredientId":"1776421292585","quantityInGrams":1500},
+        {"id":"1776421407877","ingredientId":"1776421280101","quantityInGrams":90}
+      ],
+      "yieldPercentage":100,
+      "workTimeMinutes":45,
+      "presets":[]
+    },
+    {
+      "id":"1776421438549",
+      "name":"Vegan raspberry glaze",
+      "ingredients":[
+        {"id":"1776421453303","ingredientId":"2","quantityInGrams":400},
+        {"id":"1776421461438","ingredientId":"1776421035174","quantityInGrams":1000},
+        {"id":"1776421469192","ingredientId":"1776421064436","quantityInGrams":20}
+      ],
+      "yieldPercentage":100,
+      "workTimeMinutes":15,
+      "presets":[]
+    }
+  ],
+  "dishes": [
+    {
+      "id":"1",
+      "name":"Croissant",
+      "recipes":[{"id":"1","recipeId":"1","quantityInGrams":80}],
+      "directIngredients":[],
+      "sellingPrice":3.5,
+      "portions":1,
+      "priceIncludesVat":false
+    },
+    {
+      "id":"1776421508227",
+      "name":"Vegan rapsberry cake",
+      "recipes":[
+        {"id":"1776421536900","recipeId":"1776421011078","quantityInGrams":55},
+        {"id":"1776421543278","recipeId":"1776421221001","quantityInGrams":15},
+        {"id":"1776421553908","recipeId":"1776421338620","quantityInGrams":20},
+        {"id":"1776421561658","recipeId":"1776421438549","quantityInGrams":15}
+      ],
+      "directIngredients":[
+        {"id":"1776423087652","ingredientId":"1776422304162","quantity":1},
+        {"id":"1776423096017","ingredientId":"1776422339311","quantity":15},
+        {"id":"1776423146632","ingredientId":"1776423133606","quantity":10}
+      ],
+      "sellingPrice":4.45,
+      "portions":1,
+      "priceIncludesVat":false
+    }
+  ]
+}
