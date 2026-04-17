@@ -3,6 +3,196 @@ import { useAppContext } from '@/lib/context';
 import { calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { Plus, Trash2, ChevronDown, ChevronUp, Save, X } from 'lucide-react';
 
+/* ── Preset manager sub-component ── */
+const PresetsEditor = ({
+  recipe,
+  onAdd,
+  onRemove,
+}: {
+  recipe: any;
+  onAdd: (name: string, grams: number) => void;
+  onRemove: (id: string) => void;
+}) => {
+  const [name, setName] = useState('');
+  const [grams, setGrams] = useState<number | ''>('');
+
+  const handleAdd = () => {
+    if (name && grams) {
+      onAdd(name, Number(grams));
+      setName('');
+      setGrams('');
+    }
+  };
+
+  const presets = recipe.presets || [];
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-200">
+      <h4 className="font-medium text-gray-900 mb-2 text-sm">
+        🍳 Kitchen Presets
+        <span className="ml-2 text-xs text-gray-400 font-normal">
+          Define the sizes available in the Kitchen tab
+        </span>
+      </h4>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        {presets.map((p: any) => (
+          <div
+            key={p.id}
+            className="flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-800 text-sm px-3 py-1.5 rounded-full"
+          >
+            <span className="font-medium">{p.name}</span>
+            <span className="text-orange-500 text-xs">({p.targetWeightGrams}g)</span>
+            <button
+              onClick={() => onRemove(p.id)}
+              className="text-orange-400 hover:text-orange-700 ml-1"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        ))}
+        {presets.length === 0 && (
+          <p className="text-xs text-gray-400 italic">No presets yet — add one below.</p>
+        )}
+      </div>
+
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Preset Name</label>
+          <input
+            type="text"
+            placeholder='e.g. "18cm Cake" or "Individual Portion"'
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <div className="w-36">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Target Weight (g)</label>
+          <input
+            type="number"
+            placeholder="e.g. 480"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+            value={grams}
+            onChange={(e) => setGrams(parseFloat(e.target.value) || '')}
+          />
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={!name || !grams}
+          className="px-4 py-2 bg-orange-500 text-white rounded-md text-sm hover:bg-orange-600 disabled:opacity-50"
+        >
+          Add Preset
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ── Ingredients editor (unchanged from before) ── */
+const RecipeIngredientsEditor = ({
+  recipe,
+  ingredients,
+  onAdd,
+  onRemove,
+}: {
+  recipe: any;
+  ingredients: any[];
+  onAdd: (ingId: string, qty: number) => void;
+  onRemove: (riId: string) => void;
+}) => {
+  const [selectedIngredient, setSelectedIngredient] = useState('');
+  const [quantity, setQuantity] = useState<number | ''>('');
+
+  const handleAdd = () => {
+    if (selectedIngredient && quantity) {
+      onAdd(selectedIngredient, Number(quantity));
+      setSelectedIngredient('');
+      setQuantity('');
+    }
+  };
+
+  return (
+    <div>
+      <table className="w-full text-left mb-4">
+        <thead>
+          <tr className="text-sm text-gray-500 border-b border-gray-200">
+            <th className="pb-2 font-medium">Ingredient</th>
+            <th className="pb-2 font-medium">Quantity (g)</th>
+            <th className="pb-2 font-medium">Cost</th>
+            <th className="pb-2 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {recipe.ingredients.map((ri: any) => {
+            const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
+            const cost = ing
+              ? ing.priceType === 'perUnit'
+                ? ing.pricePerKg * ri.quantityInGrams
+                : (ing.pricePerKg / 1000) * ri.quantityInGrams
+              : 0;
+            return (
+              <tr key={ri.id}>
+                <td className="py-2 text-sm">{ing?.name || 'Unknown'}</td>
+                <td className="py-2 text-sm">{ri.quantityInGrams}g</td>
+                <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
+                <td className="py-2 text-right">
+                  <button onClick={() => onRemove(ri.id)} className="text-red-500 hover:text-red-700">
+                    <X className="w-4 h-4 inline" />
+                  </button>
+                </td>
+              </tr>
+            );
+          })}
+          {recipe.ingredients.length === 0 && (
+            <tr>
+              <td colSpan={4} className="py-4 text-sm text-center text-gray-400">
+                No ingredients added yet.
+              </td>
+            </tr>
+          )}
+        </tbody>
+      </table>
+
+      <div className="flex gap-2 items-end">
+        <div className="flex-1">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Add Ingredient</label>
+          <select
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={selectedIngredient}
+            onChange={(e) => setSelectedIngredient(e.target.value)}
+          >
+            <option value="">Select an ingredient...</option>
+            {ingredients.map((i: any) => (
+              <option key={i.id} value={i.id}>
+                {i.name} (€{i.pricePerKg}/{i.priceType === 'perUnit' ? 'unit' : 'kg'})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="w-32">
+          <label className="block text-xs font-medium text-gray-500 mb-1">Quantity (g)</label>
+          <input
+            type="number"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+            value={quantity}
+            onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
+            placeholder="e.g. 100"
+          />
+        </div>
+        <button
+          onClick={handleAdd}
+          disabled={!selectedIngredient || !quantity}
+          className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+        >
+          Add
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ── Main view ── */
 export const RecipesView = () => {
   const { state, addRecipe, updateRecipe, deleteRecipe } = useAppContext();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -17,6 +207,7 @@ export const RecipesView = () => {
       ingredients: [],
       yieldPercentage: newRecipe.yieldPercentage,
       workTimeMinutes: newRecipe.workTimeMinutes,
+      presets: [],
     });
     setNewRecipe({ name: '', yieldPercentage: 100, workTimeMinutes: 0 });
     setIsAdding(false);
@@ -26,7 +217,7 @@ export const RecipesView = () => {
     const recipe = state.recipes.find(r => r.id === recipeId);
     if (recipe) {
       updateRecipe(recipeId, {
-        ingredients: [...recipe.ingredients, { id: Date.now().toString(), ingredientId, quantityInGrams }]
+        ingredients: [...recipe.ingredients, { id: Date.now().toString(), ingredientId, quantityInGrams }],
       });
     }
   };
@@ -35,7 +226,28 @@ export const RecipesView = () => {
     const recipe = state.recipes.find(r => r.id === recipeId);
     if (recipe) {
       updateRecipe(recipeId, {
-        ingredients: recipe.ingredients.filter(ri => ri.id !== recipeIngredientId)
+        ingredients: recipe.ingredients.filter(ri => ri.id !== recipeIngredientId),
+      });
+    }
+  };
+
+  const addPresetToRecipe = (recipeId: string, name: string, targetWeightGrams: number) => {
+    const recipe = state.recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      updateRecipe(recipeId, {
+        presets: [
+          ...(recipe.presets || []),
+          { id: Date.now().toString(), name, targetWeightGrams },
+        ],
+      });
+    }
+  };
+
+  const removePresetFromRecipe = (recipeId: string, presetId: string) => {
+    const recipe = state.recipes.find(r => r.id === recipeId);
+    if (recipe) {
+      updateRecipe(recipeId, {
+        presets: (recipe.presets || []).filter(p => p.id !== presetId),
       });
     }
   };
@@ -114,7 +326,7 @@ export const RecipesView = () => {
 
           return (
             <div key={recipe.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-              <div 
+              <div
                 className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
                 onClick={() => setExpandedId(isExpanded ? null : recipe.id)}
               >
@@ -124,6 +336,11 @@ export const RecipesView = () => {
                     <span>Yield: {recipe.yieldPercentage}%</span>
                     <span>Work Time: {recipe.workTimeMinutes} mins</span>
                     <span>Total Weight: {totalWeight.toFixed(0)}g</span>
+                    {(recipe.presets || []).length > 0 && (
+                      <span className="text-orange-500">
+                        🍳 {(recipe.presets || []).length} kitchen preset{(recipe.presets || []).length !== 1 ? 's' : ''}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -133,7 +350,7 @@ export const RecipesView = () => {
                     <p className="text-xs text-gray-400">€{costPerKg.toFixed(2)} / kg</p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button 
+                    <button
                       onClick={(e) => { e.stopPropagation(); deleteRecipe(recipe.id); }}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                     >
@@ -146,105 +363,22 @@ export const RecipesView = () => {
 
               {isExpanded && (
                 <div className="p-4 border-t border-gray-200 bg-gray-50">
-                  <RecipeIngredientsEditor 
-                    recipe={recipe} 
-                    ingredients={state.ingredients} 
+                  <RecipeIngredientsEditor
+                    recipe={recipe}
+                    ingredients={state.ingredients}
                     onAdd={(ingId, qty) => addIngredientToRecipe(recipe.id, ingId, qty)}
                     onRemove={(riId) => removeIngredientFromRecipe(recipe.id, riId)}
+                  />
+                  <PresetsEditor
+                    recipe={recipe}
+                    onAdd={(name, grams) => addPresetToRecipe(recipe.id, name, grams)}
+                    onRemove={(pid) => removePresetFromRecipe(recipe.id, pid)}
                   />
                 </div>
               )}
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-};
-
-const RecipeIngredientsEditor = ({ recipe, ingredients, onAdd, onRemove }: { recipe: any, ingredients: any[], onAdd: (ingId: string, qty: number) => void, onRemove: (riId: string) => void }) => {
-  const [selectedIngredient, setSelectedIngredient] = useState('');
-  const [quantity, setQuantity] = useState<number | ''>('');
-
-  const handleAdd = () => {
-    if (selectedIngredient && quantity) {
-      onAdd(selectedIngredient, Number(quantity));
-      setSelectedIngredient('');
-      setQuantity('');
-    }
-  };
-
-  return (
-    <div>
-      <table className="w-full text-left mb-4">
-        <thead>
-          <tr className="text-sm text-gray-500 border-b border-gray-200">
-            <th className="pb-2 font-medium">Ingredient</th>
-            <th className="pb-2 font-medium">Quantity (g)</th>
-            <th className="pb-2 font-medium">Cost</th>
-            <th className="pb-2 font-medium text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-100">
-          {recipe.ingredients.map((ri: any) => {
-            const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
-            const cost = ing
-              ? ing.priceType === 'perUnit'
-                ? ing.pricePerKg * ri.quantityInGrams
-                : (ing.pricePerKg / 1000) * ri.quantityInGrams
-              : 0;
-            return (
-              <tr key={ri.id}>
-                <td className="py-2 text-sm">{ing?.name || 'Unknown'}</td>
-                <td className="py-2 text-sm">{ri.quantityInGrams}g</td>
-                <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
-                <td className="py-2 text-right">
-                  <button onClick={() => onRemove(ri.id)} className="text-red-500 hover:text-red-700">
-                    <X className="w-4 h-4 inline" />
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-          {recipe.ingredients.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-4 text-sm text-center text-gray-400">No ingredients added yet.</td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      <div className="flex gap-2 items-end">
-        <div className="flex-1">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Add Ingredient</label>
-          <select 
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={selectedIngredient}
-            onChange={(e) => setSelectedIngredient(e.target.value)}
-          >
-            <option value="">Select an ingredient...</option>
-            {ingredients.map((i: any) => (
-              <option key={i.id} value={i.id}>{i.name} (€{i.pricePerKg}/{i.priceType === 'perUnit' ? 'unit' : 'kg'})</option>
-            ))}
-          </select>
-        </div>
-        <div className="w-32">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Quantity (g)</label>
-          <input 
-            type="number" 
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
-            value={quantity}
-            onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
-            placeholder="e.g. 100"
-          />
-        </div>
-        <button 
-          onClick={handleAdd}
-          disabled={!selectedIngredient || !quantity}
-          className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
-        >
-          Add
-        </button>
       </div>
     </div>
   );

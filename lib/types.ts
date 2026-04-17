@@ -13,12 +13,19 @@ export type RecipeIngredient = {
   quantityInGrams: number;
 };
 
+export type RecipePreset = {
+  id: string;
+  name: string;            // e.g. "18cm Cake", "Individual Portion (55g)"
+  targetWeightGrams: number;
+};
+
 export type Recipe = {
   id: string;
   name: string;
   ingredients: RecipeIngredient[];
   yieldPercentage: number;
   workTimeMinutes: number;
+  presets: RecipePreset[];
 };
 
 export type DishRecipe = {

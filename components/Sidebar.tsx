@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed } from 'lucide-react';
+import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -12,6 +12,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'ingredients', label: 'Price List', icon: Carrot },
     { id: 'recipes', label: 'Recipes', icon: ChefHat },
     { id: 'dishes', label: 'Dish Building', icon: UtensilsCrossed },
+    { id: 'kitchen', label: 'Kitchen Scale', icon: Scale },
   ];
 
   return (

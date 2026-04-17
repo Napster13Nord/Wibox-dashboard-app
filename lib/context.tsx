@@ -42,6 +42,11 @@ const defaultState: AppState = {
       ],
       yieldPercentage: 95,
       workTimeMinutes: 15,
+      presets: [
+        { id: 'p1', name: 'Small Loaf (400g)', targetWeightGrams: 400 },
+        { id: 'p2', name: 'Large Loaf (800g)', targetWeightGrams: 800 },
+        { id: 'p3', name: 'Individual Roll (60g)', targetWeightGrams: 60 },
+      ],
     }
   ],
   dishes: [
