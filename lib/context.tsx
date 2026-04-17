@@ -54,6 +54,7 @@ const defaultState: AppState = {
       directIngredients: [],
       sellingPrice: 3.50,
       portions: 1,
+      priceIncludesVat: false,
     }
   ],
 };

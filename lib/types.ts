@@ -38,4 +38,5 @@ export type Dish = {
   directIngredients: DishIngredient[];
   sellingPrice: number;
   portions: number;
+  priceIncludesVat: boolean;
 };

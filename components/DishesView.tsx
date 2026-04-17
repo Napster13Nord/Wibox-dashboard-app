@@ -1,9 +1,56 @@
 import React, { useState } from 'react';
 import { useAppContext } from '@/lib/context';
 import { calculateDishMetrics, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
-import { Plus, Trash2, ChevronDown, ChevronUp, X, Calculator } from 'lucide-react';
+import { Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Receipt } from 'lucide-react';
 
-/* ─── Margin calculator (local state, no persistence needed) ─── */
+const VAT_RATE = 0.135; // 13.5%
+
+/* ── VAT helpers ── */
+const getVatBreakdown = (sellingPrice: number, priceIncludesVat: boolean) => {
+  if (priceIncludesVat) {
+    // stored price is WITH VAT
+    const priceWithVat = sellingPrice;
+    const priceWithoutVat = sellingPrice / (1 + VAT_RATE);
+    const vatAmount = priceWithVat - priceWithoutVat;
+    return { priceWithoutVat, vatAmount, priceWithVat };
+  } else {
+    // stored price is WITHOUT VAT
+    const priceWithoutVat = sellingPrice;
+    const vatAmount = sellingPrice * VAT_RATE;
+    const priceWithVat = sellingPrice + vatAmount;
+    return { priceWithoutVat, vatAmount, priceWithVat };
+  }
+};
+
+/* ─── VAT Breakdown Panel ─── */
+const VatBreakdown = ({ sellingPrice, priceIncludesVat }: { sellingPrice: number; priceIncludesVat: boolean }) => {
+  const { priceWithoutVat, vatAmount, priceWithVat } = getVatBreakdown(sellingPrice, priceIncludesVat);
+
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Receipt className="w-4 h-4 text-amber-600" />
+        <span className="text-sm font-semibold text-amber-800">VAT Breakdown (13.5%)</span>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-md p-3 border border-amber-100 text-center">
+          <p className="text-xs text-amber-600 font-medium mb-1">Price excl. VAT</p>
+          <p className="text-lg font-bold text-gray-900">€{priceWithoutVat.toFixed(2)}</p>
+        </div>
+        <div className="bg-amber-100 rounded-md p-3 border border-amber-200 text-center">
+          <p className="text-xs text-amber-700 font-medium mb-1">VAT Amount</p>
+          <p className="text-lg font-bold text-amber-800">€{vatAmount.toFixed(2)}</p>
+        </div>
+        <div className="bg-white rounded-md p-3 border border-amber-100 text-center">
+          <p className="text-xs text-amber-600 font-medium mb-1">Price incl. VAT</p>
+          <p className="text-lg font-bold text-gray-900">€{priceWithVat.toFixed(2)}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ─── Margin calculator ─── */
 const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
   const [targetMargin, setTargetMargin] = useState<number | ''>('');
 
@@ -18,7 +65,7 @@ const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
         <Calculator className="w-4 h-4 text-blue-600" />
         <span className="text-sm font-semibold text-blue-800">Margin Calculator</span>
       </div>
-      <div className="flex items-end gap-3">
+      <div className="flex items-end gap-3 flex-wrap">
         <div>
           <label className="block text-xs font-medium text-blue-700 mb-1">Target Margin (%)</label>
           <input
@@ -32,25 +79,29 @@ const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
             onChange={(e) => setTargetMargin(parseFloat(e.target.value) || '')}
           />
         </div>
-        <div className="pb-0.5">
-          <span className="text-blue-500 text-sm">→</span>
-        </div>
+        <span className="text-blue-500 text-sm pb-1">→</span>
         <div>
-          <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Selling Price</label>
+          <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Price (excl. VAT)</label>
           <div
-            className={`w-40 px-3 py-2 rounded-md text-sm font-semibold border ${
+            className={`w-44 px-3 py-2 rounded-md text-sm font-semibold border ${
               suggestedPrice !== null
                 ? 'bg-white border-blue-300 text-blue-900'
                 : 'bg-blue-100 border-blue-200 text-blue-400'
             }`}
           >
-            {suggestedPrice !== null
-              ? `€${suggestedPrice.toFixed(2)}`
-              : '—'}
+            {suggestedPrice !== null ? `€${suggestedPrice.toFixed(2)}` : '—'}
           </div>
         </div>
         {suggestedPrice !== null && (
-          <p className="text-xs text-blue-600 pb-0.5">
+          <div>
+            <label className="block text-xs font-medium text-blue-700 mb-1">Suggested Price (incl. VAT)</label>
+            <div className="w-44 px-3 py-2 rounded-md text-sm font-semibold border bg-white border-blue-300 text-blue-900">
+              €{(suggestedPrice * (1 + VAT_RATE)).toFixed(2)}
+            </div>
+          </div>
+        )}
+        {suggestedPrice !== null && (
+          <p className="text-xs text-blue-600 pb-1">
             Food cost: {((costPerPortion / suggestedPrice) * 100).toFixed(1)}%
           </p>
         )}
@@ -144,7 +195,7 @@ const DishIngredientsEditor = ({
             ))}
           </select>
         </div>
-        <div className="w-32">
+        <div className="w-36">
           <label className="block text-xs font-medium text-gray-500 mb-1">
             {selectedIngredient && ingredients.find((i: any) => i.id === selectedIngredient)?.priceType === 'perUnit'
               ? 'Quantity (units)'
@@ -262,7 +313,7 @@ const DishRecipesEditor = ({
             })}
           </select>
         </div>
-        <div className="w-32">
+        <div className="w-36">
           <label className="block text-xs font-medium text-gray-500 mb-1">Quantity (g)</label>
           <input
             type="number"
@@ -289,7 +340,7 @@ export const DishesView = () => {
   const { state, addDish, updateDish, deleteDish } = useAppContext();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1 });
+  const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1, priceIncludesVat: false });
 
   const handleAddDish = () => {
     if (!newDish.name) return;
@@ -300,8 +351,9 @@ export const DishesView = () => {
       directIngredients: [],
       sellingPrice: newDish.sellingPrice,
       portions: newDish.portions,
+      priceIncludesVat: newDish.priceIncludesVat,
     });
-    setNewDish({ name: '', sellingPrice: 0, portions: 1 });
+    setNewDish({ name: '', sellingPrice: 0, portions: 1, priceIncludesVat: false });
     setIsAdding(false);
   };
 
@@ -350,7 +402,7 @@ export const DishesView = () => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Dish Building &amp; Margins</h2>
           <p className="text-gray-500">
-            Combine recipes and ingredients into final dishes and track your profit margins.
+            Combine recipes and ingredients into dishes, track margins and VAT.
           </p>
         </div>
         <button
@@ -365,7 +417,7 @@ export const DishesView = () => {
       {isAdding && (
         <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           <h3 className="text-lg font-medium mb-4">New Dish</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Dish Name</label>
               <input
@@ -384,6 +436,33 @@ export const DishesView = () => {
                 value={newDish.sellingPrice || ''}
                 onChange={(e) => setNewDish({ ...newDish, sellingPrice: parseFloat(e.target.value) || 0 })}
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Price Type</label>
+              <div className="flex rounded-md border border-gray-300 overflow-hidden h-[42px]">
+                <button
+                  type="button"
+                  onClick={() => setNewDish({ ...newDish, priceIncludesVat: false })}
+                  className={`flex-1 text-sm font-medium transition-colors ${
+                    !newDish.priceIncludesVat
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Excl. VAT
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setNewDish({ ...newDish, priceIncludesVat: true })}
+                  className={`flex-1 text-sm font-medium transition-colors ${
+                    newDish.priceIncludesVat
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Incl. VAT
+                </button>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Portions</label>
@@ -415,7 +494,12 @@ export const DishesView = () => {
 
         {state.dishes.map((dish) => {
           const isExpanded = expandedId === dish.id;
-          const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
+          const priceIncludesVat = dish.priceIncludesVat ?? false;
+          const vat = getVatBreakdown(dish.sellingPrice, priceIncludesVat);
+
+          // Margins use price excl. VAT (net price)
+          const dishForMetrics = { ...dish, sellingPrice: vat.priceWithoutVat };
+          const metrics = calculateDishMetrics(dishForMetrics as any, state.recipes, state.ingredients);
           const isProfitable = metrics.foodCostPercentage <= 30;
 
           return (
@@ -427,10 +511,18 @@ export const DishesView = () => {
               >
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">{dish.name}</h3>
-                  <div className="flex gap-4 mt-1 text-sm text-gray-500">
-                    <span>Selling Price: €{dish.sellingPrice.toFixed(2)}</span>
-                    <span>Portions: {dish.portions}</span>
-                    <span>Cost/Portion: €{metrics.costPerPortion.toFixed(2)}</span>
+                  <div className="flex gap-4 mt-1 text-sm text-gray-500 flex-wrap">
+                    <span>
+                      Price excl. VAT: <strong className="text-gray-800">€{vat.priceWithoutVat.toFixed(2)}</strong>
+                    </span>
+                    <span>
+                      VAT (13.5%): <strong className="text-amber-700">€{vat.vatAmount.toFixed(2)}</strong>
+                    </span>
+                    <span>
+                      Price incl. VAT: <strong className="text-gray-800">€{vat.priceWithVat.toFixed(2)}</strong>
+                    </span>
+                    <span>· Portions: {dish.portions}</span>
+                    <span>· Cost/Portion: €{metrics.costPerPortion.toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">
@@ -481,6 +573,33 @@ export const DishesView = () => {
                       />
                     </div>
                     <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Price Type (VAT)</label>
+                      <div className="flex rounded-md border border-gray-300 overflow-hidden h-[38px]">
+                        <button
+                          type="button"
+                          onClick={() => updateDish(dish.id, { priceIncludesVat: false })}
+                          className={`flex-1 text-sm font-medium transition-colors ${
+                            !priceIncludesVat
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          Excl. VAT
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateDish(dish.id, { priceIncludesVat: true })}
+                          className={`flex-1 text-sm font-medium transition-colors ${
+                            priceIncludesVat
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white text-gray-600 hover:bg-gray-50'
+                          }`}
+                        >
+                          Incl. VAT
+                        </button>
+                      </div>
+                    </div>
+                    <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Update Portions</label>
                       <input
                         type="number"
@@ -490,6 +609,9 @@ export const DishesView = () => {
                       />
                     </div>
                   </div>
+
+                  {/* ── VAT breakdown ── */}
+                  <VatBreakdown sellingPrice={dish.sellingPrice} priceIncludesVat={priceIncludesVat} />
 
                   {/* ── Margin calculator ── */}
                   <MarginCalculator costPerPortion={metrics.costPerPortion} />
