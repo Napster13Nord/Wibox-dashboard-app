@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useAppContext } from '@/lib/context';
-import { Plus, Trash2, Edit2, Save, X, Weight, Package } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search } from 'lucide-react';
 
 type PriceType = 'perKg' | 'perUnit';
 
+/* ── Helpers ── */
 const PriceTypeToggle = ({
   value,
   onChange,
@@ -16,9 +17,7 @@ const PriceTypeToggle = ({
       type="button"
       onClick={() => onChange('perKg')}
       className={`flex items-center gap-1.5 px-3 py-2 transition-colors ${
-        value === 'perKg'
-          ? 'bg-blue-600 text-white'
-          : 'bg-white text-gray-600 hover:bg-gray-50'
+        value === 'perKg' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
       }`}
     >
       <Weight className="w-3.5 h-3.5" />
@@ -28,9 +27,7 @@ const PriceTypeToggle = ({
       type="button"
       onClick={() => onChange('perUnit')}
       className={`flex items-center gap-1.5 px-3 py-2 border-l border-gray-300 transition-colors ${
-        value === 'perUnit'
-          ? 'bg-blue-600 text-white'
-          : 'bg-white text-gray-600 hover:bg-gray-50'
+        value === 'perUnit' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
       }`}
     >
       <Package className="w-3.5 h-3.5" />
@@ -50,22 +47,40 @@ const PriceTypeBadge = ({ priceType }: { priceType: PriceType }) =>
     </span>
   );
 
+const formatDate = (iso?: string) => {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return iso;
+  }
+};
+
+const todayIso = () => new Date().toISOString().split('T')[0];
+
+/* ── Main component ── */
 export const IngredientsView = () => {
   const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
+  const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [newIngredient, setNewIngredient] = useState<{
     name: string;
     pricePerKg: number;
     priceType: PriceType;
-  }>({ name: '', pricePerKg: 0, priceType: 'perKg' });
+    supplier: string;
+    lastUpdate: string;
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: todayIso() });
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
     name: string;
     pricePerKg: number;
     priceType: PriceType;
-  }>({ name: '', pricePerKg: 0, priceType: 'perKg' });
+    supplier: string;
+    lastUpdate: string;
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: '' });
 
+  /* Actions */
   const handleAdd = () => {
     if (!newIngredient.name) return;
     addIngredient({
@@ -73,8 +88,10 @@ export const IngredientsView = () => {
       name: newIngredient.name,
       pricePerKg: newIngredient.pricePerKg,
       priceType: newIngredient.priceType,
+      supplier: newIngredient.supplier,
+      lastUpdate: newIngredient.lastUpdate,
     });
-    setNewIngredient({ name: '', pricePerKg: 0, priceType: 'perKg' });
+    setNewIngredient({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: todayIso() });
     setIsAdding(false);
   };
 
@@ -84,20 +101,30 @@ export const IngredientsView = () => {
       name: ingredient.name,
       pricePerKg: ingredient.pricePerKg,
       priceType: ingredient.priceType ?? 'perKg',
+      supplier: ingredient.supplier ?? '',
+      lastUpdate: ingredient.lastUpdate ?? todayIso(),
     });
   };
 
   const saveEdit = () => {
     if (editingId) {
-      updateIngredient(editingId, editForm);
+      updateIngredient(editingId, { ...editForm, lastUpdate: todayIso() });
       setEditingId(null);
     }
   };
 
-  const priceLabel = (pt: PriceType) => (pt === 'perUnit' ? '€/unit' : '€/Kg');
+  /* Filtered list */
+  const filtered = state.ingredients.filter((ing) => {
+    const q = search.toLowerCase();
+    return (
+      ing.name.toLowerCase().includes(q) ||
+      (ing.supplier ?? '').toLowerCase().includes(q)
+    );
+  });
 
   return (
     <div className="space-y-6">
+      {/* ── Header ── */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Master Price List</h2>
@@ -112,6 +139,27 @@ export const IngredientsView = () => {
         </button>
       </div>
 
+      {/* ── Search box ── */}
+      <div className="relative max-w-sm">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+        <input
+          type="text"
+          placeholder="Search by name or supplier…"
+          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </div>
+
+      {/* ── Table ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -119,10 +167,14 @@ export const IngredientsView = () => {
               <th className="p-4 font-medium text-gray-600">Ingredient Name</th>
               <th className="p-4 font-medium text-gray-600">Pricing Type</th>
               <th className="p-4 font-medium text-gray-600">Price (€)</th>
+              <th className="p-4 font-medium text-gray-600">Supplier</th>
+              <th className="p-4 font-medium text-gray-600">Last Update</th>
               <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
+
+            {/* ── Add row ── */}
             {isAdding && (
               <tr className="bg-blue-50/50">
                 <td className="p-4">
@@ -157,6 +209,23 @@ export const IngredientsView = () => {
                     />
                   </div>
                 </td>
+                <td className="p-4">
+                  <input
+                    type="text"
+                    placeholder="Supplier name"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newIngredient.supplier}
+                    onChange={(e) => setNewIngredient({ ...newIngredient, supplier: e.target.value })}
+                  />
+                </td>
+                <td className="p-4">
+                  <input
+                    type="date"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                    value={newIngredient.lastUpdate}
+                    onChange={(e) => setNewIngredient({ ...newIngredient, lastUpdate: e.target.value })}
+                  />
+                </td>
                 <td className="p-4 text-right">
                   <div className="flex justify-end gap-2">
                     <button onClick={handleAdd} className="p-2 text-green-600 hover:bg-green-50 rounded-md">
@@ -170,15 +239,17 @@ export const IngredientsView = () => {
               </tr>
             )}
 
-            {state.ingredients.length === 0 && !isAdding && (
+            {/* ── Empty state ── */}
+            {filtered.length === 0 && !isAdding && (
               <tr>
-                <td colSpan={4} className="p-8 text-center text-gray-500">
-                  No ingredients found. Add one to get started.
+                <td colSpan={6} className="p-8 text-center text-gray-500">
+                  {search ? `No ingredients match "${search}".` : 'No ingredients found. Add one to get started.'}
                 </td>
               </tr>
             )}
 
-            {state.ingredients.map((ingredient) => (
+            {/* ── Ingredient rows ── */}
+            {filtered.map((ingredient) => (
               <tr key={ingredient.id} className="hover:bg-gray-50 transition-colors">
                 {editingId === ingredient.id ? (
                   <>
@@ -211,6 +282,23 @@ export const IngredientsView = () => {
                         />
                       </div>
                     </td>
+                    <td className="p-4">
+                      <input
+                        type="text"
+                        placeholder="Supplier name"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={editForm.supplier}
+                        onChange={(e) => setEditForm({ ...editForm, supplier: e.target.value })}
+                      />
+                    </td>
+                    <td className="p-4">
+                      <input
+                        type="date"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        value={editForm.lastUpdate}
+                        onChange={(e) => setEditForm({ ...editForm, lastUpdate: e.target.value })}
+                      />
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
                         <button onClick={saveEdit} className="p-2 text-green-600 hover:bg-green-50 rounded-md">
@@ -234,12 +322,24 @@ export const IngredientsView = () => {
                         / {(ingredient as any).priceType === 'perUnit' ? 'unit' : 'kg'}
                       </span>
                     </td>
+                    <td className="p-4 text-gray-600 text-sm">
+                      {(ingredient as any).supplier || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-gray-500 text-sm">
+                      {formatDate((ingredient as any).lastUpdate)}
+                    </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button onClick={() => startEdit(ingredient)} className="p-2 text-blue-600 hover:bg-blue-50 rounded-md">
+                        <button
+                          onClick={() => startEdit(ingredient)}
+                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"
+                        >
                           <Edit2 className="w-4 h-4" />
                         </button>
-                        <button onClick={() => deleteIngredient(ingredient.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-md">
+                        <button
+                          onClick={() => deleteIngredient(ingredient.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </button>
                       </div>

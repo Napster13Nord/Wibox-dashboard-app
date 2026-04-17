@@ -3,6 +3,8 @@ export type Ingredient = {
   name: string;
   pricePerKg: number;
   priceType: 'perKg' | 'perUnit';
+  supplier?: string;
+  lastUpdate?: string; // ISO date string
 };
 
 export type RecipeIngredient = {

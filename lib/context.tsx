@@ -26,10 +26,10 @@ type AppContextType = {
 
 const defaultState: AppState = {
   ingredients: [
-    { id: '1', name: 'Flour', pricePerKg: 1.20, priceType: 'perKg' },
-    { id: '2', name: 'Sugar', pricePerKg: 0.90, priceType: 'perKg' },
-    { id: '3', name: 'Butter', pricePerKg: 6.50, priceType: 'perKg' },
-    { id: '4', name: 'Eggs', pricePerKg: 3.00, priceType: 'perUnit' },
+    { id: '1', name: 'Flour',  pricePerKg: 1.20, priceType: 'perKg',  supplier: 'AmorimMills',   lastUpdate: '2026-04-01' },
+    { id: '2', name: 'Sugar',  pricePerKg: 0.90, priceType: 'perKg',  supplier: 'Sidul',          lastUpdate: '2026-03-15' },
+    { id: '3', name: 'Butter', pricePerKg: 6.50, priceType: 'perKg',  supplier: 'Mimosa',         lastUpdate: '2026-04-10' },
+    { id: '4', name: 'Eggs',   pricePerKg: 3.00, priceType: 'perUnit', supplier: 'Quinta do Ovo', lastUpdate: '2026-04-12' },
   ],
   recipes: [
     {
