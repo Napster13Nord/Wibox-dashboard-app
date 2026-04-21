@@ -802,11 +802,13 @@ export const DishesView = () => {
       </div>
 
       {/* ── Modals ── */}
-      <AddFolderDialog
-        isOpen={showAddFolder}
-        onClose={() => setShowAddFolder(false)}
-        onSave={(name, color, icon) => addFolder('dish', { id: Date.now().toString(), name, color, icon })}
-      />
+      {showAddFolder && (
+        <AddFolderDialog
+          isOpen={true}
+          onClose={() => setShowAddFolder(false)}
+          onSave={(name, color, icon) => addFolder('dish', { id: Date.now().toString(), name, color, icon })}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={!!deleteTarget}

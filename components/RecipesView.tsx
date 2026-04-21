@@ -753,21 +753,25 @@ export const RecipesView = () => {
       </div>
 
       {/* ── Modals ── */}
-      <RecipeModal
-        isOpen={showRecipeModal}
-        onClose={() => { setShowRecipeModal(false); setEditingRecipe(null); }}
-        onSave={handleSaveRecipe}
-        initialData={editingRecipe ?? undefined}
-        ingredients={state.ingredients}
-        folders={folders}
-        isEditing={!!editingRecipe}
-      />
+      {showRecipeModal && (
+        <RecipeModal
+          isOpen={true}
+          onClose={() => { setShowRecipeModal(false); setEditingRecipe(null); }}
+          onSave={handleSaveRecipe}
+          initialData={editingRecipe ?? undefined}
+          ingredients={state.ingredients}
+          folders={folders}
+          isEditing={!!editingRecipe}
+        />
+      )}
 
-      <AddFolderDialog
-        isOpen={showAddFolder}
-        onClose={() => setShowAddFolder(false)}
-        onSave={(name, color, icon) => addFolder('recipe', { id: Date.now().toString(), name, color, icon })}
-      />
+      {showAddFolder && (
+        <AddFolderDialog
+          isOpen={true}
+          onClose={() => setShowAddFolder(false)}
+          onSave={(name, color, icon) => addFolder('recipe', { id: Date.now().toString(), name, color, icon })}
+        />
+      )}
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
