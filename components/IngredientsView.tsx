@@ -235,6 +235,13 @@ export const IngredientsView = () => {
 
       {/* ── Table ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        {/* Datalist for supplier autocomplete */}
+        <datalist id="supplier-list">
+          {Array.from(new Set(state.ingredients.map(i => i.supplier).filter(Boolean))).map(supplier => (
+            <option key={supplier} value={supplier} />
+          ))}
+        </datalist>
+
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
@@ -286,6 +293,7 @@ export const IngredientsView = () => {
                 <td className="p-4">
                   <input
                     type="text"
+                    list="supplier-list"
                     placeholder="Supplier name"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={newIngredient.supplier}
@@ -359,6 +367,7 @@ export const IngredientsView = () => {
                     <td className="p-4">
                       <input
                         type="text"
+                        list="supplier-list"
                         placeholder="Supplier name"
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={editForm.supplier}

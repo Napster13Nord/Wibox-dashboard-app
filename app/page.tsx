@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { DashboardView } from '@/components/DashboardView';
 import { IngredientsView } from '@/components/IngredientsView';
@@ -11,6 +11,15 @@ import { TrashView } from '@/components/TrashView';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('wibox-active-tab');
+    if (saved) setActiveTab(saved);
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('wibox-active-tab', activeTab);
+  }, [activeTab]);
 
   return (
     <div className="flex h-screen bg-gray-50">

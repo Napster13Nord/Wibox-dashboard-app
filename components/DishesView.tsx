@@ -152,9 +152,13 @@ const DishIngredientsEditor = ({
   ingredients: any[];
   onAdd: (ingredientId: string, qty: number) => void;
   onRemove: (id: string) => void;
+  onUpdateQty: (id: string, qty: number) => void;
 }) => {
   const [selectedIngredient, setSelectedIngredient] = useState('');
   const [quantity, setQuantity] = useState<number | ''>('');
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingQty, setEditingQty] = useState<number>(0);
 
   const handleAdd = () => {
     if (selectedIngredient && quantity) {
@@ -191,7 +195,39 @@ const DishIngredientsEditor = ({
               return (
                 <tr key={di.id}>
                   <td className="p-2.5 text-sm">{ing?.name || 'Unknown'}</td>
-                  <td className="p-2.5 text-sm">{di.quantity} {unit}</td>
+                  <td className="p-2.5 text-sm">
+                    {editingId === di.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={editingQty}
+                          onChange={e => setEditingQty(parseFloat(e.target.value) || 0)}
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              onUpdateQty(di.id, editingQty);
+                              setEditingId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            onUpdateQty(di.id, editingQty);
+                            setEditingId(null);
+                          }}
+                        />
+                        <button onClick={() => { onUpdateQty(di.id, editingQty); setEditingId(null); }} className="text-green-600 hover:text-green-800">
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="cursor-pointer hover:text-blue-600 hover:underline" onClick={() => { setEditingId(di.id); setEditingQty(di.quantity); }}>
+                        {di.quantity} {unit}
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2.5 text-sm">€{cost.toFixed(2)}</td>
                   <td className="p-2.5 text-right">
                     <button onClick={() => onRemove(di.id)} className="text-red-500 hover:text-red-700">
@@ -256,9 +292,12 @@ const DishRecipesEditor = ({
   ingredients: any[];
   onAdd: (recId: string, qty: number) => void;
   onRemove: (drId: string) => void;
+  onUpdateQty: (id: string, qty: number) => void;
 }) => {
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [quantity, setQuantity] = useState<number | ''>('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingQty, setEditingQty] = useState<number>(0);
 
   const handleAdd = () => {
     if (selectedRecipe && quantity) {
@@ -295,7 +334,39 @@ const DishRecipesEditor = ({
               return (
                 <tr key={dr.id}>
                   <td className="p-2.5 text-sm">{recipe?.name || 'Unknown'}</td>
-                  <td className="p-2.5 text-sm">{dr.quantityInGrams}g</td>
+                  <td className="p-2.5 text-sm">
+                    {editingId === dr.id ? (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={editingQty}
+                          onChange={e => setEditingQty(parseFloat(e.target.value) || 0)}
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              onUpdateQty(dr.id, editingQty);
+                              setEditingId(null);
+                            }
+                          }}
+                          onBlur={() => {
+                            onUpdateQty(dr.id, editingQty);
+                            setEditingId(null);
+                          }}
+                        />
+                        <button onClick={() => { onUpdateQty(dr.id, editingQty); setEditingId(null); }} className="text-green-600 hover:text-green-800">
+                          <Save className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="cursor-pointer hover:text-blue-600 hover:underline" onClick={() => { setEditingId(dr.id); setEditingQty(dr.quantityInGrams); }}>
+                        {dr.quantityInGrams}g
+                      </span>
+                    )}
+                  </td>
                   <td className="p-2.5 text-sm">€{cost.toFixed(2)}</td>
                   <td className="p-2.5 text-right">
                     <button onClick={() => onRemove(dr.id)} className="text-red-500 hover:text-red-700">
@@ -448,6 +519,9 @@ export const DishesView = () => {
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
+
+  const [editingDishNameId, setEditingDishNameId] = useState<string | null>(null);
+  const [tempDishName, setTempDishName] = useState('');
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -680,7 +754,28 @@ export const DishesView = () => {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{dish.name}</h3>
+                    {editingDishNameId === dish.id ? (
+                      <input
+                        type="text"
+                        autoFocus
+                        className="text-lg font-semibold text-gray-900 border-b border-blue-500 focus:outline-none bg-transparent px-1"
+                        value={tempDishName}
+                        onChange={e => setTempDishName(e.target.value)}
+                        onClick={e => e.stopPropagation()}
+                        onBlur={() => {
+                          updateDish(dish.id, { name: tempDishName || dish.name });
+                          setEditingDishNameId(null);
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            updateDish(dish.id, { name: tempDishName || dish.name });
+                            setEditingDishNameId(null);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <h3 className="text-lg font-semibold text-gray-900">{dish.name}</h3>
+                    )}
                     {folderInfo && (
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -714,8 +809,20 @@ export const DishesView = () => {
                   </div>
                   <div className="flex items-center gap-1">
                     <button
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setEditingDishNameId(dish.id); 
+                        setTempDishName(dish.name);
+                      }}
+                      className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md"
+                      title="Edit Dish Name"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: dish.id, name: dish.name }); }}
                       className="p-1.5 text-red-500 hover:bg-red-50 rounded-md"
+                      title="Delete Dish"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -785,6 +892,10 @@ export const DishesView = () => {
                     ingredients={state.ingredients}
                     onAdd={(recId, qty) => addRecipeToDish(dish.id, recId, qty)}
                     onRemove={(drId) => removeRecipeFromDish(dish.id, drId)}
+                    onUpdateQty={(drId, qty) => {
+                       const updatedRecipes = dish.recipes.map((r: any) => r.id === drId ? { ...r, quantityInGrams: qty } : r);
+                       updateDish(dish.id, { recipes: updatedRecipes });
+                    }}
                   />
 
                   {/* ── Direct ingredients ── */}
@@ -793,6 +904,10 @@ export const DishesView = () => {
                     ingredients={state.ingredients}
                     onAdd={(ingId, qty) => addIngredientToDish(dish.id, ingId, qty)}
                     onRemove={(diId) => removeIngredientFromDish(dish.id, diId)}
+                    onUpdateQty={(diId, qty) => {
+                       const updatedIngs = (dish.directIngredients || []).map((i: any) => i.id === diId ? { ...i, quantity: qty } : i);
+                       updateDish(dish.id, { directIngredients: updatedIngs });
+                    }}
                   />
                 </div>
               )}
