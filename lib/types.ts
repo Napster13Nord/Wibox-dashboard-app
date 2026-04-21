@@ -26,6 +26,8 @@ export type Recipe = {
   yieldPercentage: number;
   workTimeMinutes: number;
   presets: RecipePreset[];
+  folder?: string;         // folder id for organising recipes
+  hiddenCosts?: number;    // fixed € amount for labor, energy, packaging, etc.
 };
 
 export type DishRecipe = {
@@ -48,4 +50,22 @@ export type Dish = {
   sellingPrice: number;
   portions: number;
   priceIncludesVat: boolean;
+  folder?: string;         // folder id for organising dishes
+  vatRate?: number;        // custom VAT rate, defaults to 13.5 if unset
+};
+
+// ── Folder type (shared by Recipes & Dishes) ──
+export type Folder = {
+  id: string;
+  name: string;
+  color: string;   // hex or tailwind-compatible color
+  icon: string;    // emoji or icon name
+};
+
+// ── Trash system ──
+export type TrashedItem = {
+  id: string;
+  originalType: 'ingredient' | 'recipe' | 'dish';
+  data: Ingredient | Recipe | Dish;
+  deletedAt: string; // ISO date string
 };

@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
-import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload } from 'lucide-react';
+import { useAppContext } from '@/lib/context';
+import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2 } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -9,6 +10,9 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { state, undo, canUndo } = useAppContext();
+
+  const trashCount = (state.trash || []).length;
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +21,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     { id: 'dishes', label: 'Dish Building', icon: UtensilsCrossed },
     { id: 'kitchen', label: 'Kitchen Scale', icon: Scale },
   ];
+
+  // Ctrl+Z keyboard shortcut for undo
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && canUndo) {
+        e.preventDefault();
+        undo();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [undo, canUndo]);
 
   const handleExport = () => {
     const data = localStorage.getItem('wibox-data');
@@ -82,7 +98,42 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
             </button>
           );
         })}
+
+        {/* Trash tab */}
+        <button
+          onClick={() => setActiveTab('trash')}
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+            activeTab === 'trash'
+              ? 'bg-red-50 text-red-700'
+              : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+          }`}
+        >
+          <Trash2 className={`w-5 h-5 ${activeTab === 'trash' ? 'text-red-700' : 'text-gray-400'}`} />
+          Trash
+          {trashCount > 0 && (
+            <span className="ml-auto bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full">
+              {trashCount}
+            </span>
+          )}
+        </button>
       </nav>
+
+      {/* Undo button */}
+      <div className="px-4 pb-2">
+        <button
+          onClick={undo}
+          disabled={!canUndo}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+            canUndo
+              ? 'text-gray-700 hover:bg-gray-100 bg-gray-50 border border-gray-200'
+              : 'text-gray-300 bg-gray-50 border border-gray-100 cursor-not-allowed'
+          }`}
+        >
+          <Undo2 className="w-4 h-4" />
+          Undo
+          <span className="ml-auto text-xs text-gray-400">Ctrl+Z</span>
+        </button>
+      </div>
 
       {/* Export / Import */}
       <div className="p-4 border-t border-gray-200 space-y-2">

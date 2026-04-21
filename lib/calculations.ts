@@ -14,6 +14,10 @@ export const calculateRecipeCost = (recipe: Recipe, ingredients: Ingredient[]) =
       }
     }
   }
+  // Add hidden costs (labor, energy, packaging, etc.)
+  if (recipe.hiddenCosts && recipe.hiddenCosts > 0) {
+    totalCost += recipe.hiddenCosts;
+  }
   return totalCost;
 };
 
@@ -61,9 +65,13 @@ export const calculateDishCost = (dish: Dish, recipes: Recipe[], ingredients: In
 
 export const calculateDishMetrics = (dish: Dish, recipes: Recipe[], ingredients: Ingredient[]) => {
   const totalCost = calculateDishCost(dish, recipes, ingredients);
-  const costPerPortion = dish.portions > 0 ? totalCost / dish.portions : 0;
-  const foodCostPercentage = dish.sellingPrice > 0 ? (costPerPortion / dish.sellingPrice) * 100 : 0;
-  const profitMargin = dish.sellingPrice > 0 ? ((dish.sellingPrice - costPerPortion) / dish.sellingPrice) * 100 : 0;
+  const portions = dish.portions > 0 ? dish.portions : 1;
+  const costPerPortion = totalCost / portions;
+
+  // Use selling price directly — it's stored excl. VAT
+  const sellingPrice = dish.sellingPrice || 0;
+  const foodCostPercentage = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
+  const profitMargin = sellingPrice > 0 ? ((sellingPrice - costPerPortion) / sellingPrice) * 100 : 0;
   
   return {
     totalCost,

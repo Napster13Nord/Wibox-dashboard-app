@@ -7,6 +7,7 @@ import { IngredientsView } from '@/components/IngredientsView';
 import { RecipesView } from '@/components/RecipesView';
 import { DishesView } from '@/components/DishesView';
 import { KitchenView } from '@/components/KitchenView';
+import { TrashView } from '@/components/TrashView';
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -20,6 +21,7 @@ export default function Home() {
         {activeTab === 'recipes' && <RecipesView />}
         {activeTab === 'dishes' && <DishesView />}
         {activeTab === 'kitchen' && <KitchenView />}
+        {activeTab === 'trash' && <TrashView />}
       </main>
     </div>
   );

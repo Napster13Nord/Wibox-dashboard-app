@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
-import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search } from 'lucide-react';
+import { ConfirmDialog } from './ConfirmDialog';
+import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 type PriceType = 'perKg' | 'perUnit';
+type SortField = 'name' | 'supplier' | 'lastUpdate';
+type SortDir = 'asc' | 'desc';
 
 /* ── Helpers ── */
 const PriceTypeToggle = ({
@@ -58,11 +61,49 @@ const formatDate = (iso?: string) => {
 
 const todayIso = () => new Date().toISOString().split('T')[0];
 
+/* ── Sort header helper ── */
+const SortHeader = ({
+  label,
+  field,
+  activeField,
+  activeDir,
+  onSort,
+}: {
+  label: string;
+  field: SortField;
+  activeField: SortField;
+  activeDir: SortDir;
+  onSort: (field: SortField) => void;
+}) => {
+  const isActive = activeField === field;
+  return (
+    <th
+      className="p-4 font-medium text-gray-600 cursor-pointer select-none hover:text-gray-900 transition-colors"
+      onClick={() => onSort(field)}
+    >
+      <div className="flex items-center gap-1.5">
+        <span>{label}</span>
+        {isActive ? (
+          activeDir === 'asc' ? (
+            <ArrowUp className="w-3.5 h-3.5 text-blue-600" />
+          ) : (
+            <ArrowDown className="w-3.5 h-3.5 text-blue-600" />
+          )
+        ) : (
+          <ArrowUpDown className="w-3.5 h-3.5 text-gray-300" />
+        )}
+      </div>
+    </th>
+  );
+};
+
 /* ── Main component ── */
 export const IngredientsView = () => {
   const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [newIngredient, setNewIngredient] = useState<{
     name: string;
     pricePerKg: number;
@@ -79,6 +120,19 @@ export const IngredientsView = () => {
     supplier: string;
     lastUpdate: string;
   }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: '' });
+
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  /* Sort toggle */
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+  };
 
   /* Actions */
   const handleAdd = () => {
@@ -113,14 +167,34 @@ export const IngredientsView = () => {
     }
   };
 
-  /* Filtered list */
-  const filtered = state.ingredients.filter((ing) => {
-    const q = search.toLowerCase();
-    return (
-      ing.name.toLowerCase().includes(q) ||
-      (ing.supplier ?? '').toLowerCase().includes(q)
-    );
-  });
+  /* Filtered & sorted list */
+  const filtered = useMemo(() => {
+    let list = state.ingredients.filter((ing) => {
+      const q = search.toLowerCase();
+      return (
+        ing.name.toLowerCase().includes(q) ||
+        (ing.supplier ?? '').toLowerCase().includes(q)
+      );
+    });
+
+    list.sort((a, b) => {
+      let cmp = 0;
+      switch (sortField) {
+        case 'name':
+          cmp = a.name.localeCompare(b.name);
+          break;
+        case 'supplier':
+          cmp = (a.supplier ?? '').localeCompare(b.supplier ?? '');
+          break;
+        case 'lastUpdate':
+          cmp = (a.lastUpdate ?? '').localeCompare(b.lastUpdate ?? '');
+          break;
+      }
+      return sortDir === 'asc' ? cmp : -cmp;
+    });
+
+    return list;
+  }, [state.ingredients, search, sortField, sortDir]);
 
   return (
     <div className="space-y-6">
@@ -164,11 +238,11 @@ export const IngredientsView = () => {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="p-4 font-medium text-gray-600">Ingredient Name</th>
+              <SortHeader label="Ingredient Name" field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
               <th className="p-4 font-medium text-gray-600">Pricing Type</th>
               <th className="p-4 font-medium text-gray-600">Price (€)</th>
-              <th className="p-4 font-medium text-gray-600">Supplier</th>
-              <th className="p-4 font-medium text-gray-600">Last Update</th>
+              <SortHeader label="Supplier" field="supplier" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+              <SortHeader label="Last Update" field="lastUpdate" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
               <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
             </tr>
           </thead>
@@ -337,7 +411,7 @@ export const IngredientsView = () => {
                           <Edit2 className="w-4 h-4" />
                         </button>
                         <button
-                          onClick={() => deleteIngredient(ingredient.id)}
+                          onClick={() => setDeleteTarget({ id: ingredient.id, name: ingredient.name })}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-md"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -351,6 +425,19 @@ export const IngredientsView = () => {
           </tbody>
         </table>
       </div>
+
+      {/* ── Delete confirmation ── */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Ingredient"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? It will be moved to the trash where you can recover it later.`}
+        confirmLabel="Move to Trash"
+        onConfirm={() => {
+          if (deleteTarget) deleteIngredient(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 };
