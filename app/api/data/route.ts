@@ -1,22 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { neon } from '@neondatabase/serverless';
 
-// Force Next.js to treat this route as fully dynamic (no server-side caching)
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'wibox-data.json');
+function getSQL() {
+  const url = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!url) throw new Error('DATABASE_URL is not set');
+  return neon(url);
+}
 
 export async function GET() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
+    const sql = getSQL();
+
+    // Ensure table exists (idempotent, runs every time but costs nothing)
+    await sql`
+      CREATE TABLE IF NOT EXISTS wibox_state (
+        id   INTEGER PRIMARY KEY DEFAULT 1,
+        data JSONB   NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
+
+    const rows = await sql`SELECT data FROM wibox_state WHERE id = 1`;
+
+    if (rows.length === 0) {
       return NextResponse.json(null, {
         headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' },
       });
     }
-    const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-    return NextResponse.json(JSON.parse(raw), {
+
+    return NextResponse.json(rows[0].data, {
       headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' },
     });
   } catch (err) {
@@ -28,13 +43,32 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const data = await request.json();
-    const dir = path.dirname(DATA_FILE);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
-    console.log('[Wibox API] Data saved successfully');
+    const sql = getSQL();
+
+    // Ensure table exists
+    await sql`
+      CREATE TABLE IF NOT EXISTS wibox_state (
+        id   INTEGER PRIMARY KEY DEFAULT 1,
+        data JSONB   NOT NULL DEFAULT '{}'::jsonb,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
+
+    const jsonStr = JSON.stringify(data);
+
+    // Upsert: insert row 1 or update it
+    await sql`
+      INSERT INTO wibox_state (id, data, updated_at)
+      VALUES (1, ${jsonStr}::jsonb, now())
+      ON CONFLICT (id) DO UPDATE
+      SET data = ${jsonStr}::jsonb,
+          updated_at = now()
+    `;
+
+    console.log('[Wibox API] Data saved to Neon PostgreSQL');
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST error:', err);
-    return NextResponse.json({ ok: false }, { status: 500 });
+    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
   }
 }
