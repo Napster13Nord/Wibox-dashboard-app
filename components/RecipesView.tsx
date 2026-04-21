@@ -623,7 +623,7 @@ export const RecipesView = () => {
           const folderInfo = folders.find(f => f.id === recipe.folder);
 
           return (
-            <div key={recipe.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div key={recipe.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div
                 className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
                 onClick={() => setExpandedId(isExpanded ? null : recipe.id)}

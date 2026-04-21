@@ -33,7 +33,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
 
   const filtered = query.trim()
     ? ingredients.filter(i =>
-        i.name.toLowerCase().includes(query.toLowerCase())
+        (i.name || '').toLowerCase().includes(query.toLowerCase())
       )
     : ingredients;
 

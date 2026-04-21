@@ -672,7 +672,7 @@ export const DishesView = () => {
           const vat = getVatBreakdown(dish.sellingPrice, vatRate);
 
           return (
-            <div key={dish.id} className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div key={dish.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               {/* Header row */}
               <div
                 className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
