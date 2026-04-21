@@ -86,8 +86,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, setState] = useState<AppState>(defaultState);
   const [isLoaded, setIsLoaded] = useState(false);
   const [history, setHistory] = useState<AppState[]>([]);
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInitialLoadRef = useRef(true);
+  // This ref tracks whether a state change was caused by a user action (true)
+  // vs. the initial data load (false). Only user-initiated changes trigger saves.
+  const userChangedRef = useRef(false);
 
   // ── Load: server file → localStorage fallback → defaultState ──
   useEffect(() => {
@@ -99,8 +100,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (data) {
             setState(migrateState(data));
             setIsLoaded(true);
-            // Mark that initial load is done after a tick
-            setTimeout(() => { isInitialLoadRef.current = false; }, 100);
             return;
           }
         }
@@ -117,37 +116,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch { /* ignore parse errors */ }
 
       setIsLoaded(true);
-      setTimeout(() => { isInitialLoadRef.current = false; }, 100);
     };
 
     load();
   }, []);
 
-  // ── Save: debounced write to SERVER + localStorage ──
+  // ── Save: immediately write to SERVER + localStorage on user-initiated changes ──
   useEffect(() => {
     if (!isLoaded) return;
-    // Skip the very first render after loading to avoid overwriting server data with stale state
-    if (isInitialLoadRef.current) return;
+    if (!userChangedRef.current) return;
 
-    // Debounce saves to avoid rapid-fire writes
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      // Server-side save (shared across all devices)
-      fetch('/api/data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(state),
-      }).catch(() => { /* silent fail — server unavailable */ });
+    // Reset the flag
+    userChangedRef.current = false;
 
-      // Local cache (fast reload on same device)
-      try {
-        localStorage.setItem('wibox-data', JSON.stringify(state));
-      } catch { /* ignore storage errors */ }
-    }, 300);
+    // Server-side save (shared across all devices)
+    fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    }).catch(() => { /* silent fail — server unavailable */ });
 
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
+    // Local cache (fast reload on same device)
+    try {
+      localStorage.setItem('wibox-data', JSON.stringify(state));
+    } catch { /* ignore storage errors */ }
   }, [state, isLoaded]);
 
   // ── Push to undo history before any mutation ──
@@ -164,6 +156,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (prev.length === 0) return prev;
       const next = [...prev];
       const last = next.pop()!;
+      userChangedRef.current = true;
       setState(last);
       return next;
     });
@@ -171,23 +164,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const canUndo = history.length > 0;
 
+  // ── Helper: mark user change and update state ──
+  const userSetState = (updater: (s: AppState) => AppState) => {
+    pushHistory();
+    userChangedRef.current = true;
+    setState(updater);
+  };
+
   // ── Ingredients ──
   const addIngredient = (ingredient: Ingredient) => {
-    pushHistory();
-    setState(s => ({ ...s, ingredients: [...s.ingredients, ingredient] }));
+    userSetState(s => ({ ...s, ingredients: [...s.ingredients, ingredient] }));
   };
 
   const updateIngredient = (id: string, ingredient: Partial<Ingredient>) => {
-    pushHistory();
-    setState(s => ({
+    userSetState(s => ({
       ...s,
       ingredients: s.ingredients.map(i => i.id === id ? { ...i, ...ingredient } : i),
     }));
   };
 
   const deleteIngredient = (id: string) => {
-    pushHistory();
-    setState(s => {
+    userSetState(s => {
       const item = s.ingredients.find(i => i.id === id);
       return {
         ...s,
@@ -204,21 +201,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Recipes ──
   const addRecipe = (recipe: Recipe) => {
-    pushHistory();
-    setState(s => ({ ...s, recipes: [...s.recipes, recipe] }));
+    userSetState(s => ({ ...s, recipes: [...s.recipes, recipe] }));
   };
 
   const updateRecipe = (id: string, recipe: Partial<Recipe>) => {
-    pushHistory();
-    setState(s => ({
+    userSetState(s => ({
       ...s,
       recipes: s.recipes.map(r => r.id === id ? { ...r, ...recipe } : r),
     }));
   };
 
   const deleteRecipe = (id: string) => {
-    pushHistory();
-    setState(s => {
+    userSetState(s => {
       const item = s.recipes.find(r => r.id === id);
       return {
         ...s,
@@ -235,21 +229,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Dishes ──
   const addDish = (dish: Dish) => {
-    pushHistory();
-    setState(s => ({ ...s, dishes: [...s.dishes, dish] }));
+    userSetState(s => ({ ...s, dishes: [...s.dishes, dish] }));
   };
 
   const updateDish = (id: string, dish: Partial<Dish>) => {
-    pushHistory();
-    setState(s => ({
+    userSetState(s => ({
       ...s,
       dishes: s.dishes.map(d => d.id === id ? { ...d, ...dish } : d),
     }));
   };
 
   const deleteDish = (id: string) => {
-    pushHistory();
-    setState(s => {
+    userSetState(s => {
       const item = s.dishes.find(d => d.id === id);
       return {
         ...s,
@@ -266,25 +257,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Folders ──
   const addFolder = (type: 'recipe' | 'dish', folder: Folder) => {
-    pushHistory();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    setState(s => ({ ...s, [key]: [...(s[key] || []), folder] }));
+    userSetState(s => ({ ...s, [key]: [...(s[key] || []), folder] }));
   };
 
   const updateFolder = (type: 'recipe' | 'dish', id: string, folder: Partial<Folder>) => {
-    pushHistory();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    setState(s => ({
+    userSetState(s => ({
       ...s,
       [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
     }));
   };
 
   const deleteFolder = (type: 'recipe' | 'dish', id: string) => {
-    pushHistory();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
     const itemsKey = type === 'recipe' ? 'recipes' : 'dishes';
-    setState(s => ({
+    userSetState(s => ({
       ...s,
       [key]: (s[key] || []).filter((f: Folder) => f.id !== id),
       // Unassign items from deleted folder
@@ -296,8 +284,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Trash ──
   const restoreFromTrash = (id: string) => {
-    pushHistory();
-    setState(s => {
+    userSetState(s => {
       const trashItem = s.trash.find(t => t.id === id);
       if (!trashItem) return s;
       const newState = { ...s, trash: s.trash.filter(t => t.id !== id) };
@@ -317,13 +304,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const permanentlyDelete = (id: string) => {
-    pushHistory();
-    setState(s => ({ ...s, trash: s.trash.filter(t => t.id !== id) }));
+    userSetState(s => ({ ...s, trash: s.trash.filter(t => t.id !== id) }));
   };
 
   const emptyTrash = () => {
-    pushHistory();
-    setState(s => ({ ...s, trash: [] }));
+    userSetState(s => ({ ...s, trash: [] }));
   };
 
   if (!isLoaded) return null;
