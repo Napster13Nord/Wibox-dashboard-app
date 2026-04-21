@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const dynamic = 'force-dynamic'; // CRITICAL: Stop Next.js from caching the GET request!
+
 const DATA_FILE = path.join(process.cwd(), 'data', 'wibox-data.json');
 
 export async function GET() {
