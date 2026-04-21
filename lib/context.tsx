@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Ingredient, Recipe, Dish, Folder, TrashedItem } from './types';
 
 type AppState = {
@@ -73,20 +73,27 @@ const migrateState = (raw: any): AppState => ({
   trash: raw.trash || [],
 });
 
-// ── Direct save function — no effects, no refs, no debounce ──
-const persistToServer = (data: AppState) => {
+// ── Save function — called OUTSIDE of setState, never inside ──
+function saveToServer(data: AppState) {
   fetch('/api/data', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(() => {});
-};
+  }).catch(err => console.error('[Wibox] Server save failed:', err));
+}
 
-const persistToLocalStorage = (data: AppState) => {
+function saveToLocalStorage(data: AppState) {
   try {
     localStorage.setItem('wibox-data', JSON.stringify(data));
-  } catch { /* ignore */ }
-};
+  } catch (err) {
+    console.error('[Wibox] localStorage save failed:', err);
+  }
+}
+
+function persist(data: AppState) {
+  saveToServer(data);
+  saveToLocalStorage(data);
+}
 
 const MAX_UNDO = 20;
 
@@ -97,27 +104,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isLoaded, setIsLoaded] = useState(false);
   const [history, setHistory] = useState<AppState[]>([]);
 
+  // A ref that always holds the latest state — used so doUpdate can
+  // read the current state synchronously without stale closures.
+  const stateRef = useRef<AppState>(defaultState);
+
+  // Keep ref in sync with state after every render
+  stateRef.current = state;
+
   // ── Load on mount: server → localStorage fallback ──
   useEffect(() => {
     const load = async () => {
-      try {
-        const res = await fetch('/api/data');
-        if (res.ok) {
-          const data = await res.json();
-          if (data) {
-            setState(migrateState(data));
-            setIsLoaded(true);
-            return;
-          }
-        }
-      } catch { /* fall through */ }
+      let loaded = false;
 
       try {
-        const saved = localStorage.getItem('wibox-data');
-        if (saved) {
-          setState(migrateState(JSON.parse(saved)));
+        // cache: 'no-store' prevents Next.js and the browser from caching
+        const res = await fetch('/api/data', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
+            const migrated = migrateState(data);
+            setState(migrated);
+            stateRef.current = migrated;
+            loaded = true;
+          }
         }
-      } catch { /* ignore */ }
+      } catch {
+        // server not reachable — fall through to localStorage
+      }
+
+      if (!loaded) {
+        try {
+          const saved = localStorage.getItem('wibox-data');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            const migrated = migrateState(parsed);
+            setState(migrated);
+            stateRef.current = migrated;
+          }
+        } catch { /* ignore */ }
+      }
 
       setIsLoaded(true);
     };
@@ -125,39 +150,43 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     load();
   }, []);
 
-  // ── Helper: update state AND persist immediately ──
-  const doUpdate = useCallback((updater: (prev: AppState) => AppState) => {
-    setState(prev => {
-      // Push current state to undo history
-      setHistory(h => {
-        const next = [...h, prev];
-        if (next.length > MAX_UNDO) next.shift();
-        return next;
-      });
+  // ── Core update helper — computes new state, persists it, then sets it ──
+  const doUpdate = (updater: (prev: AppState) => AppState) => {
+    // Read current state from ref (always fresh, no stale closures)
+    const prev = stateRef.current;
 
-      // Compute new state
-      const next = updater(prev);
-
-      // Persist synchronously — no effects, no timers
-      persistToServer(next);
-      persistToLocalStorage(next);
-
+    // Push to undo history
+    setHistory(h => {
+      const next = [...h, prev];
+      if (next.length > MAX_UNDO) next.shift();
       return next;
     });
-  }, []);
+
+    // Compute new state
+    const next = updater(prev);
+
+    // Update ref immediately so rapid successive calls see each other's results
+    stateRef.current = next;
+
+    // Update React state (triggers re-render)
+    setState(next);
+
+    // Persist OUTSIDE of setState — guaranteed to execute
+    persist(next);
+  };
 
   // ── Undo ──
-  const undo = useCallback(() => {
+  const undo = () => {
     setHistory(prev => {
       if (prev.length === 0) return prev;
       const next = [...prev];
       const last = next.pop()!;
+      stateRef.current = last;
       setState(last);
-      persistToServer(last);
-      persistToLocalStorage(last);
+      persist(last);
       return next;
     });
-  }, []);
+  };
 
   const canUndo = history.length > 0;
 
