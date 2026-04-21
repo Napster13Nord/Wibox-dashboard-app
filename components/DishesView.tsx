@@ -4,7 +4,7 @@ import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculate
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
 import {
-  Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2,
+  Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
   Search, FolderPlus, EyeOff,
 } from 'lucide-react';
 
