@@ -147,6 +147,7 @@ const DishIngredientsEditor = ({
   ingredients,
   onAdd,
   onRemove,
+  onUpdateQty,
 }: {
   dish: any;
   ingredients: any[];
@@ -286,6 +287,7 @@ const DishRecipesEditor = ({
   ingredients,
   onAdd,
   onRemove,
+  onUpdateQty,
 }: {
   dish: any;
   recipes: any[];
