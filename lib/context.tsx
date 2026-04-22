@@ -73,13 +73,35 @@ const migrateState = (raw: any): AppState => ({
   trash: raw.trash || [],
 });
 
-// ── Save function — called OUTSIDE of setState, never inside ──
-function saveToServer(data: AppState) {
-  fetch('/api/data', {
+// ── API helpers — fire-and-forget with error logging ──
+
+function apiPost(url: string, body: any) {
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(err => console.error(`[Wibox] POST ${url} failed:`, err));
+}
+
+function apiPatch(url: string, body: any) {
+  fetch(url, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  }).catch(err => console.error(`[Wibox] PATCH ${url} failed:`, err));
+}
+
+function apiDelete(url: string) {
+  fetch(url, { method: 'DELETE' })
+    .catch(err => console.error(`[Wibox] DELETE ${url} failed:`, err));
+}
+
+function syncFullState(data: AppState) {
+  fetch('/api/state', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(err => console.error('[Wibox] Server save failed:', err));
+  }).catch(err => console.error('[Wibox] Full state sync failed:', err));
 }
 
 function saveToLocalStorage(data: AppState) {
@@ -88,11 +110,6 @@ function saveToLocalStorage(data: AppState) {
   } catch (err) {
     console.error('[Wibox] localStorage save failed:', err);
   }
-}
-
-function persist(data: AppState) {
-  saveToServer(data);
-  saveToLocalStorage(data);
 }
 
 const MAX_UNDO = 20;
@@ -111,14 +128,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Keep ref in sync with state after every render
   stateRef.current = state;
 
-  // ── Load on mount: server → localStorage fallback ──
+  // ── Load on mount: normalized tables → localStorage fallback ──
   useEffect(() => {
     const load = async () => {
       let loaded = false;
 
       try {
-        // cache: 'no-store' prevents Next.js and the browser from caching
-        const res = await fetch('/api/data', { cache: 'no-store' });
+        // Try the new normalized endpoint first
+        const res = await fetch('/api/state', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
@@ -129,9 +146,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       } catch {
-        // server not reachable — fall through to localStorage
+        // normalized endpoint not available — try legacy
       }
 
+      // Fallback: try legacy blob endpoint
+      if (!loaded) {
+        try {
+          const res = await fetch('/api/data', { cache: 'no-store' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
+              const migrated = migrateState(data);
+              setState(migrated);
+              stateRef.current = migrated;
+              loaded = true;
+            }
+          }
+        } catch { /* ignore */ }
+      }
+
+      // Last fallback: localStorage
       if (!loaded) {
         try {
           const saved = localStorage.getItem('wibox-data');
@@ -151,7 +185,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ── Core update helper — computes new state, persists it, then sets it ──
-  const doUpdate = (updater: (prev: AppState) => AppState) => {
+  // apiAction: optional callback for the granular API call
+  const doUpdate = (updater: (prev: AppState) => AppState, apiAction?: () => void) => {
     // Read current state from ref (always fresh, no stale closures)
     const prev = stateRef.current;
 
@@ -171,8 +206,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Update React state (triggers re-render)
     setState(next);
 
-    // Persist OUTSIDE of setState — guaranteed to execute
-    persist(next);
+    // Save to localStorage immediately (for undo/offline resilience)
+    saveToLocalStorage(next);
+
+    // Fire the granular API call (non-blocking)
+    if (apiAction) {
+      apiAction();
+    }
   };
 
   // ── Undo ──
@@ -183,7 +223,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const last = next.pop()!;
       stateRef.current = last;
       setState(last);
-      persist(last);
+      saveToLocalStorage(last);
+      // Full state sync for undo — ensures DB matches
+      syncFullState(last);
       return next;
     });
   };
@@ -192,141 +234,202 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Ingredients ──
   const addIngredient = (ingredient: Ingredient) => {
-    doUpdate(s => ({ ...s, ingredients: [...s.ingredients, ingredient] }));
+    doUpdate(
+      s => ({ ...s, ingredients: [...s.ingredients, ingredient] }),
+      () => apiPost('/api/ingredients', ingredient),
+    );
   };
 
   const updateIngredient = (id: string, ingredient: Partial<Ingredient>) => {
-    doUpdate(s => ({
-      ...s,
-      ingredients: s.ingredients.map(i => i.id === id ? { ...i, ...ingredient } : i),
-    }));
+    doUpdate(
+      s => ({
+        ...s,
+        ingredients: s.ingredients.map(i => i.id === id ? { ...i, ...ingredient } : i),
+      }),
+      () => apiPatch('/api/ingredients', { id, ...ingredient }),
+    );
   };
 
   const deleteIngredient = (id: string) => {
-    doUpdate(s => {
-      const item = s.ingredients.find(i => i.id === id);
-      return {
-        ...s,
-        ingredients: s.ingredients.filter(i => i.id !== id),
-        trash: item ? [...s.trash, {
-          id: Date.now().toString(),
-          originalType: 'ingredient' as const,
-          data: item,
-          deletedAt: new Date().toISOString(),
-        }] : s.trash,
-      };
-    });
+    doUpdate(
+      s => {
+        const item = s.ingredients.find(i => i.id === id);
+        return {
+          ...s,
+          ingredients: s.ingredients.filter(i => i.id !== id),
+          trash: item ? [...s.trash, {
+            id: Date.now().toString(),
+            originalType: 'ingredient' as const,
+            data: item,
+            deletedAt: new Date().toISOString(),
+          }] : s.trash,
+        };
+      },
+      () => apiDelete(`/api/ingredients?id=${id}`),
+    );
   };
 
   // ── Recipes ──
   const addRecipe = (recipe: Recipe) => {
-    doUpdate(s => ({ ...s, recipes: [...s.recipes, recipe] }));
+    doUpdate(
+      s => ({ ...s, recipes: [...s.recipes, recipe] }),
+      () => apiPost('/api/recipes', recipe),
+    );
   };
 
   const updateRecipe = (id: string, recipe: Partial<Recipe>) => {
-    doUpdate(s => ({
-      ...s,
-      recipes: s.recipes.map(r => r.id === id ? { ...r, ...recipe } : r),
-    }));
+    doUpdate(
+      s => ({
+        ...s,
+        recipes: s.recipes.map(r => r.id === id ? { ...r, ...recipe } : r),
+      }),
+      () => apiPatch('/api/recipes', { id, ...recipe }),
+    );
   };
 
   const deleteRecipe = (id: string) => {
-    doUpdate(s => {
-      const item = s.recipes.find(r => r.id === id);
-      return {
-        ...s,
-        recipes: s.recipes.filter(r => r.id !== id),
-        trash: item ? [...s.trash, {
-          id: Date.now().toString(),
-          originalType: 'recipe' as const,
-          data: item,
-          deletedAt: new Date().toISOString(),
-        }] : s.trash,
-      };
-    });
+    doUpdate(
+      s => {
+        const item = s.recipes.find(r => r.id === id);
+        return {
+          ...s,
+          recipes: s.recipes.filter(r => r.id !== id),
+          trash: item ? [...s.trash, {
+            id: Date.now().toString(),
+            originalType: 'recipe' as const,
+            data: item,
+            deletedAt: new Date().toISOString(),
+          }] : s.trash,
+        };
+      },
+      () => apiDelete(`/api/recipes?id=${id}`),
+    );
   };
 
   // ── Dishes ──
   const addDish = (dish: Dish) => {
-    doUpdate(s => ({ ...s, dishes: [...s.dishes, dish] }));
+    doUpdate(
+      s => ({ ...s, dishes: [...s.dishes, dish] }),
+      () => apiPost('/api/dishes', dish),
+    );
   };
 
   const updateDish = (id: string, dish: Partial<Dish>) => {
-    doUpdate(s => ({
-      ...s,
-      dishes: s.dishes.map(d => d.id === id ? { ...d, ...dish } : d),
-    }));
+    doUpdate(
+      s => ({
+        ...s,
+        dishes: s.dishes.map(d => d.id === id ? { ...d, ...dish } : d),
+      }),
+      () => apiPatch('/api/dishes', { id, ...dish }),
+    );
   };
 
   const deleteDish = (id: string) => {
-    doUpdate(s => {
-      const item = s.dishes.find(d => d.id === id);
-      return {
-        ...s,
-        dishes: s.dishes.filter(d => d.id !== id),
-        trash: item ? [...s.trash, {
-          id: Date.now().toString(),
-          originalType: 'dish' as const,
-          data: item,
-          deletedAt: new Date().toISOString(),
-        }] : s.trash,
-      };
-    });
+    doUpdate(
+      s => {
+        const item = s.dishes.find(d => d.id === id);
+        return {
+          ...s,
+          dishes: s.dishes.filter(d => d.id !== id),
+          trash: item ? [...s.trash, {
+            id: Date.now().toString(),
+            originalType: 'dish' as const,
+            data: item,
+            deletedAt: new Date().toISOString(),
+          }] : s.trash,
+        };
+      },
+      () => apiDelete(`/api/dishes?id=${id}`),
+    );
   };
 
   // ── Folders ──
   const addFolder = (type: 'recipe' | 'dish', folder: Folder) => {
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    doUpdate(s => ({ ...s, [key]: [...(s[key] || []), folder] }));
+    doUpdate(
+      s => ({ ...s, [key]: [...(s[key] || []), folder] }),
+      () => apiPost('/api/folders', { type, ...folder }),
+    );
   };
 
   const updateFolder = (type: 'recipe' | 'dish', id: string, folder: Partial<Folder>) => {
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    doUpdate(s => ({
-      ...s,
-      [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
-    }));
+    doUpdate(
+      s => ({
+        ...s,
+        [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
+      }),
+      () => apiPatch('/api/folders', { id, ...folder }),
+    );
   };
 
   const deleteFolder = (type: 'recipe' | 'dish', id: string) => {
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
     const itemsKey = type === 'recipe' ? 'recipes' : 'dishes';
-    doUpdate(s => ({
-      ...s,
-      [key]: (s[key] || []).filter((f: Folder) => f.id !== id),
-      [itemsKey]: (s[itemsKey] as any[]).map((item: any) =>
-        item.folder === id ? { ...item, folder: '' } : item
-      ),
-    }));
+    doUpdate(
+      s => ({
+        ...s,
+        [key]: (s[key] || []).filter((f: Folder) => f.id !== id),
+        [itemsKey]: (s[itemsKey] as any[]).map((item: any) =>
+          item.folder === id ? { ...item, folder: '' } : item
+        ),
+      }),
+      () => apiDelete(`/api/folders?id=${id}&type=${type}`),
+    );
   };
 
   // ── Trash ──
   const restoreFromTrash = (id: string) => {
-    doUpdate(s => {
-      const trashItem = s.trash.find(t => t.id === id);
-      if (!trashItem) return s;
-      const newState = { ...s, trash: s.trash.filter(t => t.id !== id) };
-      switch (trashItem.originalType) {
-        case 'ingredient':
-          newState.ingredients = [...newState.ingredients, trashItem.data as Ingredient];
-          break;
-        case 'recipe':
-          newState.recipes = [...newState.recipes, trashItem.data as Recipe];
-          break;
-        case 'dish':
-          newState.dishes = [...newState.dishes, trashItem.data as Dish];
-          break;
-      }
-      return newState;
-    });
+    doUpdate(
+      s => {
+        const trashItem = s.trash.find(t => t.id === id);
+        if (!trashItem) return s;
+        const newState = { ...s, trash: s.trash.filter(t => t.id !== id) };
+        switch (trashItem.originalType) {
+          case 'ingredient':
+            newState.ingredients = [...newState.ingredients, trashItem.data as Ingredient];
+            break;
+          case 'recipe':
+            newState.recipes = [...newState.recipes, trashItem.data as Recipe];
+            break;
+          case 'dish':
+            newState.dishes = [...newState.dishes, trashItem.data as Dish];
+            break;
+        }
+        return newState;
+      },
+      () => {
+        // Find the trash item to get the entity details
+        const trashItem = stateRef.current.trash.find(t => t.id === id) ||
+          // Item was just restored, check previous state
+          history[history.length - 1]?.trash.find(t => t.id === id);
+        if (trashItem) {
+          apiPost('/api/trash', {
+            entityType: trashItem.originalType,
+            entityId: trashItem.data.id,
+          });
+        }
+      },
+    );
   };
 
   const permanentlyDelete = (id: string) => {
-    doUpdate(s => ({ ...s, trash: s.trash.filter(t => t.id !== id) }));
+    const trashItem = stateRef.current.trash.find(t => t.id === id);
+    doUpdate(
+      s => ({ ...s, trash: s.trash.filter(t => t.id !== id) }),
+      () => {
+        if (trashItem) {
+          apiDelete(`/api/trash?entityType=${trashItem.originalType}&entityId=${trashItem.data.id}`);
+        }
+      },
+    );
   };
 
   const emptyTrash = () => {
-    doUpdate(s => ({ ...s, trash: [] }));
+    doUpdate(
+      s => ({ ...s, trash: [] }),
+      () => apiDelete('/api/trash?all=true'),
+    );
   };
 
   if (!isLoaded) return null;

@@ -8,23 +8,51 @@ import { RecipesView } from '@/components/RecipesView';
 import { DishesView } from '@/components/DishesView';
 import { KitchenView } from '@/components/KitchenView';
 import { TrashView } from '@/components/TrashView';
+import { Menu } from 'lucide-react';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('wibox-active-tab') || 'dashboard';
+    }
+    return 'dashboard';
+  });
 
-  useEffect(() => {
-    const saved = localStorage.getItem('wibox-active-tab');
-    if (saved) setActiveTab(saved);
-  }, []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('wibox-active-tab', activeTab);
   }, [activeTab]);
 
+  const handleSetActiveTab = (tab: string) => {
+    setActiveTab(tab);
+    setSidebarOpen(false); // auto-close sidebar on mobile when tab selected
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="flex-1 overflow-y-auto p-8">
+      {/* Mobile header bar */}
+      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3 md:hidden">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+          aria-label="Open menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+        <span className="text-sm font-semibold text-gray-700 capitalize">
+          {activeTab === 'ingredients' ? 'Price List' : activeTab === 'dishes' ? 'Dish Building' : activeTab === 'kitchen' ? 'Kitchen Scale' : activeTab}
+        </span>
+      </div>
+
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={handleSetActiveTab}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
+      />
+
+      <main className="flex-1 overflow-y-auto p-4 pt-16 md:p-8 md:pt-8">
         {activeTab === 'dashboard' && <DashboardView />}
         {activeTab === 'ingredients' && <IngredientsView />}
         {activeTab === 'recipes' && <RecipesView />}

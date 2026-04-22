@@ -5,6 +5,7 @@ export type Ingredient = {
   priceType: 'perKg' | 'perUnit';
   supplier?: string;
   lastUpdate?: string; // ISO date string
+  lemonsoftId?: string; // Lemonsoft ERP article ID (for API sync)
 };
 
 export type RecipeIngredient = {

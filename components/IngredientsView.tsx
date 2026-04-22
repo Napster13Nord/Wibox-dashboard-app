@@ -199,14 +199,14 @@ export const IngredientsView = () => {
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Master Price List</h2>
           <p className="text-gray-500">Update ingredient prices here. All recipes will update automatically.</p>
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           Add Ingredient
@@ -234,7 +234,7 @@ export const IngredientsView = () => {
       </div>
 
       {/* ── Table ── */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         {/* Datalist for supplier autocomplete */}
         <datalist id="supplier-list">
           {Array.from(new Set(state.ingredients.map(i => i.supplier).filter(Boolean))).map(supplier => (
@@ -242,7 +242,7 @@ export const IngredientsView = () => {
           ))}
         </datalist>
 
-        <table className="w-full text-left border-collapse">
+        <table className="w-full min-w-[700px] text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
               <SortHeader label="Ingredient Name" field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />

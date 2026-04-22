@@ -523,14 +523,14 @@ export const RecipesView = () => {
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Standard Recipes</h2>
           <p className="text-gray-500">Build recipes with live costs based on the master price list.</p>
         </div>
         <button
           onClick={() => { setEditingRecipe(null); setShowRecipeModal(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           Create Recipe
@@ -625,11 +625,11 @@ export const RecipesView = () => {
           return (
             <div key={recipe.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               <div
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between cursor-pointer hover:bg-gray-50"
                 onClick={() => setExpandedId(isExpanded ? null : recipe.id)}
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-semibold text-gray-900">{recipe.name}</h3>
                     {folderInfo && (
                       <span
@@ -640,7 +640,7 @@ export const RecipesView = () => {
                       </span>
                     )}
                   </div>
-                  <div className="flex gap-4 mt-1 text-sm text-gray-500">
+                  <div className="flex gap-x-4 gap-y-1 mt-1 text-sm text-gray-500 flex-wrap">
                     <span>Yield: {recipe.yieldPercentage}%</span>
                     <span>Work Time: {recipe.workTimeMinutes} mins</span>
                     <span>Total Weight: {totalWeight.toFixed(0)}g</span>
@@ -656,13 +656,13 @@ export const RecipesView = () => {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
+                <div className="flex items-center gap-4 md:gap-6">
+                  <div className="text-left md:text-right">
                     <p className="text-sm text-gray-500">Live Cost</p>
                     <p className="text-lg font-bold text-blue-600">€{totalCost.toFixed(2)}</p>
                     <p className="text-xs text-gray-400">€{costPerKg.toFixed(2)} / kg</p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 ml-auto md:ml-0">
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditingRecipe(recipe); setShowRecipeModal(true); }}
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-md"

@@ -1,14 +1,16 @@
 import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useAppContext } from '@/lib/context';
-import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2 } from 'lucide-react';
+import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2, X } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobileOpen, onMobileClose }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, undo, canUndo } = useAppContext();
 
@@ -33,6 +35,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [undo, canUndo]);
+
+  // Close mobile sidebar on Escape
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onMobileClose?.();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [mobileOpen, onMobileClose]);
 
   const handleExport = () => {
     const data = localStorage.getItem('wibox-data');
@@ -66,9 +78,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     e.target.value = '';
   };
 
-  return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-6 border-b border-gray-200">
+  const sidebarContent = (
+    <>
+      <div className="p-6 border-b border-gray-200 flex items-center justify-between">
         <Image 
           src="/assets/logo.webp" 
           alt="Wibox Logo" 
@@ -77,6 +89,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           className="object-contain" 
           priority 
         />
+        {/* Close button — mobile only */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
@@ -160,6 +182,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
           onChange={handleImport}
         />
       </div>
-    </div>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile overlay sidebar */}
+      {mobileOpen && (
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 z-40 bg-black/40 md:hidden"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shadow-xl md:hidden animate-slide-in">
+            {sidebarContent}
+          </div>
+        </>
+      )}
+    </>
   );
 };

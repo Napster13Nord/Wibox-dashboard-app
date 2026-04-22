@@ -175,7 +175,8 @@ const DishIngredientsEditor = ({
     <div className="mt-4">
       <h4 className="font-medium text-gray-900 mb-2 text-sm">Direct Ingredients</h4>
       {directIngredients.length > 0 && (
-        <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
           <thead>
             <tr className="text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
               <th className="p-2.5 font-medium">Ingredient</th>
@@ -240,6 +241,7 @@ const DishIngredientsEditor = ({
             })}
           </tbody>
         </table>
+        </div>
       )}
       {directIngredients.length === 0 && (
         <p className="text-xs text-gray-400 mb-3 italic">No direct ingredients added.</p>
@@ -313,7 +315,8 @@ const DishRecipesEditor = ({
     <div>
       <h4 className="font-medium text-gray-900 mb-2 text-sm">Recipe Components</h4>
       {dish.recipes.length > 0 && (
-        <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
           <thead>
             <tr className="text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
               <th className="p-2.5 font-medium">Recipe</th>
@@ -380,6 +383,7 @@ const DishRecipesEditor = ({
             })}
           </tbody>
         </table>
+        </div>
       )}
       {dish.recipes.length === 0 && (
         <p className="text-xs text-gray-400 mb-3 italic">No recipe components added.</p>
@@ -599,7 +603,7 @@ export const DishesView = () => {
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Dish Building &amp; Margins</h2>
           <p className="text-gray-500">
@@ -608,7 +612,7 @@ export const DishesView = () => {
         </div>
         <button
           onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
           Create Dish
@@ -751,11 +755,11 @@ export const DishesView = () => {
             <div key={dish.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
               {/* Header row */}
               <div
-                className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50"
+                className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between cursor-pointer hover:bg-gray-50"
                 onClick={() => setExpandedId(isExpanded ? null : dish.id)}
               >
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {editingDishNameId === dish.id ? (
                       <input
                         type="text"
@@ -794,7 +798,7 @@ export const DishesView = () => {
                     <span>· Cost: €{metrics.costPerPortion.toFixed(2)}/portion</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-4 ml-4">
+                <div className="flex items-center gap-4 ml-0">
                   <div className="text-right flex gap-4">
                     <div>
                       <p className="text-xs text-gray-400 font-medium">Food Cost</p>
