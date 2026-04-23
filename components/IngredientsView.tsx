@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
+import { useI18n } from '@/lib/i18n';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -100,6 +101,7 @@ const SortHeader = ({
 /* ── Main component ── */
 export const IngredientsView = () => {
   const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [sortField, setSortField] = useState<SortField>('name');
@@ -201,15 +203,15 @@ export const IngredientsView = () => {
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Master Price List</h2>
-          <p className="text-gray-500">Update ingredient prices here. All recipes will update automatically.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t.ingredients.title}</h2>
+          <p className="text-gray-500">{t.ingredients.subtitle}</p>
         </div>
         <button
           onClick={() => setIsAdding(true)}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Add Ingredient
+          {t.ingredients.addIngredient}
         </button>
       </div>
 
@@ -218,7 +220,7 @@ export const IngredientsView = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Search by name or supplier…"
+          placeholder={t.ingredients.searchPlaceholder}
           className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -245,12 +247,12 @@ export const IngredientsView = () => {
         <table className="w-full min-w-[700px] text-left border-collapse">
           <thead>
             <tr className="bg-gray-50 border-b border-gray-200">
-              <SortHeader label="Ingredient Name" field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-              <th className="p-4 font-medium text-gray-600">Pricing Type</th>
-              <th className="p-4 font-medium text-gray-600">Price (€)</th>
-              <SortHeader label="Supplier" field="supplier" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-              <SortHeader label="Last Update" field="lastUpdate" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-              <th className="p-4 font-medium text-gray-600 text-right">Actions</th>
+              <SortHeader label={t.ingredients.ingredientName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+              <th className="p-4 font-medium text-gray-600">{t.ingredients.pricingType}</th>
+              <th className="p-4 font-medium text-gray-600">{t.ingredients.price}</th>
+              <SortHeader label={t.ingredients.supplier} field="supplier" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+              <SortHeader label={t.ingredients.lastUpdate} field="lastUpdate" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+              <th className="p-4 font-medium text-gray-600 text-right">{t.ingredients.actions}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -325,7 +327,7 @@ export const IngredientsView = () => {
             {filtered.length === 0 && !isAdding && (
               <tr>
                 <td colSpan={6} className="p-8 text-center text-gray-500">
-                  {search ? `No ingredients match "${search}".` : 'No ingredients found. Add one to get started.'}
+                  {search ? `${t.ingredients.noMatch} "${search}".` : t.ingredients.empty}
                 </td>
               </tr>
             )}
@@ -438,9 +440,10 @@ export const IngredientsView = () => {
       {/* ── Delete confirmation ── */}
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Ingredient"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? It will be moved to the trash where you can recover it later.`}
-        confirmLabel="Move to Trash"
+        title={t.ingredients.deleteTitle}
+        message={`${t.ingredients.deleteMsg} "${deleteTarget?.name}"? ${t.ingredients.trashNote}`}
+        confirmLabel={t.ingredients.deleteConfirm}
+        cancelLabel={t.common.cancel}
         onConfirm={() => {
           if (deleteTarget) deleteIngredient(deleteTarget.id);
           setDeleteTarget(null);

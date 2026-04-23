@@ -1,7 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useAppContext } from '@/lib/context';
-import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2, X } from 'lucide-react';
+import { useI18n, localeLabels, Locale } from '@/lib/i18n';
+import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2, X, Globe } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -13,15 +14,16 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobileOpen, onMobileClose }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { state, undo, canUndo } = useAppContext();
+  const { locale, setLocale, t } = useI18n();
 
   const trashCount = (state.trash || []).length;
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'ingredients', label: 'Price List', icon: Carrot },
-    { id: 'recipes', label: 'Recipes', icon: ChefHat },
-    { id: 'dishes', label: 'Dish Building', icon: UtensilsCrossed },
-    { id: 'kitchen', label: 'Kitchen Scale', icon: Scale },
+    { id: 'dashboard', label: t.sidebar.dashboard, icon: LayoutDashboard },
+    { id: 'ingredients', label: t.sidebar.priceList, icon: Carrot },
+    { id: 'recipes', label: t.sidebar.recipes, icon: ChefHat },
+    { id: 'dishes', label: t.sidebar.dishBuilding, icon: UtensilsCrossed },
+    { id: 'kitchen', label: t.sidebar.kitchenScale, icon: Scale },
   ];
 
   // Ctrl+Z keyboard shortcut for undo
@@ -48,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
 
   const handleExport = () => {
     const data = localStorage.getItem('wibox-data');
-    if (!data) { alert('No data found to export.'); return; }
+    if (!data) { alert(t.sidebar.noDataExport); return; }
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -65,31 +67,29 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
     reader.onload = (ev) => {
       try {
         const text = ev.target?.result as string;
-        JSON.parse(text); // validate JSON before saving
+        JSON.parse(text);
         localStorage.setItem('wibox-data', text);
-        alert('Data imported successfully! The page will now reload.');
+        alert(t.sidebar.importSuccess);
         window.location.reload();
       } catch {
-        alert('Invalid file. Please use a Wibox backup JSON file.');
+        alert(t.sidebar.importError);
       }
     };
     reader.readAsText(file);
-    // reset so same file can be re-imported if needed
     e.target.value = '';
   };
 
   const sidebarContent = (
     <>
       <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-        <Image 
-          src="/assets/logo.webp" 
-          alt="Wibox Logo" 
-          width={180} 
-          height={60} 
-          className="object-contain" 
-          priority 
+        <Image
+          src="/assets/logo.webp"
+          alt="Wibox Logo"
+          width={180}
+          height={60}
+          className="object-contain"
+          priority
         />
-        {/* Close button — mobile only */}
         {onMobileClose && (
           <button
             onClick={onMobileClose}
@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
           }`}
         >
           <Trash2 className={`w-5 h-5 ${activeTab === 'trash' ? 'text-red-700' : 'text-gray-400'}`} />
-          Trash
+          {t.sidebar.trash}
           {trashCount > 0 && (
             <span className="ml-auto bg-red-100 text-red-700 text-xs font-semibold px-2 py-0.5 rounded-full">
               {trashCount}
@@ -152,27 +152,51 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
           }`}
         >
           <Undo2 className="w-4 h-4" />
-          Undo
+          {t.sidebar.undo}
           <span className="ml-auto text-xs text-gray-400">Ctrl+Z</span>
         </button>
       </div>
 
+      {/* Language selector */}
+      <div className="px-4 pb-2">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+          <Globe className="w-4 h-4 text-gray-400" />
+          <span className="text-xs text-gray-400 font-medium uppercase tracking-wide">{t.sidebar.language}</span>
+          <div className="ml-auto flex gap-1">
+            {(Object.keys(localeLabels) as Locale[]).map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                className={`text-sm px-1.5 py-0.5 rounded transition-colors ${
+                  locale === loc
+                    ? 'bg-blue-100 text-blue-700 font-semibold'
+                    : 'text-gray-500 hover:bg-gray-200'
+                }`}
+                title={localeLabels[loc].label}
+              >
+                {localeLabels[loc].flag}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Export / Import */}
       <div className="p-4 border-t border-gray-200 space-y-2">
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide px-1 mb-1">Data Backup</p>
+        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide px-1 mb-1">{t.sidebar.dataBackup}</p>
         <button
           onClick={handleExport}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-green-50 hover:text-green-700 transition-colors"
         >
           <Download className="w-4 h-4 text-gray-400" />
-          Export Backup
+          {t.sidebar.exportBackup}
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-700 transition-colors"
         >
           <Upload className="w-4 h-4 text-gray-400" />
-          Import Backup
+          {t.sidebar.importBackup}
         </button>
         <input
           ref={fileInputRef}
@@ -187,7 +211,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
 
   return (
     <>
-      {/* Desktop sidebar — always visible */}
+      {/* Desktop sidebar */}
       <div className="hidden md:flex w-64 bg-white border-r border-gray-200 flex-col shrink-0">
         {sidebarContent}
       </div>
@@ -195,12 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
       {/* Mobile overlay sidebar */}
       {mobileOpen && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40 bg-black/40 md:hidden"
-            onClick={onMobileClose}
-          />
-          {/* Drawer */}
+          <div className="fixed inset-0 z-40 bg-black/40 md:hidden" onClick={onMobileClose} />
           <div className="fixed inset-y-0 left-0 z-50 w-72 bg-white flex flex-col shadow-xl md:hidden animate-slide-in">
             {sidebarContent}
           </div>

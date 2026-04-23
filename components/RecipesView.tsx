@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
+import { useI18n } from '@/lib/i18n';
 import { calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -41,6 +42,7 @@ const RecipeModal = ({
   folders: any[];
   isEditing: boolean;
 }) => {
+  const { t } = useI18n();
   const [name, setName] = useState(initialData?.name || '');
   const [yieldPercentage, setYieldPercentage] = useState(initialData?.yieldPercentage ?? 100);
   const [workTimeMinutes, setWorkTimeMinutes] = useState(initialData?.workTimeMinutes ?? 0);
@@ -129,7 +131,7 @@ const RecipeModal = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
           <h2 className="text-xl font-bold text-gray-900">
-            {isEditing ? 'Edit Recipe' : 'Create New Recipe'}
+            {isEditing ? t.recipes.editRecipe : t.recipes.createNew}
           </h2>
           <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 text-gray-500">
             <X className="w-5 h-5" />
@@ -140,18 +142,18 @@ const RecipeModal = ({
           {/* ── Basic info ── */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Recipe Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.recipeName}</label>
               <input
                 type="text"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                placeholder="e.g., Chocolate Mousse"
+                placeholder={t.recipes.recipeNamePlaceholder}
                 autoFocus
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Yield %</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.yieldPercent}</label>
               <input
                 type="number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -171,26 +173,24 @@ const RecipeModal = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1.5">
-                <EyeOff className="w-3.5 h-3.5" /> Hidden Costs (€)
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.hiddenCosts}</label>
               <input
                 type="number"
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={hiddenCosts || ''}
                 onChange={e => setHiddenCosts(parseFloat(e.target.value) || 0)}
-                placeholder="Labor, energy, packaging…"
+                placeholder={t.recipes.hiddenCostsPlaceholder}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Folder</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.folder}</label>
               <select
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={folder}
                 onChange={e => setFolder(e.target.value)}
               >
-                <option value="">No folder (uncategorized)</option>
+                <option value="">{t.recipes.noFolder}</option>
                 {folders.map((f: any) => (
                   <option key={f.id} value={f.id}>{f.icon} {f.name}</option>
                 ))}
@@ -218,14 +218,14 @@ const RecipeModal = ({
 
           {/* ── Ingredients table ── */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">Ingredients</h3>
-            <table className="w-full text-left mb-3">
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t.recipes.ingredients}</h3>
+            <table className="w-full text-left text-sm mb-3">
               <thead>
-                <tr className="text-xs text-gray-500 border-b border-gray-200">
-                  <th className="pb-2 font-medium">Ingredient</th>
-                  <th className="pb-2 font-medium">Quantity (g)</th>
-                  <th className="pb-2 font-medium">Cost</th>
-                  <th className="pb-2 font-medium text-right">Action</th>
+                <tr className="text-xs text-gray-500 border-b">
+                  <th className="py-1.5 font-medium">{t.recipes.ingredient}</th>
+                  <th className="py-1.5 font-medium">{t.recipes.quantity}</th>
+                  <th className="py-1.5 font-medium">{t.recipes.cost}</th>
+                  <th className="py-1.5 font-medium text-right">{t.recipes.action}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -276,8 +276,8 @@ const RecipeModal = ({
                 })}
                 {recipeIngredients.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-4 text-sm text-center text-gray-400">
-                      No ingredients added yet.
+                    <td colSpan={4} className="py-3 text-center text-gray-400 text-xs italic">
+                      {t.recipes.noIngredients}
                     </td>
                   </tr>
                 )}
@@ -315,7 +315,7 @@ const RecipeModal = ({
 
           {/* ── Presets ── */}
           <div className="pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-800 mb-3">🍳 Kitchen Presets</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t.recipes.kitchenPresets}</h3>
             <div className="flex flex-wrap gap-2 mb-3">
               {presets.map(p => (
                 <div
@@ -330,7 +330,7 @@ const RecipeModal = ({
                 </div>
               ))}
               {presets.length === 0 && (
-                <p className="text-xs text-gray-400 italic">No presets yet — add one below.</p>
+                <p className="text-xs text-gray-400 italic">{t.recipes.noPresets}</p>
               )}
             </div>
             <div className="flex gap-2 items-end">
@@ -338,7 +338,7 @@ const RecipeModal = ({
                 <label className="block text-xs font-medium text-gray-500 mb-1">Preset Name</label>
                 <input
                   type="text"
-                  placeholder='e.g. "18cm Cake"'
+                  placeholder={t.recipes.presetNamePlaceholder}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
                   value={presetName}
                   onChange={e => setPresetName(e.target.value)}
@@ -367,15 +367,15 @@ const RecipeModal = ({
 
         {/* Footer */}
         <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
-          <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm">
-            Cancel
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+            {t.recipes.cancel}
           </button>
           <button
             onClick={handleSave}
-            disabled={!name}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 font-medium"
+            disabled={!name.trim()}
+            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-40"
           >
-            {isEditing ? 'Save Changes' : 'Create Recipe'}
+            {t.recipes.saveChanges}
           </button>
         </div>
       </div>
@@ -470,6 +470,7 @@ const AddFolderDialog = ({
 /* ── Main view ── */
 export const RecipesView = () => {
   const { state, addRecipe, updateRecipe, deleteRecipe, addFolder, deleteFolder } = useAppContext();
+  const { t } = useI18n();
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
@@ -525,15 +526,15 @@ export const RecipesView = () => {
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Standard Recipes</h2>
-          <p className="text-gray-500">Build recipes with live costs based on the master price list.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t.recipes.title}</h2>
+          <p className="text-gray-500">{t.recipes.subtitle}</p>
         </div>
         <button
           onClick={() => { setEditingRecipe(null); setShowRecipeModal(true); }}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
-          Create Recipe
+          {t.recipes.createRecipe}
         </button>
       </div>
 
@@ -542,7 +543,7 @@ export const RecipesView = () => {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
         <input
           type="text"
-          placeholder="Search recipes…"
+          placeholder={t.recipes.searchPlaceholder}
           className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -562,7 +563,7 @@ export const RecipesView = () => {
             activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          All ({state.recipes.length})
+          {t.recipes.all} ({state.recipes.length})
         </button>
         <button
           onClick={() => setActiveFolder('uncategorized')}
@@ -570,7 +571,7 @@ export const RecipesView = () => {
             activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          Uncategorized ({state.recipes.filter(r => !r.folder).length})
+          {t.recipes.uncategorized} ({state.recipes.filter(r => !r.folder).length})
         </button>
         {folders.map(f => {
           const count = state.recipes.filter(r => r.folder === f.id).length;
@@ -603,7 +604,7 @@ export const RecipesView = () => {
           className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 border border-dashed border-gray-300 hover:border-gray-400 hover:text-gray-500 transition-colors flex items-center gap-1"
         >
           <FolderPlus className="w-3.5 h-3.5" />
-          New Folder
+          {t.recipes.newFolder}
         </button>
       </div>
 
@@ -611,7 +612,7 @@ export const RecipesView = () => {
       <div className="space-y-4">
         {filteredRecipes.length === 0 && (
           <div className="text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
-            {search ? `No recipes match "${search}".` : 'No recipes found. Create one to get started.'}
+            {search ? `${t.recipes.noMatch} "${search}".` : t.recipes.empty}
           </div>
         )}
 
@@ -711,7 +712,7 @@ export const RecipesView = () => {
                       {recipe.ingredients.length === 0 && (
                         <tr>
                           <td colSpan={3} className="py-4 text-sm text-center text-gray-400">
-                            No ingredients — click the edit button to add some.
+                            {t.recipes.noIngredientsEdit}
                           </td>
                         </tr>
                       )}
@@ -721,7 +722,7 @@ export const RecipesView = () => {
                   {/* Presets */}
                   {(recipe.presets || []).length > 0 && (
                     <div className="pt-3 border-t border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-2 text-sm">🍳 Kitchen Presets</h4>
+                      <h4 className="font-medium text-gray-900 mb-2 text-sm">{t.recipes.kitchenPresets}</h4>
                       <div className="flex flex-wrap gap-2">
                         {(recipe.presets || []).map(p => (
                           <div
@@ -742,7 +743,7 @@ export const RecipesView = () => {
                       className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
-                      Edit this recipe
+                      {t.recipes.editThisRecipe}
                     </button>
                   </div>
                 </div>
@@ -775,18 +776,20 @@ export const RecipesView = () => {
 
       <ConfirmDialog
         isOpen={!!deleteTarget}
-        title="Delete Recipe"
-        message={`Are you sure you want to delete "${deleteTarget?.name}"? It will be moved to the trash.`}
-        confirmLabel="Move to Trash"
+        title={t.recipes.deleteTitle}
+        message={`${t.recipes.deleteMsg} "${deleteTarget?.name}"? ${t.recipes.trashNote}`}
+        confirmLabel={t.recipes.deleteConfirm}
+        cancelLabel={t.common.cancel}
         onConfirm={() => { if (deleteTarget) deleteRecipe(deleteTarget.id); setDeleteTarget(null); }}
         onCancel={() => setDeleteTarget(null)}
       />
 
       <ConfirmDialog
         isOpen={!!deleteFolderTarget}
-        title="Delete Folder"
-        message={`Delete folder "${deleteFolderTarget?.name}"? Recipes in this folder will become uncategorized.`}
-        confirmLabel="Delete Folder"
+        title={t.recipes.deleteFolderTitle}
+        message={`${t.recipes.deleteFolderMsg} "${deleteFolderTarget?.name}"? ${t.recipes.deleteFolderNote}`}
+        confirmLabel={t.recipes.deleteFolderConfirm}
+        cancelLabel={t.common.cancel}
         variant="warning"
         onConfirm={() => { if (deleteFolderTarget) deleteFolder('recipe', deleteFolderTarget.id); setDeleteFolderTarget(null); }}
         onCancel={() => setDeleteFolderTarget(null)}

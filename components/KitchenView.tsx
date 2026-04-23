@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useAppContext } from '@/lib/context';
+import { useI18n } from '@/lib/i18n';
 import { calculateRecipeWeight } from '@/lib/calculations';
 import { ChefHat, Scale, Printer, Calculator } from 'lucide-react';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
+  const { t } = useI18n();
 
   // Step 1
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
@@ -115,8 +117,8 @@ export const KitchenView = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center print:hidden">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Kitchen Scale</h2>
-          <p className="text-gray-500">Select a recipe, enter quantities, click Calculate.</p>
+          <h2 className="text-2xl font-bold text-gray-900">{t.kitchen.title}</h2>
+          <p className="text-gray-500">{t.kitchen.subtitle}</p>
         </div>
       </div>
 
@@ -134,13 +136,13 @@ export const KitchenView = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.name}</h3>
               <p className="text-sm text-gray-500">
-                {(recipe.presets || []).length} preset sizes available
+                {(recipe.presets || []).length} {t.kitchen.presetSizes}
               </p>
             </button>
           ))}
           {state.recipes.length === 0 && (
             <div className="col-span-3 text-center p-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-              No recipes found. Go to the Recipes tab to create some.
+              {t.kitchen.noRecipes}
             </div>
           )}
         </div>
@@ -150,7 +152,7 @@ export const KitchenView = () => {
         <div className="space-y-6">
           <div className="flex items-center gap-4 print:hidden">
             <button onClick={handleBack} className="text-sm font-medium text-gray-500 hover:text-gray-900">
-              ← Back to Recipes
+              {t.kitchen.backToRecipes}
             </button>
             <h2 className="text-xl font-bold text-gray-900">/ {selectedRecipe.name}</h2>
           </div>
@@ -162,9 +164,9 @@ export const KitchenView = () => {
               <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                 <h3 className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
                   <Scale className="w-5 h-5 text-orange-500" />
-                  Select Sizes &amp; Quantities
+                  {t.kitchen.selectSizes}
                 </h3>
-                <p className="text-xs text-gray-400 mb-5">Enter quantity for one or more sizes, then click Calculate.</p>
+                <p className="text-xs text-gray-400 mb-5">{t.kitchen.selectSizesDesc}</p>
 
                 <div className="space-y-3 mb-5">
                   {/* Each preset row */}
@@ -182,10 +184,10 @@ export const KitchenView = () => {
                       >
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-medium text-gray-900 text-sm">{preset.name}</span>
-                          <span className="text-gray-400 text-xs">{preset.targetWeightGrams}g each</span>
+                          <span className="text-gray-400 text-xs">{preset.targetWeightGrams}g {t.kitchen.each}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <label className="text-xs text-gray-500 shrink-0">Qty:</label>
+                          <label className="text-xs text-gray-500 shrink-0">{t.kitchen.qty}</label>
                           <input
                             type="number"
                             min="0"
@@ -206,7 +208,7 @@ export const KitchenView = () => {
 
                   {presets.length === 0 && (
                     <p className="text-sm text-gray-400 italic">
-                      No presets defined. Add some in the Recipes tab, or use custom weight below.
+                      {t.kitchen.noPresets}
                     </p>
                   )}
 
@@ -217,7 +219,7 @@ export const KitchenView = () => {
                       : 'border-gray-200'
                   }`}>
                     <label className="block text-xs font-medium text-gray-500 mb-2">
-                      Custom total weight (g)
+                      {t.kitchen.customWeight}
                     </label>
                     <input
                       type="number"
@@ -250,7 +252,7 @@ export const KitchenView = () => {
                       </div>
                     )}
                     <div className="border-t border-gray-300 mt-2 pt-2 flex justify-between font-bold text-gray-800">
-                      <span>Total</span>
+                      <span>{t.kitchen.total}</span>
                       <span>
                         {(
                           presets.reduce((acc, p) => acc + (parseFloat(presetQtys[p.id] || '0') || 0) * p.targetWeightGrams, 0)
@@ -268,7 +270,7 @@ export const KitchenView = () => {
                   className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Calculator className="w-5 h-5" />
-                  Calculate
+                  {t.kitchen.calculate}
                 </button>
               </div>
             </div>
@@ -288,7 +290,7 @@ export const KitchenView = () => {
                       </p>
                     ) : (
                       <p className="text-gray-400 text-sm">
-                        Enter quantities and click Calculate →
+                        {t.kitchen.enterQuantities} →
                       </p>
                     )}
                   </div>
@@ -298,7 +300,7 @@ export const KitchenView = () => {
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 transition-colors print:hidden"
                   >
                     <Printer className="w-4 h-4" />
-                    Print
+                    {t.kitchen.print}
                   </button>
                 </div>
 
@@ -307,11 +309,11 @@ export const KitchenView = () => {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b-2 border-gray-900">
-                          <th className="py-3 text-base font-bold text-gray-700">Ingredient</th>
+                          <th className="py-3 text-base font-bold text-gray-700">{t.kitchen.ingredient}</th>
                           <th className="py-3 text-base font-bold text-gray-700 text-right w-44">
-                            Quantity
+                            {t.kitchen.quantityLabel}
                             {scaleFactor !== null && (
-                              <span className="block text-xs font-normal text-gray-400">click to edit</span>
+                              <span className="block text-xs font-normal text-gray-400">{t.kitchen.clickToEdit}</span>
                             )}
                           </th>
                         </tr>
@@ -330,7 +332,7 @@ export const KitchenView = () => {
                               <td className="py-4 text-lg text-gray-900 font-medium">
                                 {ingredient?.name || 'Unknown'}
                                 {ready && !hasData && (
-                                  <span className="ml-2 text-xs text-red-400 font-normal">(quantity missing — edit in Recipes tab)</span>
+                                  <span className="ml-2 text-xs text-red-400 font-normal">{t.kitchen.quantityMissing}</span>
                                 )}
                               </td>
                               <td className="py-4 text-right">
@@ -367,14 +369,14 @@ export const KitchenView = () => {
                     {scaleFactor === null && (
                       <div className="mt-6 text-center text-gray-400 text-sm py-4 border-2 border-dashed border-gray-200 rounded-xl">
                         <Calculator className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                        Enter sizes on the left and click <strong>Calculate</strong>
+                        {t.kitchen.enterQuantities} <strong>{t.kitchen.calculate}</strong>
                       </div>
                     )}
                   </>
                 ) : (
                   <div className="text-center py-12 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
                     <Scale className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                    <p>This recipe has no ingredients yet.</p>
+                    <p>{t.kitchen.noIngredientsYet}</p>
                   </div>
                 )}
               </div>
