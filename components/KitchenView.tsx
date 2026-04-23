@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { calculateRecipeWeight } from '@/lib/calculations';
-import { ChefHat, Scale, Printer, Calculator } from 'lucide-react';
+import { ChefHat, Scale, Printer, Calculator, Search, X } from 'lucide-react';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
@@ -22,6 +22,7 @@ export const KitchenView = () => {
 
   // Per-ingredient live-edit tracking
   const [editingValues, setEditingValues] = useState<Record<string, string>>({});
+  const [kitchenSearch, setKitchenSearch] = useState('');
 
   const selectedRecipe = state.recipes.find(r => r.id === selectedRecipeId);
   const presets = selectedRecipe?.presets || [];
@@ -107,6 +108,7 @@ export const KitchenView = () => {
     setScaleFactor(null);
     setCalcSummary('');
     setEditingValues({});
+    setKitchenSearch('');
   };
 
   // ── Has anything in the form? ──
@@ -124,28 +126,54 @@ export const KitchenView = () => {
 
       {/* ── Step 1: Pick a recipe ── */}
       {!selectedRecipe ? (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
-          {state.recipes.map(recipe => (
-            <button
-              key={recipe.id}
-              onClick={() => setSelectedRecipeId(recipe.id)}
-              className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group"
-            >
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 transition-colors">
-                <ChefHat className="w-6 h-6 text-orange-600 group-hover:text-white" />
+        <>
+          {/* Search box */}
+          <div className="relative max-w-sm print:hidden">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={t.kitchen.searchPlaceholder}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+              value={kitchenSearch}
+              onChange={e => setKitchenSearch(e.target.value)}
+            />
+            {kitchenSearch && (
+              <button onClick={() => setKitchenSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
+            {state.recipes
+              .filter(r => !kitchenSearch || r.name.toLowerCase().includes(kitchenSearch.toLowerCase()))
+              .map(recipe => (
+              <button
+                key={recipe.id}
+                onClick={() => setSelectedRecipeId(recipe.id)}
+                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group"
+              >
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 transition-colors">
+                  <ChefHat className="w-6 h-6 text-orange-600 group-hover:text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.name}</h3>
+                <p className="text-sm text-gray-500">
+                  {(recipe.presets || []).length} {t.kitchen.presetSizes}
+                </p>
+              </button>
+            ))}
+            {state.recipes.length === 0 && (
+              <div className="col-span-3 text-center p-12 bg-white rounded-xl border border-gray-200 text-gray-500">
+                {t.kitchen.noRecipes}
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.name}</h3>
-              <p className="text-sm text-gray-500">
-                {(recipe.presets || []).length} {t.kitchen.presetSizes}
-              </p>
-            </button>
-          ))}
-          {state.recipes.length === 0 && (
-            <div className="col-span-3 text-center p-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-              {t.kitchen.noRecipes}
-            </div>
-          )}
-        </div>
+            )}
+            {state.recipes.length > 0 && kitchenSearch && state.recipes.filter(r => r.name.toLowerCase().includes(kitchenSearch.toLowerCase())).length === 0 && (
+              <div className="col-span-3 text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
+                {t.kitchen.noMatch} "{kitchenSearch}"
+              </div>
+            )}
+          </div>
+        </>
 
       ) : (
         /* ── Step 2: Scale builder ── */

@@ -190,6 +190,8 @@ export const fi: T = {
     noIngredientsYet: 'Tässä reseptissä ei ole ainesosia vielä.',
     quantityMissing: '(määrä puuttuu — muokkaa Reseptit-välilehdellä)',
     print: 'Tulosta',
+    searchPlaceholder: 'Hae reseptejä…',
+    noMatch: 'Yhtään reseptiä ei löytynyt',
   },
   trash: {
     title: 'Roskakori',

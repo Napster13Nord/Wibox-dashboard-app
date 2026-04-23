@@ -190,6 +190,8 @@ export const sv: T = {
     noIngredientsYet: 'Detta recept har inga ingredienser ännu.',
     quantityMissing: '(mängd saknas — redigera i Recept-fliken)',
     print: 'Skriv ut',
+    searchPlaceholder: 'Sök recept…',
+    noMatch: 'Inga recept matchar',
   },
   trash: {
     title: 'Papperskorg',

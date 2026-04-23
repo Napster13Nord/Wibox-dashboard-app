@@ -198,6 +198,8 @@ export const en = {
     noIngredientsYet: 'This recipe has no ingredients yet.',
     quantityMissing: '(quantity missing — edit in Recipes tab)',
     print: 'Print',
+    searchPlaceholder: 'Search recipes…',
+    noMatch: 'No recipes match',
   },
 
   // Trash
