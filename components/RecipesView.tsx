@@ -284,8 +284,8 @@ const RecipeModal = ({
               </tbody>
             </table>
 
-            <div className="flex gap-2 items-end">
-              <div className="flex-1 max-w-xs">
+            <div className="flex flex-col gap-3">
+              <div className="w-full">
                 <label className="block text-xs font-medium text-gray-500 mb-1">Search Ingredient</label>
                 <IngredientCombobox
                   ingredients={ingredients}
@@ -293,23 +293,25 @@ const RecipeModal = ({
                   onChange={setSelIngId}
                 />
               </div>
-              <div className="w-28">
-                <label className="block text-xs font-medium text-gray-500 mb-1">Qty (g)</label>
-                <input
-                  type="number"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selQty}
-                  onChange={e => setSelQty(parseFloat(e.target.value) || '')}
-                  placeholder="e.g. 100"
-                />
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Qty (g)</label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={selQty}
+                    onChange={e => setSelQty(parseFloat(e.target.value) || '')}
+                    placeholder="e.g. 100"
+                  />
+                </div>
+                <button
+                  onClick={addIngredient}
+                  disabled={!selIngId || !selQty}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+                >
+                  Add
+                </button>
               </div>
-              <button
-                onClick={addIngredient}
-                disabled={!selIngId || !selQty}
-                className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
-              >
-                Add
-              </button>
             </div>
           </div>
 

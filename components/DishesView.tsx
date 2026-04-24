@@ -42,12 +42,12 @@ const VatRow = ({ sellingPrice, vatRate, onVatRateChange }: {
   const [tempVat, setTempVat] = useState(vatRate);
 
   return (
-    <div className="flex items-center gap-4 text-sm py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 text-sm py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
       <div className="flex items-center gap-1.5">
         <span className="text-gray-500">Excl. VAT:</span>
         <span className="font-semibold text-gray-800">€{priceWithoutVat.toFixed(2)}</span>
       </div>
-      <span className="text-gray-300">|</span>
+      <span className="hidden sm:inline text-gray-300">|</span>
       <div className="flex items-center gap-1.5">
         <span className="text-gray-500">VAT</span>
         {isEditingVat ? (
@@ -83,7 +83,7 @@ const VatRow = ({ sellingPrice, vatRate, onVatRateChange }: {
         <span className="text-gray-400">:</span>
         <span className="font-semibold text-gray-700">€{vatAmount.toFixed(2)}</span>
       </div>
-      <span className="text-gray-300">|</span>
+      <span className="hidden sm:inline text-gray-300">|</span>
       <div className="flex items-center gap-1.5">
         <span className="text-gray-500">Incl. VAT:</span>
         <span className="font-semibold text-gray-800">€{priceWithVat.toFixed(2)}</span>
@@ -248,8 +248,8 @@ const DishIngredientsEditor = ({
         <p className="text-xs text-gray-400 mb-3 italic">No direct ingredients added.</p>
       )}
 
-      <div className="flex gap-2 items-end">
-        <div className="flex-1 max-w-xs">
+      <div className="flex flex-col gap-3">
+        <div className="w-full">
           <label className="block text-xs font-medium text-gray-500 mb-1">Search Ingredient</label>
           <IngredientCombobox
             ingredients={ingredients}
@@ -257,27 +257,29 @@ const DishIngredientsEditor = ({
             onChange={setSelectedIngredient}
           />
         </div>
-        <div className="w-28">
-          <label className="block text-xs font-medium text-gray-500 mb-1">
-            {selectedIngredient && ingredients.find((i: any) => i.id === selectedIngredient)?.priceType === 'perUnit'
-              ? 'Qty (units)'
-              : 'Qty (g)'}
-          </label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={quantity}
-            onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
-            placeholder="e.g. 100"
-          />
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-500 mb-1">
+              {selectedIngredient && ingredients.find((i: any) => i.id === selectedIngredient)?.priceType === 'perUnit'
+                ? 'Qty (units)'
+                : 'Qty (g)'}
+            </label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={quantity}
+              onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
+              placeholder="e.g. 100"
+            />
+          </div>
+          <button
+            onClick={handleAdd}
+            disabled={!selectedIngredient || !quantity}
+            className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+          >
+            Add
+          </button>
         </div>
-        <button
-          onClick={handleAdd}
-          disabled={!selectedIngredient || !quantity}
-          className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
-        >
-          Add
-        </button>
       </div>
     </div>
   );
@@ -390,8 +392,8 @@ const DishRecipesEditor = ({
         <p className="text-xs text-gray-400 mb-3 italic">No recipe components added.</p>
       )}
 
-      <div className="flex gap-2 items-end">
-        <div className="flex-1 max-w-xs">
+      <div className="flex flex-col gap-3">
+        <div className="w-full">
           <label className="block text-xs font-medium text-gray-500 mb-1">Add Recipe Component</label>
           <select
             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -411,23 +413,25 @@ const DishRecipesEditor = ({
             })}
           </select>
         </div>
-        <div className="w-28">
-          <label className="block text-xs font-medium text-gray-500 mb-1">Qty (g)</label>
-          <input
-            type="number"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            value={quantity}
-            onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
-            placeholder="e.g. 250"
-          />
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-gray-500 mb-1">Qty (g)</label>
+            <input
+              type="number"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={quantity}
+              onChange={(e) => setQuantity(parseFloat(e.target.value) || '')}
+              placeholder="e.g. 250"
+            />
+          </div>
+          <button
+            onClick={handleAdd}
+            disabled={!selectedRecipe || !quantity}
+            className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+          >
+            Add
+          </button>
         </div>
-        <button
-          onClick={handleAdd}
-          disabled={!selectedRecipe || !quantity}
-          className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
-        >
-          Add
-        </button>
       </div>
     </div>
   );
