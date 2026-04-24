@@ -9,6 +9,7 @@ import { DishesView } from '@/components/DishesView';
 import { KitchenView } from '@/components/KitchenView';
 import { TrashView } from '@/components/TrashView';
 import { useI18n } from '@/lib/i18n';
+import { useRole } from '@/hooks/useRole';
 import { Menu } from 'lucide-react';
 
 export default function Home() {
@@ -21,10 +22,18 @@ export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t } = useI18n();
+  const { isManager } = useRole();
 
   useEffect(() => {
     localStorage.setItem('wibox-active-tab', activeTab);
   }, [activeTab]);
+
+  // If kitchen user somehow navigates to a manager-only tab, redirect
+  useEffect(() => {
+    if (!isManager && activeTab === 'trash') {
+      setActiveTab('dashboard');
+    }
+  }, [isManager, activeTab]);
 
   const handleSetActiveTab = (tab: string) => {
     setActiveTab(tab);
@@ -68,8 +77,9 @@ export default function Home() {
         {activeTab === 'recipes' && <RecipesView />}
         {activeTab === 'dishes' && <DishesView />}
         {activeTab === 'kitchen' && <KitchenView />}
-        {activeTab === 'trash' && <TrashView />}
+        {activeTab === 'trash' && isManager && <TrashView />}
       </main>
     </div>
   );
 }
+
