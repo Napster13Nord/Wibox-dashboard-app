@@ -10,15 +10,7 @@ export default function SignUpPage() {
       </div>
 
       <div className="relative z-10 flex flex-col items-center gap-8">
-        {/* Brand header */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Wibox
-          </h1>
-          <p className="text-sm text-gray-500">
-            Recipe Automation Dashboard
-          </p>
-        </div>
+
 
         <SignUp
           appearance={{
