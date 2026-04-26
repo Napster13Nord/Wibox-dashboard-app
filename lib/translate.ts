@@ -10,6 +10,13 @@ const DEEPL_TARGET_MAP: Record<SupportedLang, deepl.TargetLanguageCode> = {
   fi: 'fi',
 };
 
+// Map our locale codes to DeepL source language codes
+const DEEPL_SOURCE_MAP: Record<SupportedLang, deepl.SourceLanguageCode> = {
+  en: 'en',
+  sv: 'sv',
+  fi: 'fi',
+};
+
 // Map DeepL detected source language codes back to our locale codes
 const DEEPL_SOURCE_REVERSE: Record<string, SupportedLang> = {
   EN: 'en',
@@ -52,9 +59,7 @@ export async function translateName(
     try {
       const result = await translator.translateText(
         name,
-        sourceLang
-          ? (DEEPL_TARGET_MAP[sourceLang] as unknown as deepl.SourceLanguageCode)
-          : null,
+        sourceLang ? DEEPL_SOURCE_MAP[sourceLang] : null,
         DEEPL_TARGET_MAP[targetLang]
       );
 
