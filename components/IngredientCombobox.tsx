@@ -1,11 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X } from 'lucide-react';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
+import { TranslationMap } from '@/lib/types';
 
 type IngredientOption = {
   id: string;
   name: string;
   pricePerKg: number;
   priceType: 'perKg' | 'perUnit';
+  translations?: TranslationMap;
 };
 
 interface IngredientComboboxProps {
@@ -28,13 +31,23 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
   const [highlightIdx, setHighlightIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const getTranslatedName = useTranslatedName();
 
   const selectedIng = ingredients.find(i => i.id === value);
 
+  // Search across original name AND all translations
   const filtered = query.trim()
-    ? ingredients.filter(i =>
-        (i.name || '').toLowerCase().includes(query.toLowerCase())
-      )
+    ? ingredients.filter(i => {
+        const q = query.toLowerCase();
+        if ((i.name || '').toLowerCase().includes(q)) return true;
+        // Also search through translations
+        if (i.translations) {
+          return Object.values(i.translations).some(
+            t => t && t.toLowerCase().includes(q)
+          );
+        }
+        return false;
+      })
     : ingredients;
 
   // Click outside to close
@@ -56,7 +69,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
   const handleSelect = (id: string) => {
     onChange(id);
     const ing = ingredients.find(i => i.id === id);
-    setQuery(ing?.name || '');
+    setQuery(ing ? getTranslatedName(ing) : '');
     setIsOpen(false);
   };
 
@@ -104,7 +117,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
           ref={inputRef}
           type="text"
           className="w-full pl-8 pr-8 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          placeholder={selectedIng ? selectedIng.name : placeholder}
+          placeholder={selectedIng ? getTranslatedName(selectedIng) : placeholder}
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
@@ -137,7 +150,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
                 idx === highlightIdx ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
               } ${ing.id === value ? 'font-medium' : ''}`}
             >
-              <span>{ing.name}</span>
+              <span>{getTranslatedName(ing)}</span>
               <span className="text-xs text-gray-400 ml-2">
                 €{ing.pricePerKg.toFixed(2)}/{ing.priceType === 'perUnit' ? 'unit' : 'kg'}
               </span>

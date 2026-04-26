@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
@@ -102,6 +103,7 @@ const SortHeader = ({
 export const IngredientsView = () => {
   const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [search, setSearch] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [sortField, setSortField] = useState<SortField>('name');
@@ -173,9 +175,12 @@ export const IngredientsView = () => {
   const filtered = useMemo(() => {
     let list = state.ingredients.filter((ing) => {
       const q = search.toLowerCase();
+      const translatedName = getTranslatedName(ing).toLowerCase();
       return (
         ing.name.toLowerCase().includes(q) ||
-        (ing.supplier ?? '').toLowerCase().includes(q)
+        translatedName.includes(q) ||
+        (ing.supplier ?? '').toLowerCase().includes(q) ||
+        Object.values(ing.translations || {}).some(t => t && t.toLowerCase().includes(q))
       );
     });
 
@@ -397,7 +402,7 @@ export const IngredientsView = () => {
                   </>
                 ) : (
                   <>
-                    <td className="p-4 font-medium text-gray-900">{ingredient.name}</td>
+                    <td className="p-4 font-medium text-gray-900">{getTranslatedName(ingredient)}</td>
                     <td className="p-4">
                       <PriceTypeBadge priceType={(ingredient as any).priceType ?? 'perKg'} />
                     </td>

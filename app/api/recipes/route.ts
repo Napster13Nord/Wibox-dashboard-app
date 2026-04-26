@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { translateAndSave, loadTranslations } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/recipes — list all active recipes with nested ingredients & presets */
+/** GET /api/recipes — list all active recipes with nested ingredients, presets & translations */
 export async function GET() {
   try {
     const sql = getSQL();
     const rows = await sql`SELECT * FROM recipes WHERE deleted_at IS NULL ORDER BY name`;
     const allRI = await sql`SELECT * FROM recipe_ingredients`;
     const allRP = await sql`SELECT * FROM recipe_presets`;
+
+    // Load translations for all recipes
+    const translationMap = await loadTranslations(sql, 'recipe');
 
     const recipes = rows.map((r: any) => ({
       id: r.id,
@@ -24,6 +28,7 @@ export async function GET() {
       presets: allRP.filter((p: any) => p.recipe_id === r.id).map((p: any) => ({
         id: p.id, name: p.name, targetWeightGrams: Number(p.target_weight_grams),
       })),
+      translations: translationMap[r.id] || {},
     }));
 
     return NextResponse.json(recipes, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
@@ -33,7 +38,7 @@ export async function GET() {
   }
 }
 
-/** POST /api/recipes — create recipe with nested ingredients & presets */
+/** POST /api/recipes — create recipe with nested ingredients, presets & auto-translate */
 export async function POST(request: NextRequest) {
   try {
     const rec = await request.json();
@@ -57,6 +62,9 @@ export async function POST(request: NextRequest) {
       `;
     }
 
+    // Fire-and-forget translation
+    translateAndSave(sql, 'recipe', rec.id, rec.name).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST /api/recipes error:', err);
@@ -72,7 +80,11 @@ export async function PATCH(request: NextRequest) {
     const sql = getSQL();
 
     // Update scalar fields
-    if (updates.name !== undefined) await sql`UPDATE recipes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
+    if (updates.name !== undefined) {
+      await sql`UPDATE recipes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
+      // Re-translate on name change
+      translateAndSave(sql, 'recipe', id, updates.name).catch(() => {});
+    }
     if (updates.yieldPercentage !== undefined) await sql`UPDATE recipes SET yield_percentage = ${updates.yieldPercentage}, updated_at = now() WHERE id = ${id}`;
     if (updates.workTimeMinutes !== undefined) await sql`UPDATE recipes SET work_time_min = ${updates.workTimeMinutes}, updated_at = now() WHERE id = ${id}`;
     if (updates.hiddenCosts !== undefined) await sql`UPDATE recipes SET hidden_costs = ${updates.hiddenCosts}, updated_at = now() WHERE id = ${id}`;

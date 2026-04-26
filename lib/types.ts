@@ -1,3 +1,9 @@
+export type TranslationMap = {
+  en?: string;
+  sv?: string;
+  fi?: string;
+};
+
 export type Ingredient = {
   id: string;
   name: string;
@@ -6,6 +12,7 @@ export type Ingredient = {
   supplier?: string;
   lastUpdate?: string; // ISO date string
   lemonsoftId?: string; // Lemonsoft ERP article ID (for API sync)
+  translations?: TranslationMap;
 };
 
 export type RecipeIngredient = {
@@ -29,6 +36,7 @@ export type Recipe = {
   presets: RecipePreset[];
   folder?: string;         // folder id for organising recipes
   hiddenCosts?: number;    // fixed € amount for labor, energy, packaging, etc.
+  translations?: TranslationMap;
 };
 
 export type DishRecipe = {
@@ -53,6 +61,7 @@ export type Dish = {
   priceIncludesVat: boolean;
   folder?: string;         // folder id for organising dishes
   vatRate?: number;        // custom VAT rate, defaults to 13.5 if unset
+  translations?: TranslationMap;
 };
 
 // ── Folder type (shared by Recipes & Dishes) ──

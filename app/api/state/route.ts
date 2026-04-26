@@ -29,6 +29,16 @@ export async function GET() {
     const allDishRecipes = await sql`SELECT * FROM dish_recipes`;
     const allDishIngredients = await sql`SELECT * FROM dish_ingredients`;
 
+    // ── Translations (single query for all entities) ──
+    const allTranslations = await sql`SELECT * FROM translations`;
+    const translationIndex: Record<string, Record<string, string>> = {};
+    for (const t of allTranslations) {
+      const key = `${t.entity_type}:${t.entity_id}`;
+      if (!translationIndex[key]) translationIndex[key] = {} as Record<string, string>;
+      (translationIndex[key] as Record<string, string>)[t.lang as string] = t.name as string;
+    }
+    const getTranslations = (type: string, id: string) => translationIndex[`${type}:${id}`] || {};
+
     // ── Trashed items ──
     const trashedIngredients = await sql`SELECT * FROM ingredients WHERE deleted_at IS NOT NULL`;
     const trashedRecipes = await sql`SELECT * FROM recipes WHERE deleted_at IS NOT NULL`;
@@ -43,6 +53,7 @@ export async function GET() {
       supplier: r.supplier || '',
       lastUpdate: r.updated_at ? new Date(r.updated_at).toISOString().split('T')[0] : '',
       lemonsoftId: r.lemonsoft_id || undefined,
+      translations: getTranslations('ingredient', r.id),
     }));
 
     // ── Assemble recipes ──
@@ -67,6 +78,7 @@ export async function GET() {
           name: p.name,
           targetWeightGrams: Number(p.target_weight_grams),
         })),
+      translations: getTranslations('recipe', r.id),
     }));
 
     // ── Assemble dishes ──
@@ -92,6 +104,7 @@ export async function GET() {
           ingredientId: di.ingredient_id,
           quantity: Number(di.quantity),
         })),
+      translations: getTranslations('dish', d.id),
     }));
 
     // ── Assemble folders ──
@@ -112,6 +125,7 @@ export async function GET() {
         data: {
           id: r.id, name: r.name, pricePerKg: Number(r.price_per_kg),
           priceType: r.price_type, supplier: r.supplier || '', lastUpdate: '',
+          translations: getTranslations('ingredient', r.id),
         },
         deletedAt: r.deleted_at,
       });
@@ -132,6 +146,7 @@ export async function GET() {
           id: r.id, name: r.name, yieldPercentage: Number(r.yield_percentage),
           workTimeMinutes: Number(r.work_time_min), hiddenCosts: Number(r.hidden_costs),
           folder: r.folder_id || '', ingredients: recIngredients, presets: recPresets,
+          translations: getTranslations('recipe', r.id),
         },
         deletedAt: r.deleted_at,
       });
@@ -153,6 +168,7 @@ export async function GET() {
           portions: Number(d.portions), priceIncludesVat: d.price_includes_vat,
           vatRate: Number(d.vat_rate), folder: d.folder_id || '',
           recipes: dRecipes, directIngredients: dIngredients,
+          translations: getTranslations('dish', d.id),
         },
         deletedAt: d.deleted_at,
       });
@@ -181,6 +197,7 @@ export async function POST(request: NextRequest) {
     await ensureTables();
 
     // Clear all tables (child tables first)
+    await sql`DELETE FROM translations`;
     await sql`DELETE FROM dish_ingredients`;
     await sql`DELETE FROM dish_recipes`;
     await sql`DELETE FROM recipe_presets`;
@@ -196,6 +213,18 @@ export async function POST(request: NextRequest) {
         INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
         VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.lastUpdate ? new Date(ing.lastUpdate).toISOString() : new Date().toISOString()})
       `;
+      // Re-insert translations if available
+      if (ing.translations) {
+        for (const [lang, name] of Object.entries(ing.translations)) {
+          if (name) {
+            await sql`
+              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+              VALUES ('ingredient', ${ing.id}, ${lang}, ${name as string}, now())
+              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+            `;
+          }
+        }
+      }
     }
 
     // Re-insert recipes
@@ -216,6 +245,18 @@ export async function POST(request: NextRequest) {
           VALUES (${pr.id}, ${rec.id}, ${pr.name}, ${pr.targetWeightGrams || 0})
         `;
       }
+      // Re-insert translations if available
+      if (rec.translations) {
+        for (const [lang, name] of Object.entries(rec.translations)) {
+          if (name) {
+            await sql`
+              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+              VALUES ('recipe', ${rec.id}, ${lang}, ${name as string}, now())
+              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+            `;
+          }
+        }
+      }
     }
 
     // Re-insert dishes
@@ -235,6 +276,18 @@ export async function POST(request: NextRequest) {
           INSERT INTO dish_ingredients (id, dish_id, ingredient_id, quantity)
           VALUES (${di.id}, ${dish.id}, ${di.ingredientId}, ${di.quantity || 0})
         `;
+      }
+      // Re-insert translations if available
+      if (dish.translations) {
+        for (const [lang, name] of Object.entries(dish.translations)) {
+          if (name) {
+            await sql`
+              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+              VALUES ('dish', ${dish.id}, ${lang}, ${name as string}, now())
+              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+            `;
+          }
+        }
       }
     }
 

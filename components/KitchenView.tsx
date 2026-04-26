@@ -1,12 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeWeight } from '@/lib/calculations';
 import { ChefHat, Scale, Printer, Calculator, Search, X } from 'lucide-react';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
 
   // Step 1
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
@@ -146,7 +148,7 @@ export const KitchenView = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
             {state.recipes
-              .filter(r => !kitchenSearch || r.name.toLowerCase().includes(kitchenSearch.toLowerCase()))
+              .filter(r => !kitchenSearch || getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase()) || r.name.toLowerCase().includes(kitchenSearch.toLowerCase()))
               .map(recipe => (
               <button
                 key={recipe.id}
@@ -156,7 +158,7 @@ export const KitchenView = () => {
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 transition-colors">
                   <ChefHat className="w-6 h-6 text-orange-600 group-hover:text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{recipe.name}</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{getTranslatedName(recipe)}</h3>
                 <p className="text-sm text-gray-500">
                   {(recipe.presets || []).length} {t.kitchen.presetSizes}
                 </p>
@@ -167,7 +169,7 @@ export const KitchenView = () => {
                 {t.kitchen.noRecipes}
               </div>
             )}
-            {state.recipes.length > 0 && kitchenSearch && state.recipes.filter(r => r.name.toLowerCase().includes(kitchenSearch.toLowerCase())).length === 0 && (
+            {state.recipes.length > 0 && kitchenSearch && state.recipes.filter(r => getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase()) || r.name.toLowerCase().includes(kitchenSearch.toLowerCase())).length === 0 && (
               <div className="col-span-3 text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
                 {t.kitchen.noMatch} "{kitchenSearch}"
               </div>
@@ -182,7 +184,7 @@ export const KitchenView = () => {
             <button onClick={handleBack} className="text-sm font-medium text-gray-500 hover:text-gray-900">
               {t.kitchen.backToRecipes}
             </button>
-            <h2 className="text-xl font-bold text-gray-900">/ {selectedRecipe.name}</h2>
+            <h2 className="text-xl font-bold text-gray-900">/ {getTranslatedName(selectedRecipe)}</h2>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -309,7 +311,7 @@ export const KitchenView = () => {
                 <div className="flex justify-between items-start mb-8">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-1 print:text-2xl">
-                      {selectedRecipe.name}
+                      {getTranslatedName(selectedRecipe)}
                     </h1>
                     {scaleFactor !== null ? (
                       <p className="text-orange-600 font-medium">
@@ -358,7 +360,7 @@ export const KitchenView = () => {
                           return (
                             <tr key={ri.id} className="hover:bg-orange-50 transition-colors">
                               <td className="py-4 text-lg text-gray-900 font-medium">
-                                {ingredient?.name || 'Unknown'}
+                                {ingredient ? getTranslatedName(ingredient) : 'Unknown'}
                                 {ready && !hasData && (
                                   <span className="ml-2 text-xs text-red-400 font-normal">{t.kitchen.quantityMissing}</span>
                                 )}

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -43,6 +44,7 @@ const RecipeModal = ({
   isEditing: boolean;
 }) => {
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [name, setName] = useState(initialData?.name || '');
   const [yieldPercentage, setYieldPercentage] = useState(initialData?.yieldPercentage ?? 100);
   const [workTimeMinutes, setWorkTimeMinutes] = useState(initialData?.workTimeMinutes ?? 0);
@@ -238,7 +240,7 @@ const RecipeModal = ({
                     : 0;
                   return (
                     <tr key={ri.id}>
-                      <td className="py-2 text-sm">{ing?.name || 'Unknown'}</td>
+                      <td className="py-2 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
                       <td className="py-2 text-sm">
                         {editingIngId === ri.id ? (
                           <div className="flex items-center gap-1">
@@ -473,6 +475,7 @@ const AddFolderDialog = ({
 export const RecipesView = () => {
   const { state, addRecipe, updateRecipe, deleteRecipe, addFolder, deleteFolder } = useAppContext();
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
@@ -515,7 +518,7 @@ export const RecipesView = () => {
   /* Filtered recipes */
   const filteredRecipes = useMemo(() => {
     return state.recipes.filter(r => {
-      const matchesSearch = !search || r.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = !search || getTranslatedName(r).toLowerCase().includes(search.toLowerCase()) || r.name.toLowerCase().includes(search.toLowerCase());
       const matchesFolder = activeFolder === 'all' || (activeFolder === 'uncategorized' ? !r.folder : r.folder === activeFolder);
       return matchesSearch && matchesFolder;
     });
@@ -633,7 +636,7 @@ export const RecipesView = () => {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg font-semibold text-gray-900">{recipe.name}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
                     {folderInfo && (
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -705,7 +708,7 @@ export const RecipesView = () => {
                           : 0;
                         return (
                           <tr key={ri.id}>
-                            <td className="py-2 text-sm">{ing?.name || 'Unknown'}</td>
+                            <td className="py-2 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
                             <td className="py-2 text-sm">{ri.quantityInGrams}g</td>
                             <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
                           </tr>

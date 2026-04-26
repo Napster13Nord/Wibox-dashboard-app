@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { translateAndSave, loadTranslations } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/dishes — list all active dishes with nested recipes & direct ingredients */
+/** GET /api/dishes — list all active dishes with nested recipes, direct ingredients & translations */
 export async function GET() {
   try {
     const sql = getSQL();
     const rows = await sql`SELECT * FROM dishes WHERE deleted_at IS NULL ORDER BY name`;
     const allDR = await sql`SELECT * FROM dish_recipes`;
     const allDI = await sql`SELECT * FROM dish_ingredients`;
+
+    // Load translations for all dishes
+    const translationMap = await loadTranslations(sql, 'dish');
 
     const dishes = rows.map((d: any) => ({
       id: d.id,
@@ -25,6 +29,7 @@ export async function GET() {
       directIngredients: allDI.filter((di: any) => di.dish_id === d.id).map((di: any) => ({
         id: di.id, ingredientId: di.ingredient_id, quantity: Number(di.quantity),
       })),
+      translations: translationMap[d.id] || {},
     }));
 
     return NextResponse.json(dishes, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
@@ -34,7 +39,7 @@ export async function GET() {
   }
 }
 
-/** POST /api/dishes — create dish with nested recipe refs & direct ingredients */
+/** POST /api/dishes — create dish with nested recipe refs, direct ingredients & auto-translate */
 export async function POST(request: NextRequest) {
   try {
     const dish = await request.json();
@@ -58,6 +63,9 @@ export async function POST(request: NextRequest) {
       `;
     }
 
+    // Fire-and-forget translation
+    translateAndSave(sql, 'dish', dish.id, dish.name).catch(() => {});
+
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST /api/dishes error:', err);
@@ -72,7 +80,11 @@ export async function PATCH(request: NextRequest) {
     if (!id) return NextResponse.json({ ok: false, error: 'Missing id' }, { status: 400 });
     const sql = getSQL();
 
-    if (updates.name !== undefined) await sql`UPDATE dishes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
+    if (updates.name !== undefined) {
+      await sql`UPDATE dishes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
+      // Re-translate on name change
+      translateAndSave(sql, 'dish', id, updates.name).catch(() => {});
+    }
     if (updates.sellingPrice !== undefined) await sql`UPDATE dishes SET selling_price = ${updates.sellingPrice}, updated_at = now() WHERE id = ${id}`;
     if (updates.portions !== undefined) await sql`UPDATE dishes SET portions = ${updates.portions}, updated_at = now() WHERE id = ${id}`;
     if (updates.priceIncludesVat !== undefined) await sql`UPDATE dishes SET price_includes_vat = ${updates.priceIncludesVat}, updated_at = now() WHERE id = ${id}`;

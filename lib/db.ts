@@ -101,6 +101,17 @@ export async function ensureTables() {
   `;
 
   await sql`
+    CREATE TABLE IF NOT EXISTS translations (
+      entity_type  TEXT NOT NULL,
+      entity_id    TEXT NOT NULL,
+      lang         TEXT NOT NULL,
+      name         TEXT NOT NULL,
+      updated_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      PRIMARY KEY (entity_type, entity_id, lang)
+    )
+  `;
+
+  await sql`
     CREATE TABLE IF NOT EXISTS sync_log (
       id          SERIAL PRIMARY KEY,
       source      TEXT NOT NULL,

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -157,6 +158,7 @@ const DishIngredientsEditor = ({
   onUpdateQty: (id: string, qty: number) => void;
 }) => {
   const [selectedIngredient, setSelectedIngredient] = useState('');
+  const getTranslatedName = useTranslatedName();
   const [quantity, setQuantity] = useState<number | ''>('');
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -197,7 +199,7 @@ const DishIngredientsEditor = ({
               const unit = ing?.priceType === 'perUnit' ? 'unit(s)' : 'g';
               return (
                 <tr key={di.id}>
-                  <td className="p-2.5 text-sm">{ing?.name || 'Unknown'}</td>
+                  <td className="p-2.5 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
                   <td className="p-2.5 text-sm">
                     {editingId === di.id ? (
                       <div className="flex items-center gap-1">
@@ -305,6 +307,7 @@ const DishRecipesEditor = ({
   const [quantity, setQuantity] = useState<number | ''>('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingQty, setEditingQty] = useState<number>(0);
+  const getTranslatedName = useTranslatedName();
 
   const handleAdd = () => {
     if (selectedRecipe && quantity) {
@@ -341,7 +344,7 @@ const DishRecipesEditor = ({
               }
               return (
                 <tr key={dr.id}>
-                  <td className="p-2.5 text-sm">{recipe?.name || 'Unknown'}</td>
+                  <td className="p-2.5 text-sm">{recipe ? getTranslatedName(recipe) : 'Unknown'}</td>
                   <td className="p-2.5 text-sm">
                     {editingId === dr.id ? (
                       <div className="flex items-center gap-1">
@@ -525,6 +528,7 @@ const AddFolderDialog = ({
 export const DishesView = () => {
   const { state, addDish, updateDish, deleteDish, addFolder, deleteFolder } = useAppContext();
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1 });
@@ -600,7 +604,7 @@ export const DishesView = () => {
   /* Filtered dishes */
   const filteredDishes = useMemo(() => {
     return state.dishes.filter(d => {
-      const matchesSearch = !search || d.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = !search || getTranslatedName(d).toLowerCase().includes(search.toLowerCase()) || d.name.toLowerCase().includes(search.toLowerCase());
       const matchesFolder = activeFolder === 'all' || (activeFolder === 'uncategorized' ? !d.folder : d.folder === activeFolder);
       return matchesSearch && matchesFolder;
     });
@@ -786,7 +790,7 @@ export const DishesView = () => {
                         }}
                       />
                     ) : (
-                      <h3 className="text-lg font-semibold text-gray-900">{dish.name}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(dish)}</h3>
                     )}
                     {folderInfo && (
                       <span

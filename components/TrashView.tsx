@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
 import { Trash2, RotateCcw, Carrot, ChefHat, UtensilsCrossed } from 'lucide-react';
 
@@ -45,6 +46,7 @@ const typeBadge = (type: string, t: any) => {
 export const TrashView = () => {
   const { state, restoreFromTrash, permanentlyDelete, emptyTrash } = useAppContext();
   const { locale, t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -89,7 +91,8 @@ export const TrashView = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {trash.map(item => {
-                const name = (item.data as any).name || 'Unknown';
+                const data = item.data as any;
+                const name = data.translations ? getTranslatedName(data) : (data.name || 'Unknown');
                 return (
                   <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                     <td className="p-4">{typeBadge(item.originalType, t)}</td>
