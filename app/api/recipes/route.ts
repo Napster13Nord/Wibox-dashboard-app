@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fire-and-forget translation
-    translateAndSave(sql, 'recipe', rec.id, rec.name).catch(() => {});
+    translateAndSave(sql, 'recipe', rec.id, rec.name, rec.sourceLang).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     if (updates.name !== undefined) {
       await sql`UPDATE recipes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
       // Re-translate on name change
-      translateAndSave(sql, 'recipe', id, updates.name).catch(() => {});
+      translateAndSave(sql, 'recipe', id, updates.name, updates.sourceLang).catch(() => {});
     }
     if (updates.yieldPercentage !== undefined) await sql`UPDATE recipes SET yield_percentage = ${updates.yieldPercentage}, updated_at = now() WHERE id = ${id}`;
     if (updates.workTimeMinutes !== undefined) await sql`UPDATE recipes SET work_time_min = ${updates.workTimeMinutes}, updated_at = now() WHERE id = ${id}`;

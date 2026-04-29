@@ -5,6 +5,7 @@ import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
+import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset } from '@/lib/types';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
@@ -34,6 +35,7 @@ const RecipeModal = ({
   ingredients,
   folders,
   isEditing,
+  onUpdateTranslations,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -42,6 +44,7 @@ const RecipeModal = ({
   ingredients: any[];
   folders: any[];
   isEditing: boolean;
+  onUpdateTranslations?: (translations: Record<string, string>) => void;
 }) => {
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
@@ -199,6 +202,15 @@ const RecipeModal = ({
               </select>
             </div>
           </div>
+
+          {/* ── Translations (only when editing) ── */}
+          {isEditing && initialData && onUpdateTranslations && (
+            <TranslationEditor
+              translations={initialData.translations}
+              originalName={initialData.name}
+              onSave={onUpdateTranslations}
+            />
+          )}
 
           {/* ── Live cost summary ── */}
           <div className="flex items-center gap-6 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100">
@@ -473,7 +485,7 @@ const AddFolderDialog = ({
 
 /* ── Main view ── */
 export const RecipesView = () => {
-  const { state, addRecipe, updateRecipe, deleteRecipe, addFolder, deleteFolder } = useAppContext();
+  const { state, addRecipe, updateRecipe, deleteRecipe, addFolder, deleteFolder, updateTranslations } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [search, setSearch] = useState('');
@@ -768,6 +780,7 @@ export const RecipesView = () => {
           ingredients={state.ingredients}
           folders={folders}
           isEditing={!!editingRecipe}
+          onUpdateTranslations={editingRecipe ? (tr) => updateTranslations('recipe', editingRecipe.id, tr) : undefined}
         />
       )}
 

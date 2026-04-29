@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     `;
 
     // Fire-and-forget translation (non-blocking for the response)
-    translateAndSave(sql, 'ingredient', ing.id, ing.name).catch(() => {});
+    translateAndSave(sql, 'ingredient', ing.id, ing.name, ing.sourceLang).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -64,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     if (updates.name !== undefined) {
       await sql`UPDATE ingredients SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
       // Re-translate on name change
-      translateAndSave(sql, 'ingredient', id, updates.name).catch(() => {});
+      translateAndSave(sql, 'ingredient', id, updates.name, updates.sourceLang).catch(() => {});
     }
     if (updates.pricePerKg !== undefined) {
       await sql`UPDATE ingredients SET price_per_kg = ${updates.pricePerKg}, updated_at = now() WHERE id = ${id}`;

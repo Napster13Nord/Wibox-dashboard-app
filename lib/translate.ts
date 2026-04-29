@@ -141,10 +141,11 @@ export async function translateAndSave(
   sql: ReturnType<typeof import('@/lib/db').getSQL>,
   entityType: string,
   entityId: string,
-  name: string
+  name: string,
+  sourceLang?: 'en' | 'sv' | 'fi'
 ) {
   try {
-    const translations = await translateName(name);
+    const translations = await translateName(name, sourceLang);
     await saveTranslations(sql, entityType, entityId, translations);
     console.log(
       `[Wibox Translate] Translated "${name}" → ${JSON.stringify(translations)}`

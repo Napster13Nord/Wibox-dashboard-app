@@ -1,9 +1,58 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
 import { translateName, saveTranslations } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for batch translation
+
+/**
+ * PATCH /api/translate
+ * Update individual translation(s) for a given entity.
+ * Body: { entityType: 'ingredient'|'recipe'|'dish', entityId: string, translations: { en?: string, sv?: string, fi?: string } }
+ */
+export async function PATCH(request: NextRequest) {
+  try {
+    const { entityType, entityId, translations } = await request.json();
+    if (!entityType || !entityId || !translations) {
+      return NextResponse.json({ ok: false, error: 'Missing entityType, entityId, or translations' }, { status: 400 });
+    }
+
+    const sql = getSQL();
+    await saveTranslations(sql, entityType, entityId, translations);
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error('[Wibox Translate] PATCH error:', err);
+    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
+  }
+}
+
+/**
+ * PUT /api/translate
+ * Translate a name synchronously and return the result.
+ * Used by the frontend after adding a new entity to get translations immediately.
+ * Body: { name: string, sourceLang?: 'en'|'sv'|'fi', entityType: string, entityId: string }
+ */
+export async function PUT(request: NextRequest) {
+  try {
+    const { name, sourceLang, entityType, entityId } = await request.json();
+    if (!name || !entityType || !entityId) {
+      return NextResponse.json({ ok: false, error: 'Missing name, entityType, or entityId' }, { status: 400 });
+    }
+
+    const sql = getSQL();
+    const translations = await translateName(name, sourceLang || undefined);
+
+    if (Object.keys(translations).length > 0) {
+      await saveTranslations(sql, entityType, entityId, translations);
+    }
+
+    return NextResponse.json({ ok: true, translations });
+  } catch (err) {
+    console.error('[Wibox Translate] PUT error:', err);
+    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
+  }
+}
 
 /**
  * POST /api/translate

@@ -34,6 +34,8 @@ type AppContextType = {
   permanentlyDelete: (id: string) => void;
   emptyTrash: () => void;
 
+  updateTranslations: (entityType: 'ingredient' | 'recipe' | 'dish', entityId: string, translations: Record<string, string>) => void;
+
   undo: () => void;
   canUndo: boolean;
 };
@@ -94,6 +96,50 @@ function apiPatch(url: string, body: any) {
 function apiDelete(url: string) {
   fetch(url, { method: 'DELETE' })
     .catch(err => console.error(`[Wibox] DELETE ${url} failed:`, err));
+}
+
+function apiPatchTranslation(entityType: string, entityId: string, translations: Record<string, string>) {
+  fetch('/api/translate', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ entityType, entityId, translations }),
+  }).catch(err => console.error(`[Wibox] PATCH /api/translate failed:`, err));
+}
+
+/** Read the current dashboard locale from localStorage */
+function getLocale(): string {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('wibox-locale') || 'en';
+  }
+  return 'en';
+}
+
+/**
+ * Auto-translate an entity name and return the translations.
+ * Uses the PUT /api/translate endpoint which translates synchronously.
+ */
+async function autoTranslateEntity(
+  entityType: string,
+  entityId: string,
+  name: string,
+  sourceLang: string
+): Promise<Record<string, string> | null> {
+  try {
+    const res = await fetch('/api/translate', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entityType, entityId, name, sourceLang }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.ok && data.translations) {
+        return data.translations;
+      }
+    }
+  } catch (err) {
+    console.error(`[Wibox] Auto-translate failed for ${entityType}/${entityId}:`, err);
+  }
+  return null;
 }
 
 function syncFullState(data: AppState) {
@@ -234,9 +280,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Ingredients ──
   const addIngredient = (ingredient: Ingredient) => {
+    const sourceLang = getLocale();
     doUpdate(
       s => ({ ...s, ingredients: [...s.ingredients, ingredient] }),
-      () => apiPost('/api/ingredients', ingredient),
+      () => {
+        apiPost('/api/ingredients', { ...ingredient, sourceLang });
+        // Auto-translate and feed results back to state
+        autoTranslateEntity('ingredient', ingredient.id, ingredient.name, sourceLang)
+          .then(translations => {
+            if (translations) {
+              // Update local state with translations (no undo entry needed)
+              const current = stateRef.current;
+              const updated = {
+                ...current,
+                ingredients: current.ingredients.map(i =>
+                  i.id === ingredient.id ? { ...i, translations } : i
+                ),
+              };
+              stateRef.current = updated;
+              setState(updated);
+              saveToLocalStorage(updated);
+            }
+          });
+      },
     );
   };
 
@@ -271,9 +337,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Recipes ──
   const addRecipe = (recipe: Recipe) => {
+    const sourceLang = getLocale();
     doUpdate(
       s => ({ ...s, recipes: [...s.recipes, recipe] }),
-      () => apiPost('/api/recipes', recipe),
+      () => {
+        apiPost('/api/recipes', { ...recipe, sourceLang });
+        // Auto-translate and feed results back to state
+        autoTranslateEntity('recipe', recipe.id, recipe.name, sourceLang)
+          .then(translations => {
+            if (translations) {
+              const current = stateRef.current;
+              const updated = {
+                ...current,
+                recipes: current.recipes.map(r =>
+                  r.id === recipe.id ? { ...r, translations } : r
+                ),
+              };
+              stateRef.current = updated;
+              setState(updated);
+              saveToLocalStorage(updated);
+            }
+          });
+      },
     );
   };
 
@@ -308,9 +393,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Dishes ──
   const addDish = (dish: Dish) => {
+    const sourceLang = getLocale();
     doUpdate(
       s => ({ ...s, dishes: [...s.dishes, dish] }),
-      () => apiPost('/api/dishes', dish),
+      () => {
+        apiPost('/api/dishes', { ...dish, sourceLang });
+        // Auto-translate and feed results back to state
+        autoTranslateEntity('dish', dish.id, dish.name, sourceLang)
+          .then(translations => {
+            if (translations) {
+              const current = stateRef.current;
+              const updated = {
+                ...current,
+                dishes: current.dishes.map(d =>
+                  d.id === dish.id ? { ...d, translations } : d
+                ),
+              };
+              stateRef.current = updated;
+              setState(updated);
+              saveToLocalStorage(updated);
+            }
+          });
+      },
     );
   };
 
@@ -432,6 +536,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  // ── Translation editing ──
+  const updateTranslations = (
+    entityType: 'ingredient' | 'recipe' | 'dish',
+    entityId: string,
+    translations: Record<string, string>
+  ) => {
+    const key = entityType === 'ingredient' ? 'ingredients'
+              : entityType === 'recipe' ? 'recipes'
+              : 'dishes';
+    doUpdate(
+      s => ({
+        ...s,
+        [key]: (s[key] as any[]).map((item: any) =>
+          item.id === entityId ? { ...item, translations } : item
+        ),
+      }),
+      () => apiPatchTranslation(entityType, entityId, translations),
+    );
+  };
+
   if (!isLoaded) return null;
 
   return (
@@ -442,6 +566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       addDish, updateDish, deleteDish,
       addFolder, updateFolder, deleteFolder,
       restoreFromTrash, permanentlyDelete, emptyTrash,
+      updateTranslations,
       undo, canUndo,
     }}>
       {children}

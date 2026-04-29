@@ -5,6 +5,7 @@ import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
+import { TranslationEditor } from './TranslationEditor';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
   Search, FolderPlus, EyeOff,
@@ -526,7 +527,7 @@ const AddFolderDialog = ({
 
 /* ─── Main view ─── */
 export const DishesView = () => {
-  const { state, addDish, updateDish, deleteDish, addFolder, deleteFolder } = useAppContext();
+  const { state, addDish, updateDish, deleteDish, addFolder, deleteFolder, updateTranslations } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -890,6 +891,13 @@ export const DishesView = () => {
                       </select>
                     </div>
                   </div>
+
+                  {/* ── Translations ── */}
+                  <TranslationEditor
+                    translations={dish.translations}
+                    originalName={dish.name}
+                    onSave={(tr) => updateTranslations('dish', dish.id, tr)}
+                  />
 
                   {/* ── Compact VAT ── */}
                   <VatRow

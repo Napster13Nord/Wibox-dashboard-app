@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Fire-and-forget translation
-    translateAndSave(sql, 'dish', dish.id, dish.name).catch(() => {});
+    translateAndSave(sql, 'dish', dish.id, dish.name, dish.sourceLang).catch(() => {});
 
     return NextResponse.json({ ok: true });
   } catch (err) {
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest) {
     if (updates.name !== undefined) {
       await sql`UPDATE dishes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
       // Re-translate on name change
-      translateAndSave(sql, 'dish', id, updates.name).catch(() => {});
+      translateAndSave(sql, 'dish', id, updates.name, updates.sourceLang).catch(() => {});
     }
     if (updates.sellingPrice !== undefined) await sql`UPDATE dishes SET selling_price = ${updates.sellingPrice}, updated_at = now() WHERE id = ${id}`;
     if (updates.portions !== undefined) await sql`UPDATE dishes SET portions = ${updates.portions}, updated_at = now() WHERE id = ${id}`;

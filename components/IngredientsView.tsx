@@ -3,6 +3,7 @@ import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
+import { TranslationEditor } from './TranslationEditor';
 import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 type PriceType = 'perKg' | 'perUnit';
@@ -101,7 +102,7 @@ const SortHeader = ({
 
 /* ── Main component ── */
 export const IngredientsView = () => {
-  const { state, addIngredient, updateIngredient, deleteIngredient } = useAppContext();
+  const { state, addIngredient, updateIngredient, deleteIngredient, updateTranslations } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [search, setSearch] = useState('');
@@ -345,9 +346,15 @@ export const IngredientsView = () => {
                     <td className="p-4">
                       <input
                         type="text"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                         value={editForm.name}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      />
+                      <TranslationEditor
+                        compact
+                        translations={ingredient.translations}
+                        originalName={ingredient.name}
+                        onSave={(tr) => updateTranslations('ingredient', ingredient.id, tr)}
                       />
                     </td>
                     <td className="p-4">
