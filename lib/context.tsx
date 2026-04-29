@@ -103,7 +103,15 @@ function apiPatchTranslation(entityType: string, entityId: string, translations:
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entityType, entityId, translations }),
-  }).catch(err => console.error(`[Wibox] PATCH /api/translate failed:`, err));
+  })
+    .then(res => {
+      if (!res.ok) {
+        console.error(`[Wibox] PATCH /api/translate returned ${res.status}`);
+      } else {
+        console.log(`[Wibox] PATCH /api/translate OK for ${entityType}/${entityId}`);
+      }
+    })
+    .catch(err => console.error(`[Wibox] PATCH /api/translate failed:`, err));
 }
 
 /** Read the current dashboard locale from localStorage */

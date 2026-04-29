@@ -62,9 +62,14 @@ export async function PATCH(request: NextRequest) {
 
     // Build dynamic update — only update provided fields
     if (updates.name !== undefined) {
+      // Only re-translate if the name actually changed
+      const existing = await sql`SELECT name FROM ingredients WHERE id = ${id}`;
+      const oldName = existing[0]?.name;
       await sql`UPDATE ingredients SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
-      // Re-translate on name change
-      translateAndSave(sql, 'ingredient', id, updates.name, updates.sourceLang).catch(() => {});
+      if (oldName && oldName !== updates.name) {
+        // Re-translate on name change
+        translateAndSave(sql, 'ingredient', id, updates.name, updates.sourceLang).catch(() => {});
+      }
     }
     if (updates.pricePerKg !== undefined) {
       await sql`UPDATE ingredients SET price_per_kg = ${updates.pricePerKg}, updated_at = now() WHERE id = ${id}`;

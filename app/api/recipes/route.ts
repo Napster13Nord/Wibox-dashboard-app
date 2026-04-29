@@ -81,9 +81,13 @@ export async function PATCH(request: NextRequest) {
 
     // Update scalar fields
     if (updates.name !== undefined) {
+      const existing = await sql`SELECT name FROM recipes WHERE id = ${id}`;
+      const oldName = existing[0]?.name;
       await sql`UPDATE recipes SET name = ${updates.name}, updated_at = now() WHERE id = ${id}`;
-      // Re-translate on name change
-      translateAndSave(sql, 'recipe', id, updates.name, updates.sourceLang).catch(() => {});
+      if (oldName && oldName !== updates.name) {
+        // Re-translate on name change
+        translateAndSave(sql, 'recipe', id, updates.name, updates.sourceLang).catch(() => {});
+      }
     }
     if (updates.yieldPercentage !== undefined) await sql`UPDATE recipes SET yield_percentage = ${updates.yieldPercentage}, updated_at = now() WHERE id = ${id}`;
     if (updates.workTimeMinutes !== undefined) await sql`UPDATE recipes SET work_time_min = ${updates.workTimeMinutes}, updated_at = now() WHERE id = ${id}`;
