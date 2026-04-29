@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
     const sql = getSQL();
 
     await sql`
-      INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, folder_id)
-      VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.hiddenCosts || 0}, ${rec.folder || null})
+      INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id, updated_at)
+      VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.notes || null}, ${rec.folder || null}, now())
     `;
 
     for (const ri of (rec.ingredients || [])) {
@@ -91,7 +91,7 @@ export async function PATCH(request: NextRequest) {
     }
     if (updates.yieldPercentage !== undefined) await sql`UPDATE recipes SET yield_percentage = ${updates.yieldPercentage}, updated_at = now() WHERE id = ${id}`;
     if (updates.workTimeMinutes !== undefined) await sql`UPDATE recipes SET work_time_min = ${updates.workTimeMinutes}, updated_at = now() WHERE id = ${id}`;
-    if (updates.hiddenCosts !== undefined) await sql`UPDATE recipes SET hidden_costs = ${updates.hiddenCosts}, updated_at = now() WHERE id = ${id}`;
+    if (updates.notes !== undefined) await sql`UPDATE recipes SET notes = ${updates.notes}, updated_at = now() WHERE id = ${id}`;
     if (updates.folder !== undefined) await sql`UPDATE recipes SET folder_id = ${updates.folder || null}, updated_at = now() WHERE id = ${id}`;
 
     // Replace ingredients if provided

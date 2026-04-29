@@ -62,7 +62,7 @@ export async function GET() {
       name: r.name,
       yieldPercentage: Number(r.yield_percentage),
       workTimeMinutes: Number(r.work_time_min),
-      hiddenCosts: Number(r.hidden_costs) || 0,
+      notes: r.notes || '',
       folder: r.folder_id || '',
       ingredients: allRecipeIngredients
         .filter((ri: any) => ri.recipe_id === r.id)
@@ -144,7 +144,7 @@ export async function GET() {
         originalType: 'recipe',
         data: {
           id: r.id, name: r.name, yieldPercentage: Number(r.yield_percentage),
-          workTimeMinutes: Number(r.work_time_min), hiddenCosts: Number(r.hidden_costs),
+          workTimeMinutes: Number(r.work_time_min), notes: r.notes || '',
           folder: r.folder_id || '', ingredients: recIngredients, presets: recPresets,
           translations: getTranslations('recipe', r.id),
         },
@@ -230,8 +230,8 @@ export async function POST(request: NextRequest) {
     // Re-insert recipes
     for (const rec of (data.recipes || [])) {
       await sql`
-        INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, folder_id)
-        VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.hiddenCosts || 0}, ${rec.folder || null})
+        INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id)
+        VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.notes || null}, ${rec.folder || null})
       `;
       for (const ri of (rec.ingredients || [])) {
         await sql`
@@ -311,8 +311,8 @@ export async function POST(request: NextRequest) {
         `;
       } else if (t.originalType === 'recipe' && d) {
         await sql`
-          INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, folder_id, deleted_at)
-          VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${d.folder || null}, ${deletedAt})
+          INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id, deleted_at)
+          VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.notes || null}, ${d.folder || null}, ${deletedAt})
           ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}
         `;
       } else if (t.originalType === 'dish' && d) {

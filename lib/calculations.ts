@@ -14,10 +14,6 @@ export const calculateRecipeCost = (recipe: Recipe, ingredients: Ingredient[]) =
       }
     }
   }
-  // Add hidden costs (labor, energy, packaging, etc.)
-  if (recipe.hiddenCosts && recipe.hiddenCosts > 0) {
-    totalCost += recipe.hiddenCosts;
-  }
   return totalCost;
 };
 

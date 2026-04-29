@@ -35,7 +35,7 @@ export type Recipe = {
   workTimeMinutes: number;
   presets: RecipePreset[];
   folder?: string;         // folder id for organising recipes
-  hiddenCosts?: number;    // fixed € amount for labor, energy, packaging, etc.
+  notes?: string;          // notes / instructions
   translations?: TranslationMap;
 };
 

@@ -43,12 +43,20 @@ export async function ensureTables() {
       name             TEXT NOT NULL,
       yield_percentage NUMERIC(5,2) NOT NULL DEFAULT 100,
       work_time_min    INTEGER NOT NULL DEFAULT 0,
-      hidden_costs     NUMERIC(10,2) DEFAULT 0,
+      notes            TEXT,
       folder_id        TEXT,
       updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
       deleted_at       TIMESTAMPTZ
     )
   `;
+
+  // Migrate existing table
+  try {
+    await sql`ALTER TABLE recipes ADD COLUMN IF NOT EXISTS notes TEXT`;
+    await sql`ALTER TABLE recipes DROP COLUMN IF EXISTS hidden_costs`;
+  } catch (err) {
+    console.error('Migration error:', err);
+  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS recipe_ingredients (

@@ -51,7 +51,7 @@ const RecipeModal = ({
   const [name, setName] = useState(initialData?.name || '');
   const [yieldPercentage, setYieldPercentage] = useState(initialData?.yieldPercentage ?? 100);
   const [workTimeMinutes, setWorkTimeMinutes] = useState(initialData?.workTimeMinutes ?? 0);
-  const [hiddenCosts, setHiddenCosts] = useState(initialData?.hiddenCosts ?? 0);
+  const [notes, setNotes] = useState(initialData?.notes || '');
   const [folder, setFolder] = useState(initialData?.folder || '');
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>(
     initialData?.ingredients || []
@@ -116,7 +116,7 @@ const RecipeModal = ({
       name,
       yieldPercentage,
       workTimeMinutes,
-      hiddenCosts,
+      notes,
       folder,
       ingredients: recipeIngredients,
       presets,
@@ -125,7 +125,7 @@ const RecipeModal = ({
   };
 
   // Calculate live cost inside modal
-  const tempRecipe = { ingredients: recipeIngredients, yieldPercentage, hiddenCosts } as any;
+  const tempRecipe = { ingredients: recipeIngredients, yieldPercentage, notes } as any;
   const liveCost = calculateRecipeCost(tempRecipe, ingredients);
   const liveWeight = calculateRecipeWeight(tempRecipe);
 
@@ -177,15 +177,14 @@ const RecipeModal = ({
                 onChange={e => setWorkTimeMinutes(parseFloat(e.target.value) || 0)}
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.hiddenCosts}</label>
-              <input
-                type="number"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={hiddenCosts || ''}
-                onChange={e => setHiddenCosts(parseFloat(e.target.value) || 0)}
-                placeholder={t.recipes.hiddenCostsPlaceholder}
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.recipes.notes}</label>
+              <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                rows={3}
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder={t.recipes.notesPlaceholder}
               />
             </div>
             <div>
@@ -506,7 +505,7 @@ export const RecipesView = () => {
         name: data.name,
         yieldPercentage: data.yieldPercentage,
         workTimeMinutes: data.workTimeMinutes,
-        hiddenCosts: data.hiddenCosts,
+        notes: data.notes,
         folder: data.folder,
         ingredients: data.ingredients,
         presets: data.presets,
@@ -518,7 +517,7 @@ export const RecipesView = () => {
         name: data.name,
         yieldPercentage: data.yieldPercentage,
         workTimeMinutes: data.workTimeMinutes,
-        hiddenCosts: data.hiddenCosts,
+        notes: data.notes,
         folder: data.folder,
         ingredients: data.ingredients,
         presets: data.presets,
@@ -662,9 +661,9 @@ export const RecipesView = () => {
                     <span>Yield: {recipe.yieldPercentage}%</span>
                     <span>Work Time: {recipe.workTimeMinutes} mins</span>
                     <span>Total Weight: {totalWeight.toFixed(0)}g</span>
-                    {(recipe.hiddenCosts ?? 0) > 0 && (
-                      <span className="text-gray-400 flex items-center gap-1">
-                        <EyeOff className="w-3 h-3" /> Hidden: €{(recipe.hiddenCosts ?? 0).toFixed(2)}
+                    {recipe.notes && (
+                      <span className="text-gray-400 max-w-xs truncate" title={recipe.notes}>
+                        Notes: {recipe.notes}
                       </span>
                     )}
                     {(recipe.presets || []).length > 0 && (
