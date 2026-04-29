@@ -4,7 +4,7 @@ type T = typeof en;
 export const fi: T = {
   sidebar: {
     dashboard: 'Yleiskatsaus',
-    priceList: 'Hinnasto',
+    priceList: 'Ainesosaluettelo',
     recipes: 'Reseptit',
     dishBuilding: 'Annokset',
     kitchenScale: 'Keittiövaaka',
@@ -25,13 +25,13 @@ export const fi: T = {
     totalRecipes: 'Reseptejä Yhteensä',
     totalDishes: 'Annoksia Yhteensä',
     systemStatus: 'Järjestelmän Tila',
-    priceListSync: 'Hinnaston Synkronointi',
+    priceListSync: 'Ainesosaluettelon Synkronointi',
     liveCostCalc: 'Reaaliaikainen Kustannuslaskenta',
     marginTracking: 'Katteen Seuranta',
     active: 'Aktiivinen',
   },
   ingredients: {
-    title: 'Päähinnasto',
+    title: 'Pääainesosaluettelo',
     subtitle: 'Päivitä raaka-aineiden hinnat täällä. Kaikki reseptit päivittyvät automaattisesti.',
     addIngredient: 'Lisää Ainesosa',
     searchPlaceholder: 'Hae nimellä tai toimittajalla…',

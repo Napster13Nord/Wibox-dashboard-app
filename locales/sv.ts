@@ -4,7 +4,7 @@ type T = typeof en;
 export const sv: T = {
   sidebar: {
     dashboard: 'Översikt',
-    priceList: 'Prislista',
+    priceList: 'Ingredienslista',
     recipes: 'Recept',
     dishBuilding: 'Rätter',
     kitchenScale: 'Köksvåg',
@@ -25,13 +25,13 @@ export const sv: T = {
     totalRecipes: 'Totalt Recept',
     totalDishes: 'Totalt Rätter',
     systemStatus: 'Systemstatus',
-    priceListSync: 'Prislistsynk',
+    priceListSync: 'Ingredienslistsynk',
     liveCostCalc: 'Livekostnadsberäkning',
     marginTracking: 'Marginaluppföljning',
     active: 'Aktiv',
   },
   ingredients: {
-    title: 'Huvudprislista',
+    title: 'Huvudingredienslista',
     subtitle: 'Uppdatera ingredienspriser här. Alla recept uppdateras automatiskt.',
     addIngredient: 'Lägg till Ingrediens',
     searchPlaceholder: 'Sök efter namn eller leverantör…',

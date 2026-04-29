@@ -2,7 +2,7 @@ export const en = {
   // Sidebar
   sidebar: {
     dashboard: 'Dashboard',
-    priceList: 'Price List',
+    priceList: 'Ingredient List',
     recipes: 'Recipes',
     dishBuilding: 'Dish Building',
     kitchenScale: 'Kitchen Scale',
@@ -25,7 +25,7 @@ export const en = {
     totalRecipes: 'Total Recipes',
     totalDishes: 'Total Dishes',
     systemStatus: 'System Status',
-    priceListSync: 'Price List Sync',
+    priceListSync: 'Ingredient List Sync',
     liveCostCalc: 'Live Cost Calculation',
     marginTracking: 'Margin Tracking',
     active: 'Active',
@@ -33,7 +33,7 @@ export const en = {
 
   // Ingredients
   ingredients: {
-    title: 'Master Price List',
+    title: 'Master Ingredient List',
     subtitle: 'Update ingredient prices here. All recipes will update automatically.',
     addIngredient: 'Add Ingredient',
     searchPlaceholder: 'Search by name or supplier…',
