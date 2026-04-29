@@ -8,7 +8,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
-  Search, FolderPlus, EyeOff,
+  Search, FolderPlus, EyeOff, Printer,
 } from 'lucide-react';
 
 /* ── Folder config ── */
@@ -441,6 +441,452 @@ const DishRecipesEditor = ({
   );
 };
 
+/* ── Dish Modal (Create / Edit) ── */
+const DishModal = ({
+  isOpen,
+  onClose,
+  onSave,
+  initialData,
+  recipes,
+  ingredients,
+  folders,
+  isEditing,
+  onUpdateTranslations,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (dish: any) => void;
+  initialData?: any;
+  recipes: any[];
+  ingredients: any[];
+  folders: any[];
+  isEditing: boolean;
+  onUpdateTranslations?: (translations: Record<string, string>) => void;
+}) => {
+  const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
+
+  const [name, setName] = useState(initialData?.name || '');
+  const [sellingPrice, setSellingPrice] = useState(initialData?.sellingPrice ?? 0);
+  const [portions, setPortions] = useState(initialData?.portions ?? 1);
+  const [folder, setFolder] = useState(initialData?.folder || '');
+  const [vatRate, setVatRate] = useState(initialData?.vatRate ?? 13.5);
+
+  // Recipe components
+  const [dishRecipes, setDishRecipes] = useState<any[]>(initialData?.recipes || []);
+  const [selectedRecipe, setSelectedRecipe] = useState('');
+  const [recipeQty, setRecipeQty] = useState<number | ''>('');
+
+  // Direct ingredients
+  const [dishDirectIngredients, setDishDirectIngredients] = useState<any[]>(initialData?.directIngredients || []);
+  const [selectedIngredient, setSelectedIngredient] = useState('');
+  const [ingredientQty, setIngredientQty] = useState<number | ''>('');
+
+  // Editing quantities inline
+  const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null);
+  const [editingRecipeQty, setEditingRecipeQty] = useState<number>(0);
+  const [editingIngId, setEditingIngId] = useState<string | null>(null);
+  const [editingIngQty, setEditingIngQty] = useState<number>(0);
+
+  if (!isOpen) return null;
+
+  // Add recipe component
+  const addRecipe = () => {
+    if (selectedRecipe && recipeQty) {
+      setDishRecipes(prev => [
+        ...prev,
+        { id: Date.now().toString(), recipeId: selectedRecipe, quantityInGrams: Number(recipeQty) },
+      ]);
+      setSelectedRecipe('');
+      setRecipeQty('');
+    }
+  };
+
+  const removeRecipe = (drId: string) => {
+    setDishRecipes(prev => prev.filter(r => r.id !== drId));
+  };
+
+  // Add direct ingredient
+  const addIngredient = () => {
+    if (selectedIngredient && ingredientQty) {
+      setDishDirectIngredients(prev => [
+        ...prev,
+        { id: Date.now().toString(), ingredientId: selectedIngredient, quantity: Number(ingredientQty) },
+      ]);
+      setSelectedIngredient('');
+      setIngredientQty('');
+    }
+  };
+
+  const removeIngredient = (diId: string) => {
+    setDishDirectIngredients(prev => prev.filter(i => i.id !== diId));
+  };
+
+  const handleSave = () => {
+    if (!name) return;
+    onSave({
+      ...(isEditing && initialData ? { id: initialData.id } : {}),
+      name,
+      sellingPrice,
+      portions,
+      folder,
+      vatRate,
+      priceIncludesVat: false,
+      recipes: dishRecipes,
+      directIngredients: dishDirectIngredients,
+    });
+    onClose();
+  };
+
+  // Live cost calculation
+  const tempDish = { recipes: dishRecipes, directIngredients: dishDirectIngredients, sellingPrice, portions, vatRate, priceIncludesVat: false } as any;
+  const totalCost = calculateDishCost(tempDish, recipes, ingredients);
+  const portionCount = portions > 0 ? portions : 1;
+  const costPerPortion = totalCost / portionCount;
+  const foodCostPct = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
+  const marginPct = sellingPrice > 0 ? ((sellingPrice - costPerPortion) / sellingPrice) * 100 : 0;
+
+  // VAT calc
+  const vatAmount = sellingPrice * (vatRate / 100);
+  const priceWithVat = sellingPrice + vatAmount;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 my-8 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gray-50">
+          <h2 className="text-xl font-bold text-gray-900">
+            {isEditing ? t.dishes.editDish : t.dishes.createDish}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-200 text-gray-500">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6 max-h-[calc(100vh-12rem)] overflow-y-auto">
+          {/* ── Basic info ── */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.dishName}</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder={t.dishes.dishNamePlaceholder || 'e.g., Chocolate Cake 250g'}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.sellingPrice}</label>
+              <input
+                type="number"
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={sellingPrice || ''}
+                onChange={e => setSellingPrice(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.portions}</label>
+              <input
+                type="number"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={portions || ''}
+                onChange={e => setPortions(parseFloat(e.target.value) || 1)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.folder || 'Folder'}</label>
+              <select
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={folder}
+                onChange={e => setFolder(e.target.value)}
+              >
+                <option value="">{t.dishes.noFolder || 'No folder (uncategorized)'}</option>
+                {folders.map(f => (
+                  <option key={f.id} value={f.id}>{f.icon} {f.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* ── Translations (edit mode only) ── */}
+          {isEditing && initialData && onUpdateTranslations && (
+            <TranslationEditor
+              translations={initialData.translations}
+              originalName={initialData.name}
+              onSave={onUpdateTranslations}
+            />
+          )}
+
+          {/* ── Live metrics bar ── */}
+          <div className="bg-blue-50 rounded-xl px-4 py-3 flex flex-wrap gap-4 items-center text-sm">
+            <div>
+              <span className="text-blue-600 font-semibold">Cost: </span>
+              <span className="font-bold text-blue-800">€{totalCost.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="text-blue-600 font-semibold">Per Portion: </span>
+              <span className="font-bold text-blue-800">€{costPerPortion.toFixed(2)}</span>
+            </div>
+            <div>
+              <span className="text-blue-600 font-semibold">Food Cost: </span>
+              <span className={`font-bold ${foodCostPct <= 30 ? 'text-green-600' : 'text-red-500'}`}>
+                {foodCostPct.toFixed(1)}%
+              </span>
+            </div>
+            <div>
+              <span className="text-blue-600 font-semibold">Margin: </span>
+              <span className={`font-bold ${marginPct >= 70 ? 'text-green-600' : 'text-red-500'}`}>
+                {marginPct.toFixed(1)}%
+              </span>
+            </div>
+          </div>
+
+          {/* ── VAT Row ── */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-sm py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">Excl. VAT:</span>
+              <span className="font-semibold text-gray-800">€{sellingPrice.toFixed(2)}</span>
+            </div>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">VAT ({vatRate}%):</span>
+              <span className="font-semibold text-gray-700">€{vatAmount.toFixed(2)}</span>
+            </div>
+            <span className="hidden sm:inline text-gray-300">|</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-gray-500">Incl. VAT:</span>
+              <span className="font-semibold text-gray-800">€{priceWithVat.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* ── Recipe Components ── */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">{t.dishes.recipeComponents || 'Recipe Components'}</h3>
+            {dishRecipes.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
+                  <thead>
+                    <tr className="text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
+                      <th className="p-2.5 font-medium">Recipe</th>
+                      <th className="p-2.5 font-medium">Qty (g)</th>
+                      <th className="p-2.5 font-medium">Cost</th>
+                      <th className="p-2.5 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {dishRecipes.map((dr: any) => {
+                      const recipe = recipes.find((r: any) => r.id === dr.recipeId);
+                      const recipeTotalCost = recipe ? calculateRecipeCost(recipe, ingredients) : 0;
+                      const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
+                      const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
+                      const cost = costPerGram * dr.quantityInGrams;
+                      return (
+                        <tr key={dr.id}>
+                          <td className="p-2.5 text-sm">{recipe ? getTranslatedName(recipe) : 'Unknown'}</td>
+                          <td className="p-2.5 text-sm">
+                            {editingRecipeId === dr.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  value={editingRecipeQty}
+                                  onChange={e => setEditingRecipeQty(parseFloat(e.target.value) || 0)}
+                                  autoFocus
+                                  onKeyDown={e => { if (e.key === 'Enter') { setDishRecipes(prev => prev.map(r => r.id === dr.id ? { ...r, quantityInGrams: editingRecipeQty } : r)); setEditingRecipeId(null); } }}
+                                  onBlur={() => { setDishRecipes(prev => prev.map(r => r.id === dr.id ? { ...r, quantityInGrams: editingRecipeQty } : r)); setEditingRecipeId(null); }}
+                                />
+                              </div>
+                            ) : (
+                              <span className="cursor-pointer hover:text-blue-600 hover:underline" onClick={() => { setEditingRecipeId(dr.id); setEditingRecipeQty(dr.quantityInGrams); }}>
+                                {dr.quantityInGrams}g
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2.5 text-sm">€{cost.toFixed(2)}</td>
+                          <td className="p-2.5 text-right">
+                            <button onClick={() => removeRecipe(dr.id)} className="text-red-500 hover:text-red-700">
+                              <X className="w-3.5 h-3.5 inline" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {dishRecipes.length === 0 && (
+              <p className="text-xs text-gray-400 mb-3 italic">{t.dishes.noRecipeComponents || 'No recipe components added.'}</p>
+            )}
+            <div className="flex flex-col gap-3">
+              <div className="w-full">
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.addRecipeComponent || 'Add Recipe Component'}</label>
+                <select
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={selectedRecipe}
+                  onChange={e => setSelectedRecipe(e.target.value)}
+                >
+                  <option value="">{t.dishes.selectRecipe || 'Select a recipe...'}</option>
+                  {recipes.map((r: any) => {
+                    const tc = calculateRecipeCost(r, ingredients);
+                    const tw = calculateRecipeWeight(r);
+                    const cpk = tw > 0 ? (tc / tw) * 1000 : 0;
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {r.name} (€{cpk.toFixed(2)}/kg)
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Qty (g)</label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={recipeQty}
+                    onChange={e => setRecipeQty(parseFloat(e.target.value) || '')}
+                    placeholder="e.g. 250"
+                  />
+                </div>
+                <button
+                  onClick={addRecipe}
+                  disabled={!selectedRecipe || !recipeQty}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Direct Ingredients ── */}
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">{t.dishes.directIngredients || 'Direct Ingredients'}</h3>
+            {dishDirectIngredients.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left mb-3 bg-white rounded-lg overflow-hidden border border-gray-200">
+                  <thead>
+                    <tr className="text-xs text-gray-500 border-b border-gray-200 bg-gray-50">
+                      <th className="p-2.5 font-medium">Ingredient</th>
+                      <th className="p-2.5 font-medium">Quantity</th>
+                      <th className="p-2.5 font-medium">Cost</th>
+                      <th className="p-2.5 font-medium text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {dishDirectIngredients.map((di: any) => {
+                      const ing = ingredients.find((i: any) => i.id === di.ingredientId);
+                      const cost = ing
+                        ? ing.priceType === 'perUnit'
+                          ? ing.pricePerKg * di.quantity
+                          : (ing.pricePerKg / 1000) * di.quantity
+                        : 0;
+                      const unit = ing?.priceType === 'perUnit' ? 'unit(s)' : 'g';
+                      return (
+                        <tr key={di.id}>
+                          <td className="p-2.5 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
+                          <td className="p-2.5 text-sm">
+                            {editingIngId === di.id ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="number"
+                                  className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  value={editingIngQty}
+                                  onChange={e => setEditingIngQty(parseFloat(e.target.value) || 0)}
+                                  autoFocus
+                                  onKeyDown={e => { if (e.key === 'Enter') { setDishDirectIngredients(prev => prev.map(i => i.id === di.id ? { ...i, quantity: editingIngQty } : i)); setEditingIngId(null); } }}
+                                  onBlur={() => { setDishDirectIngredients(prev => prev.map(i => i.id === di.id ? { ...i, quantity: editingIngQty } : i)); setEditingIngId(null); }}
+                                />
+                              </div>
+                            ) : (
+                              <span className="cursor-pointer hover:text-blue-600 hover:underline" onClick={() => { setEditingIngId(di.id); setEditingIngQty(di.quantity); }}>
+                                {di.quantity} {unit}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2.5 text-sm">€{cost.toFixed(2)}</td>
+                          <td className="p-2.5 text-right">
+                            <button onClick={() => removeIngredient(di.id)} className="text-red-500 hover:text-red-700">
+                              <X className="w-3.5 h-3.5 inline" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {dishDirectIngredients.length === 0 && (
+              <p className="text-xs text-gray-400 mb-3 italic">{t.dishes.noDirectIngredients || 'No direct ingredients added.'}</p>
+            )}
+            <div className="flex flex-col gap-3">
+              <div className="w-full">
+                <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.searchIngredient || 'Search Ingredient'}</label>
+                <IngredientCombobox
+                  ingredients={ingredients}
+                  value={selectedIngredient}
+                  onChange={setSelectedIngredient}
+                />
+              </div>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    {selectedIngredient && ingredients.find((i: any) => i.id === selectedIngredient)?.priceType === 'perUnit'
+                      ? 'Qty (units)'
+                      : 'Qty (g)'}
+                  </label>
+                  <input
+                    type="number"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={ingredientQty}
+                    onChange={e => setIngredientQty(parseFloat(e.target.value) || '')}
+                    placeholder="e.g. 100"
+                  />
+                </div>
+                <button
+                  onClick={addIngredient}
+                  disabled={!selectedIngredient || !ingredientQty}
+                  className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Margin Calculator ── */}
+          <MarginCalculator costPerPortion={costPerPortion} />
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
+          >
+            {t.dishes.cancel}
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!name}
+            className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            {isEditing ? t.dishes.saveChanges || 'Save Changes' : t.dishes.saveDish}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ── Add Folder Dialog ── */
 const AddFolderDialog = ({
   isOpen,
@@ -532,7 +978,6 @@ export const DishesView = () => {
   const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
-  const [newDish, setNewDish] = useState({ name: '', sellingPrice: 0, portions: 1 });
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
@@ -546,20 +991,18 @@ export const DishesView = () => {
 
   const folders = state.dishFolders || [];
 
-  const handleAddDish = () => {
-    if (!newDish.name) return;
+  const handleAddDish = (data: any) => {
     addDish({
-      id: Date.now().toString(),
-      name: newDish.name,
-      recipes: [],
-      directIngredients: [],
-      sellingPrice: newDish.sellingPrice,
-      portions: newDish.portions,
-      priceIncludesVat: false,
-      folder: activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : '',
-      vatRate: 13.5,
+      id: data.id || Date.now().toString(),
+      name: data.name,
+      recipes: data.recipes || [],
+      directIngredients: data.directIngredients || [],
+      sellingPrice: data.sellingPrice || 0,
+      portions: data.portions || 1,
+      priceIncludesVat: data.priceIncludesVat || false,
+      folder: data.folder || (activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''),
+      vatRate: data.vatRate ?? 13.5,
     });
-    setNewDish({ name: '', sellingPrice: 0, portions: 1 });
     setIsAdding(false);
   };
 
@@ -621,13 +1064,22 @@ export const DishesView = () => {
             {t.dishes.subtitle}
           </p>
         </div>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          {t.dishes.createDish}
-        </button>
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors print:hidden"
+          >
+            <Printer className="w-4 h-4" />
+            Print
+          </button>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {t.dishes.createDish}
+          </button>
+        </div>
       </div>
 
       {/* ── Search ── */}
@@ -700,51 +1152,16 @@ export const DishesView = () => {
         </button>
       </div>
 
-      {/* ── New dish form ── */}
-      {isAdding && (
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-          <h3 className="text-lg font-medium mb-4">{t.dishes.newDish}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.dishName}</label>
-              <input
-                type="text"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={newDish.name}
-                onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.sellingPrice}</label>
-              <input
-                type="number"
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={newDish.sellingPrice || ''}
-                onChange={(e) => setNewDish({ ...newDish, sellingPrice: parseFloat(e.target.value) || 0 })}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t.dishes.portions}</label>
-              <input
-                type="number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={newDish.portions || ''}
-                onChange={(e) => setNewDish({ ...newDish, portions: parseFloat(e.target.value) || 1 })}
-              />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-md">
-              {t.dishes.cancel}
-            </button>
-            <button onClick={handleAddDish} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-              {t.dishes.saveDish}
-            </button>
-          </div>
-        </div>
-      )}
+      {/* ── New dish modal ── */}
+      <DishModal
+        isOpen={isAdding}
+        onClose={() => setIsAdding(false)}
+        onSave={handleAddDish}
+        recipes={state.recipes}
+        ingredients={state.ingredients}
+        folders={folders}
+        isEditing={false}
+      />
 
       {/* ── Dish cards ── */}
       <div className="space-y-3">
@@ -969,6 +1386,75 @@ export const DishesView = () => {
         onConfirm={() => { if (deleteFolderTarget) deleteFolder('dish', deleteFolderTarget.id); setDeleteFolderTarget(null); }}
         onCancel={() => setDeleteFolderTarget(null)}
       />
+
+      {/* ── Print-only view ── */}
+      <div className="print-only">
+        <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '4pt' }}>
+          {t.dishes.title}
+        </h2>
+        <p style={{ color: '#666', fontSize: '9pt', marginBottom: '12pt' }}>
+          {activeFolder === 'all'
+            ? `All dishes (${filteredDishes.length})`
+            : activeFolder === 'uncategorized'
+              ? `Uncategorized (${filteredDishes.length})`
+              : `${folders.find(f => f.id === activeFolder)?.name || ''} (${filteredDishes.length})`
+          }
+          {' — '}Printed {new Date().toLocaleDateString()}
+        </p>
+        <table>
+          <thead>
+            <tr>
+              <th>Dish</th>
+              <th>Folder</th>
+              <th>Excl. VAT</th>
+              <th>Incl. VAT</th>
+              <th>Portions</th>
+              <th>Cost/Portion</th>
+              <th>Food Cost %</th>
+              <th>Margin %</th>
+              <th>Components</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredDishes.map(dish => {
+              const vatRate = dish.vatRate ?? 13.5;
+              const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
+              const vat = getVatBreakdown(dish.sellingPrice, vatRate);
+              const folderInfo = folders.find(f => f.id === dish.folder);
+              const isProfitable = metrics.foodCostPercentage <= 30;
+
+              // Build components summary
+              const recipeNames = dish.recipes.map((dr: any) => {
+                const r = state.recipes.find((rec: any) => rec.id === dr.recipeId);
+                return r ? `${r.name} (${dr.quantityInGrams}g)` : '?';
+              });
+              const ingredientNames = (dish.directIngredients || []).map((di: any) => {
+                const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
+                return ing ? `${ing.name} (${di.quantity}${ing.priceType === 'perUnit' ? 'u' : 'g'})` : '?';
+              });
+              const allComponents = [...recipeNames, ...ingredientNames].join(', ') || '—';
+
+              return (
+                <tr key={dish.id}>
+                  <td style={{ fontWeight: 500 }}>{getTranslatedName(dish)}</td>
+                  <td>{folderInfo ? `${folderInfo.icon} ${folderInfo.name}` : '—'}</td>
+                  <td>€{vat.priceWithoutVat.toFixed(2)}</td>
+                  <td>€{vat.priceWithVat.toFixed(2)}</td>
+                  <td style={{ textAlign: 'center' }}>{dish.portions}</td>
+                  <td>€{metrics.costPerPortion.toFixed(2)}</td>
+                  <td className={isProfitable ? 'text-green-600' : 'text-red-500'} style={{ fontWeight: 600 }}>
+                    {metrics.foodCostPercentage.toFixed(1)}%
+                  </td>
+                  <td className={isProfitable ? 'text-green-600' : 'text-red-500'} style={{ fontWeight: 600 }}>
+                    {metrics.profitMargin.toFixed(1)}%
+                  </td>
+                  <td style={{ fontSize: '8pt', maxWidth: '200px' }}>{allComponents}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

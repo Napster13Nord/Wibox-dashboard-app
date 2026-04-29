@@ -8,3 +8,67 @@
 .animate-slide-in {
   animation: slide-in 0.2s ease-out;
 }
+
+/* ── Print styles ── */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Hide all non-essential UI */
+  nav, aside, header,
+  .print\\:hidden,
+  button, input, select, textarea,
+  [class*="hover:"],
+  .fixed {
+    display: none !important;
+  }
+
+  /* Show print-only sections */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Reset layout for print */
+  body {
+    background: white !important;
+    color: black !important;
+    font-size: 11pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Clean table styling */
+  .print-only table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10pt;
+    page-break-inside: auto;
+  }
+
+  .print-only th {
+    background-color: #f3f4f6 !important;
+    font-weight: 600;
+    text-align: left;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+  }
+
+  .print-only td {
+    padding: 5px 10px;
+    border: 1px solid #e5e7eb;
+    vertical-align: top;
+  }
+
+  .print-only tr {
+    page-break-inside: avoid;
+  }
+
+  .print-only h2 {
+    font-size: 16pt;
+    margin-bottom: 8pt;
+  }
+
+  .print-only .text-green-600 { color: #16a34a !important; }
+  .print-only .text-red-500   { color: #ef4444 !important; }
+}
