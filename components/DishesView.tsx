@@ -981,6 +981,7 @@ export const DishesView = () => {
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
+  const [printingDishId, setPrintingDishId] = useState<string | null>(null);
 
   const [editingDishNameId, setEditingDishNameId] = useState<string | null>(null);
   const [tempDishName, setTempDishName] = useState('');
@@ -1064,22 +1065,13 @@ export const DishesView = () => {
             {t.dishes.subtitle}
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-          <button
-            onClick={() => window.print()}
-            className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors print:hidden"
-          >
-            <Printer className="w-4 h-4" />
-            Print
-          </button>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            {t.dishes.createDish}
-          </button>
-        </div>
+        <button
+          onClick={() => setIsAdding(true)}
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
+        >
+          <Plus className="w-4 h-4" />
+          {t.dishes.createDish}
+        </button>
       </div>
 
       {/* ── Search ── */}
@@ -1260,6 +1252,17 @@ export const DishesView = () => {
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPrintingDishId(dish.id);
+                        setTimeout(() => { window.print(); setPrintingDishId(null); }, 100);
+                      }}
+                      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md"
+                      title="Print Dish"
+                    >
+                      <Printer className="w-4 h-4" />
+                    </button>
                     {isExpanded ? (
                       <ChevronUp className="w-5 h-5 text-gray-400" />
                     ) : (
@@ -1387,59 +1390,47 @@ export const DishesView = () => {
         onCancel={() => setDeleteFolderTarget(null)}
       />
 
-      {/* ── Print-only view ── */}
-      <div className="print-only">
-        <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '4pt' }}>
-          {t.dishes.title}
-        </h2>
-        <p style={{ color: '#666', fontSize: '9pt', marginBottom: '12pt' }}>
-          {activeFolder === 'all'
-            ? `All dishes (${filteredDishes.length})`
-            : activeFolder === 'uncategorized'
-              ? `Uncategorized (${filteredDishes.length})`
-              : `${folders.find(f => f.id === activeFolder)?.name || ''} (${filteredDishes.length})`
-          }
-          {' — '}Printed {new Date().toLocaleDateString()}
-        </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Dish</th>
-              <th>Folder</th>
-              <th>Excl. VAT</th>
-              <th>Incl. VAT</th>
-              <th>Portions</th>
-              <th>Cost/Portion</th>
-              <th>Food Cost %</th>
-              <th>Margin %</th>
-              <th>Components</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredDishes.map(dish => {
-              const vatRate = dish.vatRate ?? 13.5;
-              const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
-              const vat = getVatBreakdown(dish.sellingPrice, vatRate);
-              const folderInfo = folders.find(f => f.id === dish.folder);
-              const isProfitable = metrics.foodCostPercentage <= 30;
+      {/* ── Print-only view (single dish) ── */}
+      {printingDishId && (() => {
+        const dish = state.dishes.find(d => d.id === printingDishId);
+        if (!dish) return null;
+        const vatRate = dish.vatRate ?? 13.5;
+        const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
+        const vat = getVatBreakdown(dish.sellingPrice, vatRate);
+        const folderInfo = folders.find(f => f.id === dish.folder);
+        const isProfitable = metrics.foodCostPercentage <= 30;
 
-              // Build components summary
-              const recipeNames = dish.recipes.map((dr: any) => {
-                const r = state.recipes.find((rec: any) => rec.id === dr.recipeId);
-                return r ? `${r.name} (${dr.quantityInGrams}g)` : '?';
-              });
-              const ingredientNames = (dish.directIngredients || []).map((di: any) => {
-                const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
-                return ing ? `${ing.name} (${di.quantity}${ing.priceType === 'perUnit' ? 'u' : 'g'})` : '?';
-              });
-              const allComponents = [...recipeNames, ...ingredientNames].join(', ') || '—';
+        return (
+          <div className="print-only" style={{ padding: '20px' }}>
+            <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '2pt' }}>
+              {getTranslatedName(dish)}
+            </h2>
+            {folderInfo && (
+              <p style={{ fontSize: '10pt', color: '#666', marginBottom: '4pt' }}>
+                {folderInfo.icon} {folderInfo.name}
+              </p>
+            )}
+            <p style={{ fontSize: '9pt', color: '#999', marginBottom: '16pt' }}>
+              Printed {new Date().toLocaleDateString()}
+            </p>
 
-              return (
-                <tr key={dish.id}>
-                  <td style={{ fontWeight: 500 }}>{getTranslatedName(dish)}</td>
-                  <td>{folderInfo ? `${folderInfo.icon} ${folderInfo.name}` : '—'}</td>
+            <table style={{ marginBottom: '16pt' }}>
+              <thead>
+                <tr>
+                  <th>Excl. VAT</th>
+                  <th>VAT ({vatRate}%)</th>
+                  <th>Incl. VAT</th>
+                  <th>Portions</th>
+                  <th>Cost / Portion</th>
+                  <th>Food Cost</th>
+                  <th>Margin</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
                   <td>€{vat.priceWithoutVat.toFixed(2)}</td>
-                  <td>€{vat.priceWithVat.toFixed(2)}</td>
+                  <td>€{vat.vatAmount.toFixed(2)}</td>
+                  <td style={{ fontWeight: 600 }}>€{vat.priceWithVat.toFixed(2)}</td>
                   <td style={{ textAlign: 'center' }}>{dish.portions}</td>
                   <td>€{metrics.costPerPortion.toFixed(2)}</td>
                   <td className={isProfitable ? 'text-green-600' : 'text-red-500'} style={{ fontWeight: 600 }}>
@@ -1448,13 +1439,80 @@ export const DishesView = () => {
                   <td className={isProfitable ? 'text-green-600' : 'text-red-500'} style={{ fontWeight: 600 }}>
                     {metrics.profitMargin.toFixed(1)}%
                   </td>
-                  <td style={{ fontSize: '8pt', maxWidth: '200px' }}>{allComponents}</td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+
+            {dish.recipes.length > 0 && (
+              <>
+                <h3 style={{ fontWeight: 600, fontSize: '12pt', marginBottom: '6pt' }}>Recipe Components</h3>
+                <table style={{ marginBottom: '16pt' }}>
+                  <thead>
+                    <tr>
+                      <th>Recipe</th>
+                      <th>Qty (g)</th>
+                      <th>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dish.recipes.map((dr: any) => {
+                      const recipe = state.recipes.find((r: any) => r.id === dr.recipeId);
+                      const recipeTotalCost = recipe ? calculateRecipeCost(recipe, state.ingredients) : 0;
+                      const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
+                      const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
+                      const cost = costPerGram * dr.quantityInGrams;
+                      return (
+                        <tr key={dr.id}>
+                          <td>{recipe ? recipe.name : '?'}</td>
+                          <td>{dr.quantityInGrams}g</td>
+                          <td>€{cost.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {(dish.directIngredients || []).length > 0 && (
+              <>
+                <h3 style={{ fontWeight: 600, fontSize: '12pt', marginBottom: '6pt' }}>Direct Ingredients</h3>
+                <table style={{ marginBottom: '16pt' }}>
+                  <thead>
+                    <tr>
+                      <th>Ingredient</th>
+                      <th>Quantity</th>
+                      <th>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(dish.directIngredients || []).map((di: any) => {
+                      const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
+                      const cost = ing
+                        ? ing.priceType === 'perUnit'
+                          ? ing.pricePerKg * di.quantity
+                          : (ing.pricePerKg / 1000) * di.quantity
+                        : 0;
+                      const unit = ing?.priceType === 'perUnit' ? 'unit(s)' : 'g';
+                      return (
+                        <tr key={di.id}>
+                          <td>{ing ? ing.name : '?'}</td>
+                          <td>{di.quantity} {unit}</td>
+                          <td>€{cost.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            <p style={{ fontSize: '11pt', fontWeight: 600, marginTop: '8pt' }}>
+              Total Cost: €{metrics.totalCost.toFixed(2)}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 };
