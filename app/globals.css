@@ -15,18 +15,35 @@
 }
 
 @media print {
-  /* Hide all non-essential UI */
-  nav, aside, header,
-  .print\\:hidden,
-  button, input, select, textarea,
-  [class*="hover:"],
-  .fixed {
+  /* Hide EVERYTHING by default */
+  body > * {
     display: none !important;
   }
 
-  /* Show print-only sections */
+  /* Show print-only and all its ancestors */
   .print-only {
     display: block !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    z-index: 99999 !important;
+    background: white !important;
+    padding: 20px !important;
+    margin: 0 !important;
+  }
+
+  /* Make sure ancestor containers are visible */
+  body,
+  body > *:has(.print-only),
+  *:has(> .print-only) {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    position: static !important;
+    padding: 0 !important;
+    margin: 0 !important;
   }
 
   /* Reset layout for print */
@@ -36,6 +53,11 @@
     font-size: 11pt !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+
+  /* Hide all siblings of print-only's ancestors */
+  *:has(> .print-only) > *:not(.print-only) {
+    display: none !important;
   }
 
   /* Clean table styling */
@@ -67,6 +89,11 @@
   .print-only h2 {
     font-size: 16pt;
     margin-bottom: 8pt;
+  }
+
+  .print-only h3 {
+    font-size: 12pt;
+    margin-bottom: 6pt;
   }
 
   .print-only .text-green-600 { color: #16a34a !important; }
