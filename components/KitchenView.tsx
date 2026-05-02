@@ -26,6 +26,9 @@ export const KitchenView = () => {
   const [editingValues, setEditingValues] = useState<Record<string, string>>({});
   const [kitchenSearch, setKitchenSearch] = useState('');
 
+  // Print state flag
+  const [isPrinting, setIsPrinting] = useState(false);
+
   const selectedRecipe = state.recipes.find(r => r.id === selectedRecipeId);
   const presets = selectedRecipe?.presets || [];
   const baseWeight = selectedRecipe ? calculateRecipeWeight(selectedRecipe) : 0;
@@ -325,7 +328,10 @@ export const KitchenView = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => window.print()}
+                    onClick={() => {
+                      setIsPrinting(true);
+                      setTimeout(() => { window.print(); setIsPrinting(false); }, 100);
+                    }}
                     disabled={scaleFactor === null || selectedRecipe.ingredients.length === 0}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 transition-colors print:hidden"
                   >
@@ -413,6 +419,51 @@ export const KitchenView = () => {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {/* ── Print-only view (Kitchen Scale) ── */}
+      {isPrinting && selectedRecipe && scaleFactor !== null && (
+        <div className="print-only" style={{ padding: '20px' }}>
+          <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '2pt' }}>
+            {getTranslatedName(selectedRecipe)}
+          </h2>
+          <p style={{ fontSize: '11pt', color: '#ea580c', fontWeight: 600, marginBottom: '4pt' }}>
+            {totalTargetWeight.toLocaleString(undefined, { maximumFractionDigits: 0 })}g total
+            {calcSummary ? ` — ${calcSummary}` : ''}
+          </p>
+          <p style={{ fontSize: '9pt', color: '#999', marginBottom: '16pt' }}>
+            Wibox Recipe Automation · Printed {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </p>
+
+          <table>
+            <thead>
+              <tr>
+                <th>{t.kitchen.ingredient}</th>
+                <th style={{ textAlign: 'right' }}>{t.kitchen.quantityLabel}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedRecipe.ingredients.map(ri => {
+                const ingredient = state.ingredients.find(i => i.id === ri.ingredientId);
+                const isUnit = ingredient?.priceType === 'perUnit';
+                const base = safeNum(ri.quantityInGrams);
+                const scaled = base * effectiveSF;
+                return (
+                  <tr key={ri.id}>
+                    <td>{ingredient ? getTranslatedName(ingredient) : 'Unknown'}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                      {scaled.toFixed(1)} {isUnit ? 'unit' : 'g'}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+
+          <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '12pt', color: '#666' }}>
+            Scale factor: {effectiveSF.toFixed(3)}x · Base weight: {baseWeight.toFixed(0)}g
+          </p>
         </div>
       )}
     </div>
