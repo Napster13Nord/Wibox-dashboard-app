@@ -6,6 +6,7 @@ export const en = {
     recipes: 'Recipes',
     dishBuilding: 'Dish Building',
     kitchenScale: 'Kitchen Scale',
+    reports: 'Margin Reports',
     trash: 'Trash',
     undo: 'Undo',
     dataBackup: 'Data Backup',
@@ -227,6 +228,29 @@ export const en = {
     permanentMsg: 'Permanently delete',
     permanentMsgSuffix: 'This cannot be undone.',
     permanentConfirm: 'Delete Forever',
+  },
+
+  // Reports
+  reports: {
+    title: 'Margin Reports',
+    subtitle: 'Analyze dish profitability and get smart suggestions to maximize your margins.',
+    emptyTitle: 'No Dishes Yet',
+    emptyDesc: 'Create dishes in the Dish Building tab to see margin reports and suggestions here.',
+    avgMargin: 'Avg. Margin',
+    avgFoodCost: 'Avg. Food Cost',
+    bestMargin: 'Best Margin',
+    totalProfit: 'Total Profit/Port.',
+    industryBenchmark: 'Industry: 28-32%',
+    marginDistribution: 'Margin Distribution',
+    smartSuggestions: 'Smart Suggestions',
+    allDishes: 'All Dishes — Ranked by Profitability',
+    dishName: 'Dish',
+    margin: 'Margin',
+    foodCost: 'Food Cost %',
+    costPortion: 'Cost/Port.',
+    sellPrice: 'Sell Price',
+    profitPortion: 'Profit/Port.',
+    marginBar: 'Visual',
   },
 
   // Common
