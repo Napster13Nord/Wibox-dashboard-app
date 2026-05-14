@@ -782,7 +782,8 @@ export const RecipesView = () => {
 
       {/* ── Print-only view (current expanded recipe) — always present ── */}
       {(() => {
-        const recipe = expandedId ? state.recipes.find(r => r.id === expandedId) : null;
+        const printRecipeId = viewingRecipeId || expandedId;
+        const recipe = printRecipeId ? state.recipes.find(r => r.id === printRecipeId) : null;
         if (!recipe) return null;
         const totalCost = calculateRecipeCost(recipe, state.ingredients);
         const totalWeight = calculateRecipeWeight(recipe);
