@@ -544,6 +544,118 @@ export const KitchenView = () => {
         );
       })()}
 
+      {/* ── Print-only view (Recipe Detail Modal) — for Eye icon preview ── */}
+      {(() => {
+        const printRecipe = viewingRecipeId ? state.recipes.find(r => r.id === viewingRecipeId) : null;
+        if (!printRecipe || selectedRecipe) return null; // don't override scale print
+        const totalCost = calculateRecipeCost(printRecipe, state.ingredients);
+        const totalWeight = calculateRecipeWeight(printRecipe);
+        const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
+        const folderInfo = folders.find(f => f.id === printRecipe.folder);
+        return (
+          <div className="print-only">
+            <h2>{getTranslatedName(printRecipe)}</h2>
+            {folderInfo && (
+              <p style={{ color: '#666', marginBottom: '4pt' }}>
+                {folderInfo.icon} {folderInfo.name}
+              </p>
+            )}
+            <p className="print-meta">
+              Wibox Recipe Automation · Printed {new Date().toLocaleDateString()}
+            </p>
+            <table style={{ marginBottom: '16pt' }}>
+              <thead>
+                <tr>
+                  <th>Total Cost</th>
+                  <th>Total Weight</th>
+                  <th>Cost / kg</th>
+                  <th>Yield</th>
+                  <th>Work Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ fontWeight: 600 }}>€{totalCost.toFixed(2)}</td>
+                  <td>{totalWeight.toFixed(0)}g</td>
+                  <td style={{ fontWeight: 600 }}>€{costPerKg.toFixed(2)}</td>
+                  <td>{printRecipe.yieldPercentage}%</td>
+                  <td>{printRecipe.workTimeMinutes} mins</td>
+                </tr>
+              </tbody>
+            </table>
+            {printRecipe.ingredients.length > 0 && (
+              <>
+                <h3>Ingredients</h3>
+                <table style={{ marginBottom: '16pt' }}>
+                  <thead>
+                    <tr>
+                      <th>Ingredient</th>
+                      <th>Quantity</th>
+                      <th>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {printRecipe.ingredients.map(ri => {
+                      const ing = state.ingredients.find(i => i.id === ri.ingredientId);
+                      const cost = ing
+                        ? ing.priceType === 'perUnit'
+                          ? ing.pricePerKg * ri.quantityInGrams
+                          : (ing.pricePerKg / 1000) * ri.quantityInGrams
+                        : 0;
+                      const unit = ing?.priceType === 'perUnit' ? 'unit(s)' : 'g';
+                      return (
+                        <tr key={ri.id}>
+                          <td>{ing ? getTranslatedName(ing) : 'Unknown'}</td>
+                          <td>{ri.quantityInGrams} {unit}</td>
+                          <td>€{cost.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{ fontWeight: 700, borderTop: '2px solid #333' }}>
+                      <td>Total</td>
+                      <td>{totalWeight.toFixed(0)}g</td>
+                      <td>€{totalCost.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+            {(printRecipe.presets || []).length > 0 && (
+              <>
+                <h3>Kitchen Presets</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Preset Name</th>
+                      <th>Target Weight</th>
+                      <th>Cost per Unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(printRecipe.presets || []).map(p => {
+                      const costPerUnit = totalWeight > 0 ? (totalCost / totalWeight) * p.targetWeightGrams : 0;
+                      return (
+                        <tr key={p.id}>
+                          <td>{p.name}</td>
+                          <td>{p.targetWeightGrams}g</td>
+                          <td>€{costPerUnit.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
+            {printRecipe.notes && (
+              <>
+                <h3>Notes</h3>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{printRecipe.notes}</p>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {/* ── Print-only view (Kitchen Scale) — always present, hidden on screen ── */}
       {selectedRecipe && (
         <div className="print-only">
