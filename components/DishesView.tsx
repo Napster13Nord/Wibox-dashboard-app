@@ -1001,8 +1001,8 @@ export const DishesView = () => {
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
-  const [editingDishNameId, setEditingDishNameId] = useState<string | null>(null);
-  const [tempDishName, setTempDishName] = useState('');
+  const [editingDish, setEditingDish] = useState<any>(null);
+  const [editModalKey, setEditModalKey] = useState(0);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -1023,6 +1023,20 @@ export const DishesView = () => {
       vatRate: data.vatRate ?? 13.5,
     });
     setIsAdding(false);
+  };
+
+  const handleEditDish = (data: any) => {
+    if (!editingDish) return;
+    updateDish(editingDish.id, {
+      name: data.name,
+      recipes: data.recipes || [],
+      directIngredients: data.directIngredients || [],
+      sellingPrice: data.sellingPrice || 0,
+      portions: data.portions || 1,
+      folder: data.folder || '',
+      vatRate: data.vatRate ?? 13.5,
+    });
+    setEditingDish(null);
   };
 
   /* Recipe helpers */
@@ -1162,6 +1176,23 @@ export const DishesView = () => {
         </button>
       </div>
 
+      {/* ── Edit dish modal ── */}
+      {editingDish && (
+        <DishModal
+          key={`edit-${editModalKey}`}
+          isOpen={true}
+          onClose={() => setEditingDish(null)}
+          onSave={handleEditDish}
+          initialData={editingDish}
+          recipes={state.recipes}
+          ingredients={state.ingredients}
+          folders={folders}
+          isEditing={true}
+          onUpdateTranslations={(tr) => updateTranslations('dish', editingDish.id, tr)}
+          onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
+        />
+      )}
+
       {/* ── New dish modal ── */}
       <DishModal
         key={modalKey}
@@ -1200,28 +1231,7 @@ export const DishesView = () => {
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    {editingDishNameId === dish.id ? (
-                      <input
-                        type="text"
-                        autoFocus
-                        className="text-lg font-semibold text-gray-900 border-b border-blue-500 focus:outline-none bg-transparent px-1"
-                        value={tempDishName}
-                        onChange={e => setTempDishName(e.target.value)}
-                        onClick={e => e.stopPropagation()}
-                        onBlur={() => {
-                          updateDish(dish.id, { name: tempDishName || dish.name });
-                          setEditingDishNameId(null);
-                        }}
-                        onKeyDown={e => {
-                          if (e.key === 'Enter') {
-                            updateDish(dish.id, { name: tempDishName || dish.name });
-                            setEditingDishNameId(null);
-                          }
-                        }}
-                      />
-                    ) : (
-                      <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(dish)}</h3>
-                    )}
+                    <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(dish)}</h3>
                     {folderInfo && (
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -1257,11 +1267,11 @@ export const DishesView = () => {
                     <button
                       onClick={(e) => { 
                         e.stopPropagation(); 
-                        setEditingDishNameId(dish.id); 
-                        setTempDishName(dish.name);
+                        setEditModalKey(k => k + 1);
+                        setEditingDish(dish);
                       }}
                       className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md"
-                      title="Edit Dish Name"
+                      title="Edit Dish"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -1292,88 +1302,121 @@ export const DishesView = () => {
                 </div>
               </div>
 
-              {/* Expanded panel */}
+              {/* Expanded panel — read-only summary */}
               {isExpanded && (
                 <div className="p-4 border-t border-gray-200 bg-gray-50/50 space-y-4">
 
-                  {/* ── Settings row ── */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Selling Price excl. VAT (€)</label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        value={dish.sellingPrice}
-                        onChange={(e) => updateDish(dish.id, { sellingPrice: parseFloat(e.target.value) || 0 })}
-                      />
+                  {/* ── Key metrics ── */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="bg-blue-50 rounded-xl p-3 text-center">
+                      <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-1">Total Cost</p>
+                      <p className="text-lg font-bold text-blue-700">€{metrics.totalCost.toFixed(2)}</p>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Portions</label>
-                      <input
-                        type="number"
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        value={dish.portions}
-                        onChange={(e) => updateDish(dish.id, { portions: parseFloat(e.target.value) || 1 })}
-                      />
+                    <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-200">
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Cost/Portion</p>
+                      <p className="text-lg font-bold text-gray-700">€{metrics.costPerPortion.toFixed(2)}</p>
                     </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Folder</label>
-                      <select
-                        className="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        value={dish.folder || ''}
-                        onChange={e => updateDish(dish.id, { folder: e.target.value })}
-                      >
-                        <option value="">Uncategorized</option>
-                        {folders.map(f => (
-                          <option key={f.id} value={f.id}>{f.icon} {f.name}</option>
-                        ))}
-                      </select>
+                    <div className={`rounded-xl p-3 text-center ${isProfitable ? 'bg-green-50' : 'bg-red-50'}`}>
+                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>Food Cost</p>
+                      <p className={`text-lg font-bold ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>{metrics.foodCostPercentage.toFixed(1)}%</p>
+                    </div>
+                    <div className={`rounded-xl p-3 text-center ${isProfitable ? 'bg-green-50' : 'bg-red-50'}`}>
+                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>Margin</p>
+                      <p className={`text-lg font-bold ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>{metrics.profitMargin.toFixed(1)}%</p>
                     </div>
                   </div>
 
-                  {/* ── Translations ── */}
-                  <TranslationEditor
-                    translations={dish.translations}
-                    originalName={dish.name}
-                    onSave={(tr) => updateTranslations('dish', dish.id, tr)}
-                  />
+                  {/* ── Recipe components list ── */}
+                  {dish.recipes.length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Recipe Components</h4>
+                      <div className="overflow-x-auto rounded-xl border border-gray-200">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                              <th className="px-4 py-2">Recipe</th>
+                              <th className="px-4 py-2">Qty (g)</th>
+                              <th className="px-4 py-2">Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {dish.recipes.map((dr: any) => {
+                              const recipe = state.recipes.find((r: any) => r.id === dr.recipeId);
+                              const recipeTotalCost = recipe ? calculateRecipeCost(recipe, state.ingredients) : 0;
+                              const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
+                              const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
+                              const cost = costPerGram * dr.quantityInGrams;
+                              return (
+                                <tr key={dr.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2 text-sm font-medium">
+                                    {recipe ? (
+                                      <button
+                                        onClick={() => setViewingRecipeId(recipe.id)}
+                                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left"
+                                      >
+                                        {getTranslatedName(recipe)}
+                                      </button>
+                                    ) : 'Unknown'}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-gray-600">{dr.quantityInGrams}g</td>
+                                  <td className="px-4 py-2 text-sm text-gray-600">€{cost.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* ── Compact VAT ── */}
-                  <VatRow
-                    sellingPrice={dish.sellingPrice}
-                    vatRate={vatRate}
-                    onVatRateChange={(rate) => updateDish(dish.id, { vatRate: rate })}
-                  />
+                  {/* ── Direct ingredients list ── */}
+                  {(dish.directIngredients || []).length > 0 && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Direct Ingredients</h4>
+                      <div className="overflow-x-auto rounded-xl border border-gray-200">
+                        <table className="w-full text-left">
+                          <thead>
+                            <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 font-semibold uppercase tracking-wide">
+                              <th className="px-4 py-2">Ingredient</th>
+                              <th className="px-4 py-2">Qty</th>
+                              <th className="px-4 py-2">Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {(dish.directIngredients || []).map((di: any) => {
+                              const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
+                              const isUnit = ing?.priceType === 'perUnit';
+                              const cost = ing
+                                ? isUnit ? ing.pricePerKg * di.quantity : (ing.pricePerKg / 1000) * di.quantity
+                                : 0;
+                              return (
+                                <tr key={di.id} className="hover:bg-gray-50">
+                                  <td className="px-4 py-2 text-sm font-medium text-gray-900">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-600">{di.quantity}{isUnit ? ' unit(s)' : 'g'}</td>
+                                  <td className="px-4 py-2 text-sm text-gray-600">€{cost.toFixed(2)}</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
-                  {/* ── Margin calculator ── */}
-                  <MarginCalculator costPerPortion={metrics.costPerPortion} />
+                  {dish.recipes.length === 0 && (dish.directIngredients || []).length === 0 && (
+                    <p className="text-sm text-gray-400 italic text-center py-4">No components yet. Click ✏️ to add recipes and ingredients.</p>
+                  )}
 
-                  {/* ── Recipe components ── */}
-                  <DishRecipesEditor
-                    dish={dish}
-                    recipes={state.recipes}
-                    ingredients={state.ingredients}
-                    onAdd={(recId, qty) => addRecipeToDish(dish.id, recId, qty)}
-                    onRemove={(drId) => removeRecipeFromDish(dish.id, drId)}
-                    onUpdateQty={(drId, qty) => {
-                       const updatedRecipes = dish.recipes.map((r: any) => r.id === drId ? { ...r, quantityInGrams: qty } : r);
-                       updateDish(dish.id, { recipes: updatedRecipes });
-                    }}
-                    onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
-                  />
-
-                  {/* ── Direct ingredients ── */}
-                  <DishIngredientsEditor
-                    dish={dish}
-                    ingredients={state.ingredients}
-                    onAdd={(ingId, qty) => addIngredientToDish(dish.id, ingId, qty)}
-                    onRemove={(diId) => removeIngredientFromDish(dish.id, diId)}
-                    onUpdateQty={(diId, qty) => {
-                       const updatedIngs = (dish.directIngredients || []).map((i: any) => i.id === diId ? { ...i, quantity: qty } : i);
-                       updateDish(dish.id, { directIngredients: updatedIngs });
-                    }}
-                  />
+                  {/* Edit button */}
+                  <div className="pt-2 border-t border-gray-200">
+                    <button
+                      onClick={() => { setEditModalKey(k => k + 1); setEditingDish(dish); }}
+                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                      Edit this dish
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
