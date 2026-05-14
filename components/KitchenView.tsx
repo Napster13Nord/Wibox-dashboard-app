@@ -64,6 +64,7 @@ export const KitchenView = () => {
   const getDisplayQty = (riId: string, baseQty: unknown): string => {
     if (editingValues[riId] !== undefined) return editingValues[riId];
     const base = safeNum(baseQty);
+    if (base === 0) return '';
     const q = base * effectiveSF;
     return q.toFixed(1); // plain dot decimal — always valid in number inputs
   };
@@ -405,8 +406,8 @@ export const KitchenView = () => {
                         {calcSummary ? ` — ${calcSummary}` : ''}
                       </p>
                     ) : (
-                      <p className="text-gray-400 text-sm">
-                        {t.kitchen.enterQuantities} →
+                      <p className="text-gray-500 text-sm">
+                        Base weight: {baseWeight.toFixed(0)}g — {t.kitchen.clickToEdit}
                       </p>
                     )}
                   </div>
@@ -415,7 +416,7 @@ export const KitchenView = () => {
                       setIsPrinting(true);
                       setTimeout(() => { window.print(); setIsPrinting(false); }, 100);
                     }}
-                    disabled={scaleFactor === null || selectedRecipe.ingredients.length === 0}
+                    disabled={selectedRecipe.ingredients.length === 0}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 transition-colors print:hidden"
                   >
                     <Printer className="w-4 h-4" />
@@ -431,9 +432,7 @@ export const KitchenView = () => {
                           <th className="py-3 text-base font-bold text-gray-700">{t.kitchen.ingredient}</th>
                           <th className="py-3 text-base font-bold text-gray-700 text-right w-44">
                             {t.kitchen.quantityLabel}
-                            {scaleFactor !== null && (
-                              <span className="block text-xs font-normal text-gray-400">{t.kitchen.clickToEdit}</span>
-                            )}
+                            <span className="block text-xs font-normal text-gray-400">{t.kitchen.clickToEdit}</span>
                           </th>
                         </tr>
                       </thead>
@@ -443,14 +442,14 @@ export const KitchenView = () => {
                           const isUnit = ingredient?.priceType === 'perUnit';
                           const displayVal = getDisplayQty(ri.id, ri.quantityInGrams);
                           const isEditing = editingValues[ri.id] !== undefined;
-                          const ready = scaleFactor !== null;
                           const hasData = safeNum(ri.quantityInGrams) > 0;
+                          const isScaled = scaleFactor !== null;
 
                           return (
                             <tr key={ri.id} className="hover:bg-orange-50 transition-colors">
                               <td className="py-4 text-lg text-gray-900 font-medium">
                                 {ingredient ? getTranslatedName(ingredient) : 'Unknown'}
-                                {ready && !hasData && (
+                                {!hasData && (
                                   <span className="ml-2 text-xs text-red-400 font-normal">{t.kitchen.quantityMissing}</span>
                                 )}
                               </td>
@@ -460,17 +459,17 @@ export const KitchenView = () => {
                                     type="number"
                                     min="0"
                                     step="0.1"
-                                    disabled={!ready}
                                     className={`w-28 px-2 py-1 rounded-lg text-right text-xl font-bold border transition-colors focus:outline-none focus:ring-2 focus:ring-orange-400 ${
-                                      !ready
-                                        ? 'border-transparent bg-transparent text-gray-300 cursor-default'
-                                        : isEditing
-                                          ? 'border-orange-400 bg-orange-50 text-orange-700'
+                                      isEditing
+                                        ? 'border-orange-400 bg-orange-50 text-orange-700'
+                                        : isScaled && hasData
+                                          ? 'border-transparent bg-transparent text-orange-600 hover:border-gray-300 hover:bg-white cursor-pointer'
                                           : hasData
-                                            ? 'border-transparent bg-transparent text-orange-600 hover:border-gray-300 hover:bg-white cursor-pointer'
+                                            ? 'border-transparent bg-transparent text-gray-700 hover:border-gray-300 hover:bg-white cursor-pointer'
                                             : 'border-transparent bg-transparent text-red-300 hover:border-gray-300 hover:bg-white cursor-pointer'
                                     }`}
-                                    value={ready ? displayVal : ''}
+                                    value={displayVal}
+                                    placeholder="0"
                                     onChange={e => handleIngredientChange(ri.id, e.target.value)}
                                     onBlur={() => handleIngredientBlur(ri.id, ri.quantityInGrams)}
                                     onKeyDown={e => handleIngredientKeyDown(e, ri.id, ri.quantityInGrams)}
@@ -485,12 +484,7 @@ export const KitchenView = () => {
                         })}
                       </tbody>
                     </table>
-                    {scaleFactor === null && (
-                      <div className="mt-6 text-center text-gray-400 text-sm py-4 border-2 border-dashed border-gray-200 rounded-xl">
-                        <Calculator className="w-10 h-10 mx-auto mb-2 text-gray-300" />
-                        {t.kitchen.enterQuantities} <strong>{t.kitchen.calculate}</strong>
-                      </div>
-                    )}
+
                   </>
                 ) : (
                   <div className="text-center py-12 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
