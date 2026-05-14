@@ -146,6 +146,28 @@ export const KitchenView = () => {
         </div>
       </div>
 
+      {/* ── Instructions ── */}
+      {!selectedRecipe && (
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-5 print:hidden">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <Scale className="w-4.5 h-4.5 text-orange-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-orange-900 mb-2">How to use the Kitchen Scale</h3>
+              <ol className="text-sm text-orange-800 space-y-1.5 list-decimal list-inside">
+                <li><strong>Select a recipe</strong> from the list below to start scaling.</li>
+                <li><strong>Set quantities</strong> — choose how many of each preset you need, or enter a custom weight.</li>
+                <li><strong>Review the scaled ingredients</strong> — all quantities are recalculated automatically.</li>
+                <li><strong>Edit any ingredient</strong> — click a value in the scaled list to adjust it, and all other ingredients will re-scale.</li>
+                <li><strong>Print</strong> the scaled recipe using the 🖨️ button or <kbd className="px-1.5 py-0.5 bg-orange-100 border border-orange-300 rounded text-xs font-mono">Ctrl+P</kbd>.</li>
+              </ol>
+              <p className="text-xs text-orange-500 mt-2">💡 Tip: Use the 👁 icon on any recipe card to preview its full details without entering scale mode.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Step 1: Pick a recipe ── */}
       {!selectedRecipe ? (
         <>
