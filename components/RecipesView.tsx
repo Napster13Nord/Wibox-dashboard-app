@@ -9,7 +9,7 @@ import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset } from '@/lib/types';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
-  Edit2, FolderPlus, Folder, Clock, EyeOff,
+  Edit2, FolderPlus, Folder, Clock, EyeOff, Printer,
 } from 'lucide-react';
 
 /* ── Folder color palette ── */
@@ -690,8 +690,20 @@ export const RecipesView = () => {
                     <button
                       onClick={(e) => { e.stopPropagation(); setDeleteTarget({ id: recipe.id, name: recipe.name }); }}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+                      title="Delete recipe"
                     >
                       <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedId(recipe.id);
+                        setTimeout(() => window.print(), 50);
+                      }}
+                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-md"
+                      title="Print recipe"
+                    >
+                      <Printer className="w-4 h-4" />
                     </button>
                     {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
                   </div>
@@ -811,6 +823,127 @@ export const RecipesView = () => {
         onConfirm={() => { if (deleteFolderTarget) deleteFolder('recipe', deleteFolderTarget.id); setDeleteFolderTarget(null); }}
         onCancel={() => setDeleteFolderTarget(null)}
       />
+
+      {/* ── Print-only view (current expanded recipe) — always present ── */}
+      {(() => {
+        const recipe = expandedId ? state.recipes.find(r => r.id === expandedId) : null;
+        if (!recipe) return null;
+        const totalCost = calculateRecipeCost(recipe, state.ingredients);
+        const totalWeight = calculateRecipeWeight(recipe);
+        const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
+        const folderInfo = folders.find(f => f.id === recipe.folder);
+
+        return (
+          <div className="print-only">
+            <h2>{getTranslatedName(recipe)}</h2>
+            {folderInfo && (
+              <p style={{ color: '#666', marginBottom: '4pt' }}>
+                {folderInfo.icon} {folderInfo.name}
+              </p>
+            )}
+            <p className="print-meta">
+              Wibox Recipe Automation · Printed {new Date().toLocaleDateString()}
+            </p>
+
+            {/* Summary metrics */}
+            <table style={{ marginBottom: '16pt' }}>
+              <thead>
+                <tr>
+                  <th>Total Cost</th>
+                  <th>Total Weight</th>
+                  <th>Cost / kg</th>
+                  <th>Yield</th>
+                  <th>Work Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ fontWeight: 600 }}>€{totalCost.toFixed(2)}</td>
+                  <td>{totalWeight.toFixed(0)}g</td>
+                  <td style={{ fontWeight: 600 }}>€{costPerKg.toFixed(2)}</td>
+                  <td>{recipe.yieldPercentage}%</td>
+                  <td>{recipe.workTimeMinutes} mins</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Ingredients table */}
+            {recipe.ingredients.length > 0 && (
+              <>
+                <h3>Ingredients</h3>
+                <table style={{ marginBottom: '16pt' }}>
+                  <thead>
+                    <tr>
+                      <th>Ingredient</th>
+                      <th>Quantity</th>
+                      <th>Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recipe.ingredients.map(ri => {
+                      const ing = state.ingredients.find(i => i.id === ri.ingredientId);
+                      const cost = ing
+                        ? ing.priceType === 'perUnit'
+                          ? ing.pricePerKg * ri.quantityInGrams
+                          : (ing.pricePerKg / 1000) * ri.quantityInGrams
+                        : 0;
+                      const unit = ing?.priceType === 'perUnit' ? 'unit(s)' : 'g';
+                      return (
+                        <tr key={ri.id}>
+                          <td>{ing ? getTranslatedName(ing) : 'Unknown'}</td>
+                          <td>{ri.quantityInGrams} {unit}</td>
+                          <td>€{cost.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                    <tr style={{ fontWeight: 700, borderTop: '2px solid #333' }}>
+                      <td>Total</td>
+                      <td>{totalWeight.toFixed(0)}g</td>
+                      <td>€{totalCost.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* Presets */}
+            {(recipe.presets || []).length > 0 && (
+              <>
+                <h3>Kitchen Presets</h3>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Preset Name</th>
+                      <th>Target Weight</th>
+                      <th>Cost per Unit</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(recipe.presets || []).map(p => {
+                      const costPerUnit = totalWeight > 0 ? (totalCost / totalWeight) * p.targetWeightGrams : 0;
+                      return (
+                        <tr key={p.id}>
+                          <td>{p.name}</td>
+                          <td>{p.targetWeightGrams}g</td>
+                          <td>€{costPerUnit.toFixed(2)}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
+            )}
+
+            {/* Notes */}
+            {recipe.notes && (
+              <>
+                <h3>Notes</h3>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{recipe.notes}</p>
+              </>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 };

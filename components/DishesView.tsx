@@ -981,7 +981,6 @@ export const DishesView = () => {
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
-  const [printingDishId, setPrintingDishId] = useState<string | null>(null);
 
   const [editingDishNameId, setEditingDishNameId] = useState<string | null>(null);
   const [tempDishName, setTempDishName] = useState('');
@@ -1255,8 +1254,8 @@ export const DishesView = () => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPrintingDishId(dish.id);
-                        setTimeout(() => { window.print(); setPrintingDishId(null); }, 100);
+                        setExpandedId(dish.id);
+                        setTimeout(() => window.print(), 50);
                       }}
                       className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md"
                       title="Print Dish"
@@ -1390,9 +1389,9 @@ export const DishesView = () => {
         onCancel={() => setDeleteFolderTarget(null)}
       />
 
-      {/* ── Print-only view (single dish) ── */}
-      {printingDishId && (() => {
-        const dish = state.dishes.find(d => d.id === printingDishId);
+      {/* ── Print-only view (current expanded dish or first dish) — always present ── */}
+      {(() => {
+        const dish = expandedId ? state.dishes.find(d => d.id === expandedId) : null;
         if (!dish) return null;
         const vatRate = dish.vatRate ?? 13.5;
         const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
@@ -1401,17 +1400,15 @@ export const DishesView = () => {
         const isProfitable = metrics.foodCostPercentage <= 30;
 
         return (
-          <div className="print-only" style={{ padding: '20px' }}>
-            <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '2pt' }}>
-              {getTranslatedName(dish)}
-            </h2>
+          <div className="print-only">
+            <h2>{getTranslatedName(dish)}</h2>
             {folderInfo && (
-              <p style={{ fontSize: '10pt', color: '#666', marginBottom: '4pt' }}>
+              <p style={{ color: '#666', marginBottom: '4pt' }}>
                 {folderInfo.icon} {folderInfo.name}
               </p>
             )}
-            <p style={{ fontSize: '9pt', color: '#999', marginBottom: '16pt' }}>
-              Printed {new Date().toLocaleDateString()}
+            <p className="print-meta">
+              Wibox Recipe Automation · Printed {new Date().toLocaleDateString()}
             </p>
 
             <table style={{ marginBottom: '16pt' }}>
@@ -1445,7 +1442,7 @@ export const DishesView = () => {
 
             {dish.recipes.length > 0 && (
               <>
-                <h3 style={{ fontWeight: 600, fontSize: '12pt', marginBottom: '6pt' }}>Recipe Components</h3>
+                <h3>Recipe Components</h3>
                 <table style={{ marginBottom: '16pt' }}>
                   <thead>
                     <tr>
@@ -1476,7 +1473,7 @@ export const DishesView = () => {
 
             {(dish.directIngredients || []).length > 0 && (
               <>
-                <h3 style={{ fontWeight: 600, fontSize: '12pt', marginBottom: '6pt' }}>Direct Ingredients</h3>
+                <h3>Direct Ingredients</h3>
                 <table style={{ marginBottom: '16pt' }}>
                   <thead>
                     <tr>
@@ -1507,7 +1504,7 @@ export const DishesView = () => {
               </>
             )}
 
-            <p style={{ fontSize: '11pt', fontWeight: 600, marginTop: '8pt' }}>
+            <p className="print-summary">
               Total Cost: €{metrics.totalCost.toFixed(2)}
             </p>
           </div>

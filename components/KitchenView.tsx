@@ -29,8 +29,6 @@ export const KitchenView = () => {
   // Folder filter
   const [activeFolder, setActiveFolder] = useState<string>('all');
 
-  // Print state flag
-  const [isPrinting, setIsPrinting] = useState(false);
 
   const selectedRecipe = state.recipes.find(r => r.id === selectedRecipeId);
   const presets = selectedRecipe?.presets || [];
@@ -412,10 +410,7 @@ export const KitchenView = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => {
-                      setIsPrinting(true);
-                      setTimeout(() => { window.print(); setIsPrinting(false); }, 100);
-                    }}
+                    onClick={() => window.print()}
                     disabled={selectedRecipe.ingredients.length === 0}
                     className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-40 transition-colors print:hidden"
                   >
@@ -499,17 +494,21 @@ export const KitchenView = () => {
         </div>
       )}
 
-      {/* ── Print-only view (Kitchen Scale) ── */}
-      {isPrinting && selectedRecipe && scaleFactor !== null && (
-        <div className="print-only" style={{ padding: '20px' }}>
-          <h2 style={{ fontWeight: 'bold', fontSize: '18pt', marginBottom: '2pt' }}>
-            {getTranslatedName(selectedRecipe)}
-          </h2>
-          <p style={{ fontSize: '11pt', color: '#ea580c', fontWeight: 600, marginBottom: '4pt' }}>
-            {totalTargetWeight.toLocaleString(undefined, { maximumFractionDigits: 0 })}g total
-            {calcSummary ? ` — ${calcSummary}` : ''}
-          </p>
-          <p style={{ fontSize: '9pt', color: '#999', marginBottom: '16pt' }}>
+      {/* ── Print-only view (Kitchen Scale) — always present, hidden on screen ── */}
+      {selectedRecipe && (
+        <div className="print-only">
+          <h2>{getTranslatedName(selectedRecipe)}</h2>
+          {scaleFactor !== null ? (
+            <p className="print-subtitle">
+              {totalTargetWeight.toLocaleString(undefined, { maximumFractionDigits: 0 })}g total
+              {calcSummary ? ` — ${calcSummary}` : ''}
+            </p>
+          ) : (
+            <p className="print-subtitle">
+              Base recipe — {baseWeight.toFixed(0)}g total
+            </p>
+          )}
+          <p className="print-meta">
             Wibox Recipe Automation · Printed {new Date().toLocaleDateString()} {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </p>
 
@@ -538,9 +537,11 @@ export const KitchenView = () => {
             </tbody>
           </table>
 
-          <p style={{ fontSize: '10pt', fontWeight: 600, marginTop: '12pt', color: '#666' }}>
-            Scale factor: {effectiveSF.toFixed(3)}x · Base weight: {baseWeight.toFixed(0)}g
-          </p>
+          {scaleFactor !== null && (
+            <p className="print-summary">
+              Scale factor: {effectiveSF.toFixed(3)}x · Base weight: {baseWeight.toFixed(0)}g
+            </p>
+          )}
         </div>
       )}
     </div>
