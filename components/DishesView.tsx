@@ -995,6 +995,7 @@ export const DishesView = () => {
   const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [modalKey, setModalKey] = useState(0);
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
@@ -1083,7 +1084,7 @@ export const DishesView = () => {
           </p>
         </div>
         <button
-          onClick={() => setIsAdding(true)}
+          onClick={() => { setModalKey(k => k + 1); setIsAdding(true); }}
           className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
         >
           <Plus className="w-4 h-4" />
@@ -1163,6 +1164,7 @@ export const DishesView = () => {
 
       {/* ── New dish modal ── */}
       <DishModal
+        key={modalKey}
         isOpen={isAdding}
         onClose={() => setIsAdding(false)}
         onSave={handleAddDish}
