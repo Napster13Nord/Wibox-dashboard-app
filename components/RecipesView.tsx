@@ -9,8 +9,9 @@ import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset } from '@/lib/types';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
-  Edit2, FolderPlus, Folder, Clock, EyeOff, Printer,
+  Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye,
 } from 'lucide-react';
+import { RecipeDetailModal } from './RecipeDetailModal';
 
 /* ── Folder color palette ── */
 const FOLDER_COLORS = [
@@ -493,6 +494,7 @@ export const RecipesView = () => {
   const [showRecipeModal, setShowRecipeModal] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -633,18 +635,18 @@ export const RecipesView = () => {
         )}
 
         {filteredRecipes.map(recipe => {
-          const isExpanded = expandedId === recipe.id;
           const totalCost = calculateRecipeCost(recipe, state.ingredients);
           const totalWeight = calculateRecipeWeight(recipe);
           const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
           const folderInfo = folders.find(f => f.id === recipe.folder);
 
           return (
-            <div key={recipe.id} className="bg-white rounded-xl border border-gray-200 shadow-sm">
-              <div
-                className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between cursor-pointer hover:bg-gray-50"
-                onClick={() => setExpandedId(isExpanded ? null : recipe.id)}
-              >
+            <div
+              key={recipe.id}
+              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+              onClick={() => setViewingRecipeId(recipe.id)}
+            >
+              <div className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
@@ -705,83 +707,37 @@ export const RecipesView = () => {
                     >
                       <Printer className="w-4 h-4" />
                     </button>
-                    {isExpanded ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                    <Eye className="w-5 h-5 text-gray-300 group-hover:text-blue-400 transition-colors" />
                   </div>
                 </div>
               </div>
-
-              {isExpanded && (
-                <div className="p-4 border-t border-gray-200 bg-gray-50">
-                  {/* Read-only ingredient summary */}
-                  <table className="w-full text-left mb-4">
-                    <thead>
-                      <tr className="text-sm text-gray-500 border-b border-gray-200">
-                        <th className="pb-2 font-medium">Ingredient</th>
-                        <th className="pb-2 font-medium">Quantity (g)</th>
-                        <th className="pb-2 font-medium">Cost</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {recipe.ingredients.map(ri => {
-                        const ing = state.ingredients.find(i => i.id === ri.ingredientId);
-                        const cost = ing
-                          ? ing.priceType === 'perUnit'
-                            ? ing.pricePerKg * ri.quantityInGrams
-                            : (ing.pricePerKg / 1000) * ri.quantityInGrams
-                          : 0;
-                        return (
-                          <tr key={ri.id}>
-                            <td className="py-2 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
-                            <td className="py-2 text-sm">{ri.quantityInGrams}g</td>
-                            <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
-                          </tr>
-                        );
-                      })}
-                      {recipe.ingredients.length === 0 && (
-                        <tr>
-                          <td colSpan={3} className="py-4 text-sm text-center text-gray-400">
-                            {t.recipes.noIngredientsEdit}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-
-                  {/* Presets */}
-                  {(recipe.presets || []).length > 0 && (
-                    <div className="pt-3 border-t border-gray-200">
-                      <h4 className="font-medium text-gray-900 mb-2 text-sm">{t.recipes.kitchenPresets}</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {(recipe.presets || []).map(p => (
-                          <div
-                            key={p.id}
-                            className="flex items-center gap-2 bg-orange-50 border border-orange-200 text-orange-800 text-sm px-3 py-1.5 rounded-full"
-                          >
-                            <span className="font-medium">{p.name}</span>
-                            <span className="text-orange-500 text-xs">({p.targetWeightGrams}g)</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="mt-4 pt-3 border-t border-gray-200">
-                    <button
-                      onClick={() => { setEditingRecipe(recipe); setShowRecipeModal(true); }}
-                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                      {t.recipes.editThisRecipe}
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
           );
         })}
       </div>
 
-      {/* ── Modals ── */}
+      {/* ── Recipe Detail Modal ── */}
+      {viewingRecipeId && (() => {
+        const recipe = state.recipes.find(r => r.id === viewingRecipeId);
+        if (!recipe) return null;
+        return (
+          <RecipeDetailModal
+            recipe={recipe}
+            onClose={() => setViewingRecipeId(null)}
+            onEdit={() => {
+              setEditingRecipe(recipe);
+              setShowRecipeModal(true);
+              setViewingRecipeId(null);
+            }}
+            onPrint={() => {
+              setExpandedId(recipe.id);
+              setTimeout(() => window.print(), 50);
+            }}
+          />
+        );
+      })()}
+
+      {/* ── Edit Modal ── */}
       {showRecipeModal && (
         <RecipeModal
           isOpen={true}

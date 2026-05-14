@@ -3,7 +3,8 @@ import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeWeight, calculateRecipeCost } from '@/lib/calculations';
-import { ChefHat, Scale, Printer, Calculator, Search, X } from 'lucide-react';
+import { ChefHat, Scale, Printer, Calculator, Search, X, Eye } from 'lucide-react';
+import { RecipeDetailModal } from './RecipeDetailModal';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
@@ -28,6 +29,7 @@ export const KitchenView = () => {
 
   // Folder filter
   const [activeFolder, setActiveFolder] = useState<string>('all');
+  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
 
   const selectedRecipe = state.recipes.find(r => r.id === selectedRecipeId);
@@ -218,45 +220,59 @@ export const KitchenView = () => {
               const folderInfo = folders.find(f => f.id === recipe.folder);
 
               return (
-                <button
+                <div
                   key={recipe.id}
-                  onClick={() => setSelectedRecipeId(recipe.id)}
-                  className="w-full bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group"
+                  className="w-full bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group relative"
                 >
-                  <div className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-500 transition-colors shrink-0">
-                          <ChefHat className="w-4.5 h-4.5 text-orange-600 group-hover:text-white" />
+                  {/* Info button */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setViewingRecipeId(recipe.id); }}
+                    className="absolute top-3 right-3 p-1.5 rounded-lg text-gray-300 hover:text-blue-500 hover:bg-blue-50 transition-colors z-10"
+                    title="View recipe details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+
+                  {/* Main click area → scale */}
+                  <button
+                    onClick={() => setSelectedRecipeId(recipe.id)}
+                    className="w-full text-left"
+                  >
+                    <div className="p-4 pr-12 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-500 transition-colors shrink-0">
+                            <ChefHat className="w-4.5 h-4.5 text-orange-600 group-hover:text-white" />
+                          </div>
+                          <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
+                          {folderInfo && (
+                            <span
+                              className="text-xs px-2 py-0.5 rounded-full font-medium"
+                              style={{ backgroundColor: `${folderInfo.color}20`, color: folderInfo.color }}
+                            >
+                              {folderInfo.icon} {folderInfo.name}
+                            </span>
+                          )}
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
-                        {folderInfo && (
-                          <span
-                            className="text-xs px-2 py-0.5 rounded-full font-medium"
-                            style={{ backgroundColor: `${folderInfo.color}20`, color: folderInfo.color }}
-                          >
-                            {folderInfo.icon} {folderInfo.name}
-                          </span>
-                        )}
+                        <div className="flex gap-x-4 gap-y-1 mt-1 text-sm text-gray-500 flex-wrap ml-11">
+                          <span>{recipe.ingredients.length} {t.kitchen.ingredients}</span>
+                          <span>{t.kitchen.weight}: {totalWeight.toFixed(0)}g</span>
+                          {(recipe.presets || []).length > 0 && (
+                            <span className="text-orange-500">
+                              🍳 {(recipe.presets || []).length} preset{(recipe.presets || []).length !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex gap-x-4 gap-y-1 mt-1 text-sm text-gray-500 flex-wrap ml-11">
-                        <span>{recipe.ingredients.length} {t.kitchen.ingredients}</span>
-                        <span>{t.kitchen.weight}: {totalWeight.toFixed(0)}g</span>
-                        {(recipe.presets || []).length > 0 && (
-                          <span className="text-orange-500">
-                            🍳 {(recipe.presets || []).length} preset{(recipe.presets || []).length !== 1 ? 's' : ''}
-                          </span>
-                        )}
+                      <div className="flex items-center gap-4 md:gap-6 ml-11 md:ml-0">
+                        <div className="text-left md:text-right">
+                          <p className="text-xs text-gray-400 font-medium">{t.kitchen.costKg}</p>
+                          <p className="text-lg font-bold text-orange-600">€{costPerKg.toFixed(2)}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 md:gap-6 ml-11 md:ml-0">
-                      <div className="text-left md:text-right">
-                        <p className="text-xs text-gray-400 font-medium">{t.kitchen.costKg}</p>
-                        <p className="text-lg font-bold text-orange-600">€{costPerKg.toFixed(2)}</p>
-                      </div>
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                </div>
               );
             })}
           </div>
@@ -493,6 +509,18 @@ export const KitchenView = () => {
           </div>
         </div>
       )}
+
+      {/* ── Recipe Detail Modal ── */}
+      {viewingRecipeId && (() => {
+        const recipe = state.recipes.find(r => r.id === viewingRecipeId);
+        if (!recipe) return null;
+        return (
+          <RecipeDetailModal
+            recipe={recipe}
+            onClose={() => setViewingRecipeId(null)}
+          />
+        );
+      })()}
 
       {/* ── Print-only view (Kitchen Scale) — always present, hidden on screen ── */}
       {selectedRecipe && (

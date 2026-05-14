@@ -7,6 +7,7 @@ import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
+import { RecipeDetailModal } from './RecipeDetailModal';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
   Search, FolderPlus, EyeOff, Printer,
@@ -297,6 +298,7 @@ const DishRecipesEditor = ({
   onAdd,
   onRemove,
   onUpdateQty,
+  onViewRecipe,
 }: {
   dish: any;
   recipes: any[];
@@ -304,6 +306,7 @@ const DishRecipesEditor = ({
   onAdd: (recId: string, qty: number) => void;
   onRemove: (drId: string) => void;
   onUpdateQty: (id: string, qty: number) => void;
+  onViewRecipe?: (recipeId: string) => void;
 }) => {
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [quantity, setQuantity] = useState<number | ''>('');
@@ -346,7 +349,16 @@ const DishRecipesEditor = ({
               }
               return (
                 <tr key={dr.id}>
-                  <td className="p-2.5 text-sm">{recipe ? getTranslatedName(recipe) : 'Unknown'}</td>
+                  <td className="p-2.5 text-sm">
+                    {recipe ? (
+                      <button
+                        onClick={() => onViewRecipe?.(recipe.id)}
+                        className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left"
+                      >
+                        {getTranslatedName(recipe)}
+                      </button>
+                    ) : 'Unknown'}
+                  </td>
                   <td className="p-2.5 text-sm">
                     {editingId === dr.id ? (
                       <div className="flex items-center gap-1">
@@ -453,6 +465,7 @@ const DishModal = ({
   folders,
   isEditing,
   onUpdateTranslations,
+  onViewRecipe,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -463,6 +476,7 @@ const DishModal = ({
   folders: any[];
   isEditing: boolean;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
+  onViewRecipe?: (recipeId: string) => void;
 }) => {
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
@@ -687,7 +701,16 @@ const DishModal = ({
                       const cost = costPerGram * dr.quantityInGrams;
                       return (
                         <tr key={dr.id}>
-                          <td className="p-2.5 text-sm">{recipe ? getTranslatedName(recipe) : 'Unknown'}</td>
+                          <td className="p-2.5 text-sm">
+                            {recipe ? (
+                              <button
+                                onClick={() => onViewRecipe?.(recipe.id)}
+                                className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left"
+                              >
+                                {getTranslatedName(recipe)}
+                              </button>
+                            ) : 'Unknown'}
+                          </td>
                           <td className="p-2.5 text-sm">
                             {editingRecipeId === dr.id ? (
                               <div className="flex items-center gap-1">
@@ -975,6 +998,7 @@ export const DishesView = () => {
   const [search, setSearch] = useState('');
   const [activeFolder, setActiveFolder] = useState<string>('all');
   const [showAddFolder, setShowAddFolder] = useState(false);
+  const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
   const [editingDishNameId, setEditingDishNameId] = useState<string | null>(null);
   const [tempDishName, setTempDishName] = useState('');
@@ -1146,6 +1170,7 @@ export const DishesView = () => {
         ingredients={state.ingredients}
         folders={folders}
         isEditing={false}
+        onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
       />
 
       {/* ── Dish cards ── */}
@@ -1333,6 +1358,7 @@ export const DishesView = () => {
                        const updatedRecipes = dish.recipes.map((r: any) => r.id === drId ? { ...r, quantityInGrams: qty } : r);
                        updateDish(dish.id, { recipes: updatedRecipes });
                     }}
+                    onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
                   />
 
                   {/* ── Direct ingredients ── */}
@@ -1383,7 +1409,19 @@ export const DishesView = () => {
         onCancel={() => setDeleteFolderTarget(null)}
       />
 
-      {/* ── Print-only view (current expanded dish or first dish) — always present ── */}
+      {/* ── Recipe Detail Modal ── */}
+      {viewingRecipeId && (() => {
+        const recipe = state.recipes.find(r => r.id === viewingRecipeId);
+        if (!recipe) return null;
+        return (
+          <RecipeDetailModal
+            recipe={recipe}
+            onClose={() => setViewingRecipeId(null)}
+          />
+        );
+      })()}
+
+      {/* ── Print-only view (current expanded dish) — always present ── */}
       {(() => {
         const dish = expandedId ? state.dishes.find(d => d.id === expandedId) : null;
         if (!dish) return null;
