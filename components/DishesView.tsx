@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
+import { RecipeCombobox } from './RecipeCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
 import {
@@ -725,23 +726,16 @@ const DishModal = ({
             <div className="flex flex-col gap-3">
               <div className="w-full">
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.addRecipeComponent || 'Add Recipe Component'}</label>
-                <select
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedRecipe}
-                  onChange={e => setSelectedRecipe(e.target.value)}
-                >
-                  <option value="">{t.dishes.selectRecipe || 'Select a recipe...'}</option>
-                  {recipes.map((r: any) => {
+                <RecipeCombobox
+                  recipes={recipes.map((r: any) => {
                     const tc = calculateRecipeCost(r, ingredients);
                     const tw = calculateRecipeWeight(r);
-                    const cpk = tw > 0 ? (tc / tw) * 1000 : 0;
-                    return (
-                      <option key={r.id} value={r.id}>
-                        {r.name} (€{cpk.toFixed(2)}/kg)
-                      </option>
-                    );
+                    return { ...r, costPerKg: tw > 0 ? (tc / tw) * 1000 : 0 };
                   })}
-                </select>
+                  value={selectedRecipe}
+                  onChange={setSelectedRecipe}
+                  placeholder={t.dishes.selectRecipe || 'Search recipes…'}
+                />
               </div>
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
