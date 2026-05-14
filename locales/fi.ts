@@ -197,6 +197,11 @@ export const fi: T = {
     print: 'Tulosta',
     searchPlaceholder: 'Hae reseptejä…',
     noMatch: 'Yhtään reseptiä ei löytynyt',
+    all: 'Kaikki',
+    uncategorized: 'Luokittelemattomat',
+    ingredients: 'ainesosia',
+    weight: 'paino',
+    costKg: 'Hinta/kg',
   },
   trash: {
     title: 'Roskakori',

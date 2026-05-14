@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
-import { calculateRecipeWeight } from '@/lib/calculations';
+import { calculateRecipeWeight, calculateRecipeCost } from '@/lib/calculations';
 import { ChefHat, Scale, Printer, Calculator, Search, X } from 'lucide-react';
 
 export const KitchenView = () => {
@@ -26,6 +26,9 @@ export const KitchenView = () => {
   const [editingValues, setEditingValues] = useState<Record<string, string>>({});
   const [kitchenSearch, setKitchenSearch] = useState('');
 
+  // Folder filter
+  const [activeFolder, setActiveFolder] = useState<string>('all');
+
   // Print state flag
   const [isPrinting, setIsPrinting] = useState(false);
 
@@ -34,6 +37,20 @@ export const KitchenView = () => {
   const baseWeight = selectedRecipe ? calculateRecipeWeight(selectedRecipe) : 0;
   const effectiveSF = scaleFactor ?? 1;
   const totalTargetWeight = baseWeight * effectiveSF;
+
+  const folders = state.recipeFolders || [];
+
+  // Filtered recipes (folder + search)
+  const filteredRecipes = useMemo(() => {
+    return state.recipes.filter(r => {
+      const matchesSearch = !kitchenSearch
+        || getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase())
+        || r.name.toLowerCase().includes(kitchenSearch.toLowerCase());
+      const matchesFolder = activeFolder === 'all'
+        || (activeFolder === 'uncategorized' ? !r.folder : r.folder === activeFolder);
+      return matchesSearch && matchesFolder;
+    });
+  }, [state.recipes, kitchenSearch, activeFolder]);
 
   // ── Safe quantity display ──
   // IMPORTANT: use toFixed (not toLocaleString) for type="number" inputs —
@@ -113,7 +130,6 @@ export const KitchenView = () => {
     setScaleFactor(null);
     setCalcSummary('');
     setEditingValues({});
-    setKitchenSearch('');
   };
 
   // ── Has anything in the form? ──
@@ -149,34 +165,101 @@ export const KitchenView = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:hidden">
-            {state.recipes
-              .filter(r => !kitchenSearch || getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase()) || r.name.toLowerCase().includes(kitchenSearch.toLowerCase()))
-              .map(recipe => (
-              <button
-                key={recipe.id}
-                onClick={() => setSelectedRecipeId(recipe.id)}
-                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group"
-              >
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4 group-hover:bg-orange-500 transition-colors">
-                  <ChefHat className="w-6 h-6 text-orange-600 group-hover:text-white" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{getTranslatedName(recipe)}</h3>
-                <p className="text-sm text-gray-500">
-                  {(recipe.presets || []).length} {t.kitchen.presetSizes}
-                </p>
-              </button>
-            ))}
-            {state.recipes.length === 0 && (
-              <div className="col-span-3 text-center p-12 bg-white rounded-xl border border-gray-200 text-gray-500">
-                {t.kitchen.noRecipes}
+          {/* ── Folder tabs ── */}
+          <div className="flex items-center gap-2 flex-wrap print:hidden">
+            <button
+              onClick={() => setActiveFolder('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {t.kitchen.all} ({state.recipes.length})
+            </button>
+            <button
+              onClick={() => setActiveFolder('uncategorized')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {t.kitchen.uncategorized} ({state.recipes.filter(r => !r.folder).length})
+            </button>
+            {folders.map(f => {
+              const count = state.recipes.filter(r => r.folder === f.id).length;
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setActiveFolder(f.id)}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                    activeFolder === f.id ? 'text-white' : 'text-gray-700 hover:opacity-80'
+                  }`}
+                  style={{
+                    backgroundColor: activeFolder === f.id ? f.color : `${f.color}20`,
+                  }}
+                >
+                  <span>{f.icon}</span>
+                  <span>{f.name}</span>
+                  <span className="text-xs opacity-75">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── Recipe cards (consistent with Dishes/Recipes style) ── */}
+          <div className="space-y-3 print:hidden">
+            {filteredRecipes.length === 0 && (
+              <div className="text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
+                {kitchenSearch ? `${t.kitchen.noMatch} "${kitchenSearch}"` : t.kitchen.noRecipes}
               </div>
             )}
-            {state.recipes.length > 0 && kitchenSearch && state.recipes.filter(r => getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase()) || r.name.toLowerCase().includes(kitchenSearch.toLowerCase())).length === 0 && (
-              <div className="col-span-3 text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
-                {t.kitchen.noMatch} "{kitchenSearch}"
-              </div>
-            )}
+
+            {filteredRecipes.map(recipe => {
+              const totalCost = calculateRecipeCost(recipe, state.ingredients);
+              const totalWeight = calculateRecipeWeight(recipe);
+              const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
+              const folderInfo = folders.find(f => f.id === recipe.folder);
+
+              return (
+                <button
+                  key={recipe.id}
+                  onClick={() => setSelectedRecipeId(recipe.id)}
+                  className="w-full bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-orange-300 text-left transition-all group"
+                >
+                  <div className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center group-hover:bg-orange-500 transition-colors shrink-0">
+                          <ChefHat className="w-4.5 h-4.5 text-orange-600 group-hover:text-white" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
+                        {folderInfo && (
+                          <span
+                            className="text-xs px-2 py-0.5 rounded-full font-medium"
+                            style={{ backgroundColor: `${folderInfo.color}20`, color: folderInfo.color }}
+                          >
+                            {folderInfo.icon} {folderInfo.name}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex gap-x-4 gap-y-1 mt-1 text-sm text-gray-500 flex-wrap ml-11">
+                        <span>{recipe.ingredients.length} {t.kitchen.ingredients}</span>
+                        <span>{t.kitchen.weight}: {totalWeight.toFixed(0)}g</span>
+                        {(recipe.presets || []).length > 0 && (
+                          <span className="text-orange-500">
+                            🍳 {(recipe.presets || []).length} preset{(recipe.presets || []).length !== 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4 md:gap-6 ml-11 md:ml-0">
+                      <div className="text-left md:text-right">
+                        <p className="text-xs text-gray-400 font-medium">{t.kitchen.costKg}</p>
+                        <p className="text-lg font-bold text-orange-600">€{costPerKg.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </>
 

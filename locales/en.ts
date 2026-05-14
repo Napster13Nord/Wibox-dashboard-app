@@ -205,6 +205,11 @@ export const en = {
     print: 'Print',
     searchPlaceholder: 'Search recipes…',
     noMatch: 'No recipes match',
+    all: 'All',
+    uncategorized: 'Uncategorized',
+    ingredients: 'ingredients',
+    weight: 'weight',
+    costKg: 'Cost/kg',
   },
 
   // Trash

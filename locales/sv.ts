@@ -197,6 +197,11 @@ export const sv: T = {
     print: 'Skriv ut',
     searchPlaceholder: 'Sök recept…',
     noMatch: 'Inga recept matchar',
+    all: 'Alla',
+    uncategorized: 'Okategoriserade',
+    ingredients: 'ingredienser',
+    weight: 'vikt',
+    costKg: 'Kostnad/kg',
   },
   trash: {
     title: 'Papperskorg',
