@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
+import { isManager } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,6 +11,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST() {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const sql = getSQL();
 
     // 1. Create normalized tables

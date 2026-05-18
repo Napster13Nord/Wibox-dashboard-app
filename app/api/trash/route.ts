@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { isManager } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,13 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { entityType, entityId } = await request.json();
     if (!entityType || !entityId) {
       return NextResponse.json({ ok: false, error: 'Missing entityType or entityId' }, { status: 400 });
@@ -46,6 +54,13 @@ export async function POST(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const all = searchParams.get('all');
     const entityType = searchParams.get('entityType');

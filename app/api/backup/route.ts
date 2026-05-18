@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { isManager } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,13 @@ export async function GET() {
  */
 export async function POST(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const data = await request.json();
     const sql = getSQL();
 

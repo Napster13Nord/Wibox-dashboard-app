@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
 import { translateName, saveTranslations } from '@/lib/translate';
+import { isManager } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow up to 60s for batch translation
@@ -12,6 +13,13 @@ export const maxDuration = 60; // Allow up to 60s for batch translation
  */
 export async function PATCH(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { entityType, entityId, translations } = await request.json();
     if (!entityType || !entityId || !translations) {
       return NextResponse.json({ ok: false, error: 'Missing entityType, entityId, or translations' }, { status: 400 });
@@ -38,6 +46,13 @@ export async function PATCH(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { name, sourceLang, entityType, entityId } = await request.json();
     if (!name || !entityType || !entityId) {
       return NextResponse.json({ ok: false, error: 'Missing name, entityType, or entityId' }, { status: 400 });
@@ -64,6 +79,13 @@ export async function PUT(request: NextRequest) {
  */
 export async function POST() {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const sql = getSQL();
     await ensureTables();
 

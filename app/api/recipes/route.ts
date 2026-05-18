@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
+import { isManager } from '@/lib/auth';
 import { translateAndSave, loadTranslations } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +42,13 @@ export async function GET() {
 /** POST /api/recipes — create recipe with nested ingredients, presets & auto-translate */
 export async function POST(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const rec = await request.json();
     const sql = getSQL();
 
@@ -75,6 +83,13 @@ export async function POST(request: NextRequest) {
 /** PATCH /api/recipes — update recipe (replace nested data) */
 export async function PATCH(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { id, ...updates } = await request.json();
     if (!id) return NextResponse.json({ ok: false, error: 'Missing id' }, { status: 400 });
     const sql = getSQL();
@@ -126,6 +141,13 @@ export async function PATCH(request: NextRequest) {
 /** DELETE /api/recipes — soft-delete */
 export async function DELETE(request: NextRequest) {
   try {
+    if (!(await isManager())) {
+      return NextResponse.json(
+        { ok: false, error: 'Forbidden: manager role required' },
+        { status: 403 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ ok: false, error: 'Missing id' }, { status: 400 });
