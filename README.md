@@ -111,6 +111,7 @@ Built for **production use** with normalized PostgreSQL tables, multi-user suppo
 | `/api/folders` | `GET`, `POST`, `DELETE` | Folder management |
 | `/api/trash` | `GET`, `POST`, `DELETE` | Trash restore & permanent delete |
 | `/api/backup` | `GET`, `POST` | JSON export/import |
+| `/api/translate` | `GET`, `POST`, `PUT`, `PATCH` | Translation status, batch migration, sync translate, manual override |
 | `/api/lemonsoft` | `GET`, `POST` | Price list & ERP sync (placeholder) |
 | `/api/db/migrate` | `POST` | One-time blob→tables migration |
 
@@ -123,6 +124,8 @@ Built for **production use** with normalized PostgreSQL tables, multi-user suppo
 | Framework | [Next.js 15](https://nextjs.org/) (App Router) |
 | UI | [React 19](https://react.dev/) |
 | Database | [Neon PostgreSQL](https://neon.tech/) (serverless) |
+| Auth | [Clerk](https://clerk.com/) (multi-user, role-based) |
+| Translation | [DeepL API](https://www.deepl.com/pro-api) |
 | Styling | [Tailwind CSS 4](https://tailwindcss.com/) |
 | Icons | [Lucide React](https://lucide.dev/) |
 | Language | TypeScript 5 (strict) |
@@ -169,10 +172,14 @@ This creates all normalized tables and migrates any existing legacy data.
 ### Environment Variables
 
 | Variable | Required | Description |
-|----------|----------|-------------|
+| --- | --- | --- |
 | `DATABASE_URL` | ✅ | Neon PostgreSQL connection string |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | ✅ | Clerk publishable key |
+| `CLERK_SECRET_KEY` | ✅ | Clerk secret key |
+| `DEEPL_API_KEY` | ⚠️ | DeepL API key — without it, auto-translation is skipped silently |
 | `LEMONSOFT_API_URL` | ❌ | Lemonsoft ERP API base URL (future) |
 | `LEMONSOFT_API_KEY` | ❌ | Lemonsoft API authentication key (future) |
+| `NEXT_PUBLIC_BASE_URL` | ❌ | Used by `/api/backup` GET for internal fetches |
 
 ---
 
@@ -229,14 +236,12 @@ This creates all normalized tables and migrates any existing legacy data.
 - [x] **Multi-user safe** — granular API calls, no more full-state race conditions
 - [x] **Lemonsoft endpoint** — `GET /api/lemonsoft` returns price list in ERP format
 - [x] **Responsive mobile layout** — hamburger menu, horizontal scroll tables
+- [x] **🌍 Internationalization (i18n)** — full translation support for English, Swedish, and Finnish. UI strings via dictionary files in `/locales/{en,sv,fi}.ts`. Entity names (ingredients, recipes, dishes) auto-translated via DeepL on create/edit, stored in a normalized `translations` table, fall back gracefully to the original name when a translation is missing. Manual override available via the inline `TranslationEditor` component.
+- [x] **🔐 Role-Based Access** — Manager (full edit) vs Kitchen (read-only) views. Enforced on both the UI (via `useRole()` hook) and the API layer (`isManager()` check on all mutating endpoints).
+- [x] **📦 Master ingredient migration** — 277-item ingredient catalog imported from official Wi-Box supplier list (Finnish/Swedish), normalized to sentence case, with auto-translation to EN/SV/FI via DeepL.
 
 ### 🔜 Next Up
-- [ ] **🌍 Internationalization (i18n)** — full translation support for 3 languages:
-  - 🇬🇧 English (current)
-  - 🇸🇪 Swedish (Svenska)
-  - 🇫🇮 Finnish (Suomi)
 - [ ] **🔗 Lemonsoft ERP Integration** — automated price sync when API credentials are provided
-- [ ] **👥 Role-Based Access** — Manager (full edit) vs Kitchen (read-only) views
 - [ ] **📊 Dashboard Analytics** — cost trends, margin history, top-performing dishes
 - [ ] **📱 PWA Support** — installable app for kitchen tablets
 - [ ] **🔔 Price Alert System** — notifications when ingredient prices change significantly
