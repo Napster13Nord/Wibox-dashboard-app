@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
+import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateDishMetrics, calculateDishCost } from '@/lib/calculations';
 import { Dish } from '@/lib/types';
 import {
@@ -101,6 +102,7 @@ const SuggestionCard: React.FC<{
 export const ReportsView: React.FC = () => {
   const { state } = useAppContext();
   const { t } = useI18n();
+  const getTranslatedName = useTranslatedName();
   const [sortKey, setSortKey] = useState<'margin' | 'cost' | 'profit' | 'name'>('margin');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -129,7 +131,7 @@ export const ReportsView: React.FC = () => {
         case 'margin': cmp = a.profitMargin - b.profitMargin; break;
         case 'cost': cmp = a.foodCostPercentage - b.foodCostPercentage; break;
         case 'profit': cmp = a.profitPerPortion - b.profitPerPortion; break;
-        case 'name': cmp = a.dish.name.localeCompare(b.dish.name); break;
+        case 'name': cmp = getTranslatedName(a.dish).localeCompare(getTranslatedName(b.dish)); break;
       }
       return sortDir === 'desc' ? -cmp : cmp;
     });
@@ -167,7 +169,7 @@ export const ReportsView: React.FC = () => {
     const needed = worstDish.costPerPortion / 0.7;
     suggestions.push({
       icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
-      title: `"${worstDish.dish.name}" has a critically low margin (${pct(worstDish.profitMargin)})`,
+      title: `"${getTranslatedName(worstDish.dish)}" has a critically low margin (${pct(worstDish.profitMargin)})`,
       description: `Food cost is ${pct(worstDish.foodCostPercentage)}. Consider raising price to ${fmt(needed)} (excl. VAT) to reach 30% food cost, or reduce ingredient quantities.`,
       action: `Current: ${fmt(worstDish.dish.sellingPrice)} → Suggested: ${fmt(needed)}`,
       color: 'border-red-400 bg-red-50/50',
@@ -176,7 +178,7 @@ export const ReportsView: React.FC = () => {
 
   const highCostDishes = dishes.filter(d => d.foodCostPercentage > 35 && d.profitMargin < 65);
   if (highCostDishes.length > 0) {
-    const names = highCostDishes.slice(0, 3).map(d => d.dish.name).join(', ');
+    const names = highCostDishes.slice(0, 3).map(d => getTranslatedName(d.dish)).join(', ');
     suggestions.push({
       icon: <Zap className="w-5 h-5 text-amber-500" />,
       title: `${highCostDishes.length} dish(es) with food cost above 35%`,
@@ -188,7 +190,7 @@ export const ReportsView: React.FC = () => {
   if (bestDish && bestDish.profitMargin >= 70) {
     suggestions.push({
       icon: <Star className="w-5 h-5 text-emerald-500" />,
-      title: `"${bestDish.dish.name}" is your top performer (${pct(bestDish.profitMargin)} margin)`,
+      title: `"${getTranslatedName(bestDish.dish)}" is your top performer (${pct(bestDish.profitMargin)} margin)`,
       description: `This dish earns ${fmt(bestDish.profitPerPortion)} profit per portion. Consider promoting it or creating similar dishes with the same recipe structure.`,
       color: 'border-emerald-400 bg-emerald-50/50',
     });
@@ -199,7 +201,7 @@ export const ReportsView: React.FC = () => {
     suggestions.push({
       icon: <DollarSign className="w-5 h-5 text-blue-500" />,
       title: `${noPriceDishes.length} dish(es) missing a selling price`,
-      description: `Set a selling price to see margin data: ${noPriceDishes.slice(0, 3).map(d => d.dish.name).join(', ')}`,
+      description: `Set a selling price to see margin data: ${noPriceDishes.slice(0, 3).map(d => getTranslatedName(d.dish)).join(', ')}`,
       color: 'border-blue-400 bg-blue-50/50',
     });
   }
@@ -247,7 +249,7 @@ export const ReportsView: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard icon={<Percent className="w-5 h-5" />} label={t.reports?.avgMargin || "Avg. Margin"} value={pct(avgMargin)} sub={`${dishes.length} dishes`} gradient="bg-gradient-to-br from-emerald-500 to-teal-600" delay={0} />
         <KpiCard icon={<PieChart className="w-5 h-5" />} label={t.reports?.avgFoodCost || "Avg. Food Cost"} value={pct(avgFoodCost)} sub={t.reports?.industryBenchmark || "Industry: 28-32%"} gradient="bg-gradient-to-br from-blue-500 to-indigo-600" delay={0.1} />
-        <KpiCard icon={<ArrowUpRight className="w-5 h-5" />} label={t.reports?.bestMargin || "Best Margin"} value={bestDish ? pct(bestDish.profitMargin) : '-'} sub={bestDish?.dish.name} gradient="bg-gradient-to-br from-violet-500 to-purple-600" delay={0.2} />
+        <KpiCard icon={<ArrowUpRight className="w-5 h-5" />} label={t.reports?.bestMargin || "Best Margin"} value={bestDish ? pct(bestDish.profitMargin) : '-'} sub={bestDish ? getTranslatedName(bestDish.dish) : undefined} gradient="bg-gradient-to-br from-violet-500 to-purple-600" delay={0.2} />
         <KpiCard icon={<Flame className="w-5 h-5" />} label={t.reports?.totalProfit || "Total Profit/Portion"} value={fmt(totalRevenue - totalCosts)} sub={`${highMargin} high / ${lowMargin} low`} gradient="bg-gradient-to-br from-orange-500 to-rose-600" delay={0.3} />
       </div>
 
@@ -357,7 +359,7 @@ export const ReportsView: React.FC = () => {
                     >
                       <td className="px-6 py-3.5 text-xs text-gray-400 font-mono">{idx + 1}</td>
                       <td className="px-6 py-3.5">
-                        <div className="font-medium text-gray-900">{d.dish.name}</div>
+                        <div className="font-medium text-gray-900">{getTranslatedName(d.dish)}</div>
                         {d.folderName && <div className="text-xs text-gray-400">{d.folderName}</div>}
                       </td>
                       <td className="px-6 py-3.5">
