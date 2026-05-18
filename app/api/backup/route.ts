@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { saveTranslations } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
     await sql`DELETE FROM recipes`;
     await sql`DELETE FROM ingredients`;
     await sql`DELETE FROM folders`;
+    await sql`DELETE FROM translations`;
 
     // Re-insert via the state route logic
     // Inline it here to avoid circular fetch
@@ -103,6 +105,23 @@ export async function POST(request: NextRequest) {
         await sql`INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, deleted_at) VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
       } else if (t.originalType === 'dish' && d) {
         await sql`INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, deleted_at) VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? 14}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
+      }
+    }
+
+    // Re-insert translations after entities exist
+    for (const ing of (data.ingredients || [])) {
+      if (ing.translations && Object.keys(ing.translations).length > 0) {
+        await saveTranslations(sql, 'ingredient', ing.id, ing.translations);
+      }
+    }
+    for (const rec of (data.recipes || [])) {
+      if (rec.translations && Object.keys(rec.translations).length > 0) {
+        await saveTranslations(sql, 'recipe', rec.id, rec.translations);
+      }
+    }
+    for (const dish of (data.dishes || [])) {
+      if (dish.translations && Object.keys(dish.translations).length > 0) {
+        await saveTranslations(sql, 'dish', dish.id, dish.translations);
       }
     }
 
