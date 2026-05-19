@@ -486,9 +486,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateFolder = (type: 'recipe' | 'dish', id: string, folder: Partial<Folder>) => {
     const sourceLang = getLocale();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    // Check if name is changing
+    // Snapshot the existing folder's raw name BEFORE any state mutations
     const existing = stateRef.current[key]?.find((f: Folder) => f.id === id);
-    const nameChanged = folder.name !== undefined && existing && existing.name !== folder.name;
+    const existingName = existing?.name;
+    const nameChanged = folder.name !== undefined && !!existingName && existingName !== folder.name;
+    console.log('[Wibox] updateFolder called:', { type, id, folder, existingName, newName: folder.name, nameChanged });
     doUpdate(
       s => ({
         ...s,
