@@ -238,7 +238,7 @@ export const KitchenView = () => {
                   {f.icon}
                 </div>
                 <div className="text-center">
-                  <h3 className="font-semibold text-gray-900">{f.name}</h3>
+                  <h3 className="font-semibold text-gray-900">{getTranslatedName(f)}</h3>
                   <p className="text-sm text-gray-500">{count} recipes</p>
                 </div>
               </button>
@@ -312,7 +312,7 @@ export const KitchenView = () => {
                   }}
                 >
                   <span>{f.icon}</span>
-                  <span>{f.name}</span>
+                  <span>{getTranslatedName(f)}</span>
                   <span className="text-xs opacity-75">({count})</span>
                 </button>
               );
@@ -364,7 +364,7 @@ export const KitchenView = () => {
                               className="text-xs px-2 py-0.5 rounded-full font-medium"
                               style={{ backgroundColor: `${folderInfo.color}20`, color: folderInfo.color }}
                             >
-                              {folderInfo.icon} {folderInfo.name}
+                              {folderInfo.icon} {getTranslatedName(folderInfo)}
                             </span>
                           )}
                         </div>
@@ -650,7 +650,7 @@ export const KitchenView = () => {
             <h2>{getTranslatedName(printRecipe)}</h2>
             {folderInfo && (
               <p style={{ color: '#666', marginBottom: '4pt' }}>
-                {folderInfo.icon} {folderInfo.name}
+                {folderInfo.icon} {getTranslatedName(folderInfo)}
               </p>
             )}
             <p className="print-meta">

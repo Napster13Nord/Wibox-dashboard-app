@@ -34,7 +34,7 @@ type AppContextType = {
   permanentlyDelete: (id: string) => void;
   emptyTrash: () => void;
 
-  updateTranslations: (entityType: 'ingredient' | 'recipe' | 'dish', entityId: string, translations: Record<string, string>) => void;
+  updateTranslations: (entityType: 'ingredient' | 'recipe' | 'dish' | 'folder', entityId: string, translations: Record<string, string>) => void;
 
   undo: () => void;
   canUndo: boolean;
@@ -457,10 +457,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Folders ──
   const addFolder = (type: 'recipe' | 'dish', folder: Folder) => {
+    const sourceLang = getLocale();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
     doUpdate(
       s => ({ ...s, [key]: [...(s[key] || []), folder] }),
-      () => apiPost('/api/folders', { type, ...folder }),
+      () => {
+        apiPost('/api/folders', { type, ...folder });
+        // Auto-translate folder name
+        autoTranslateEntity('folder', folder.id, folder.name, sourceLang)
+          .then(translations => {
+            if (translations) {
+              const current = stateRef.current;
+              const updated = {
+                ...current,
+                [key]: (current[key] || []).map((f: Folder) =>
+                  f.id === folder.id ? { ...f, translations } : f
+                ),
+              };
+              stateRef.current = updated;
+              setState(updated);
+              saveToLocalStorage(updated);
+            }
+          });
+      },
     );
   };
 
@@ -546,13 +565,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Translation editing ──
   const updateTranslations = (
-    entityType: 'ingredient' | 'recipe' | 'dish',
+    entityType: 'ingredient' | 'recipe' | 'dish' | 'folder',
     entityId: string,
     translations: Record<string, string>
   ) => {
-    const key = entityType === 'ingredient' ? 'ingredients'
-              : entityType === 'recipe' ? 'recipes'
-              : 'dishes';
+    let key: keyof AppState;
+    if (entityType === 'folder') {
+      // Folders: search both recipeFolders and dishFolders
+      const inRecipe = stateRef.current.recipeFolders.some((f: Folder) => f.id === entityId);
+      key = inRecipe ? 'recipeFolders' : 'dishFolders';
+    } else {
+      key = entityType === 'ingredient' ? 'ingredients'
+            : entityType === 'recipe' ? 'recipes'
+            : 'dishes';
+    }
     doUpdate(
       s => ({
         ...s,

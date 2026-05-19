@@ -621,7 +621,7 @@ const DishModal = ({
               >
                 <option value="">{t.dishes.noFolder || 'No folder (uncategorized)'}</option>
                 {folders.map(f => (
-                  <option key={f.id} value={f.id}>{f.icon} {f.name}</option>
+                  <option key={f.id} value={f.id}>{f.icon} {getTranslatedName(f)}</option>
                 ))}
               </select>
             </div>
@@ -1155,11 +1155,11 @@ export const DishesView = () => {
                 }}
               >
                 <span>{f.icon}</span>
-                <span>{f.name}</span>
+                <span>{getTranslatedName(f)}</span>
                 <span className="text-xs opacity-75">({count})</span>
               </button>
               <button
-                onClick={() => setDeleteFolderTarget({ id: f.id, name: f.name })}
+                onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
                 className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
               >
                 ×
@@ -1237,7 +1237,7 @@ export const DishesView = () => {
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
                         style={{ backgroundColor: `${folderInfo.color}20`, color: folderInfo.color }}
                       >
-                        {folderInfo.icon} {folderInfo.name}
+                        {folderInfo.icon} {getTranslatedName(folderInfo)}
                       </span>
                     )}
                   </div>
@@ -1481,7 +1481,7 @@ export const DishesView = () => {
             <h2>{getTranslatedName(dish)}</h2>
             {folderInfo && (
               <p style={{ color: '#666', marginBottom: '4pt' }}>
-                {folderInfo.icon} {folderInfo.name}
+                {folderInfo.icon} {getTranslatedName(folderInfo)}
               </p>
             )}
             <p className="print-meta">

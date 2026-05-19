@@ -70,6 +70,7 @@ export type Folder = {
   name: string;
   color: string;   // hex or tailwind-compatible color
   icon: string;    // emoji or icon name
+  translations?: TranslationMap;
 };
 
 // ── Trash system ──

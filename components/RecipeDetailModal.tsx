@@ -58,7 +58,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                     color: folderInfo.color,
                   }}
                 >
-                  {folderInfo.icon} {folderInfo.name}
+                  {folderInfo.icon} {getTranslatedName(folderInfo)}
                 </span>
               )}
             </div>

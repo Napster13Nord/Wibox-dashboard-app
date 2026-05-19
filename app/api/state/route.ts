@@ -111,9 +111,11 @@ export async function GET() {
     // ── Assemble folders ──
     const recipeFolders = recipeFolderRows.map((f: any) => ({
       id: f.id, name: f.name, color: f.color, icon: f.icon,
+      translations: getTranslations('folder', f.id),
     }));
     const dishFolders = dishFolderRows.map((f: any) => ({
       id: f.id, name: f.name, color: f.color, icon: f.icon,
+      translations: getTranslations('folder', f.id),
     }));
 
     // ── Assemble trash ──
@@ -302,9 +304,31 @@ export async function POST(request: NextRequest) {
     // Re-insert folders
     for (const f of (data.recipeFolders || [])) {
       await sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'recipe', ${f.name}, ${f.color}, ${f.icon})`;
+      if (f.translations) {
+        for (const [lang, name] of Object.entries(f.translations)) {
+          if (name) {
+            await sql`
+              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+              VALUES ('folder', ${f.id}, ${lang}, ${name as string}, now())
+              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+            `;
+          }
+        }
+      }
     }
     for (const f of (data.dishFolders || [])) {
       await sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'dish', ${f.name}, ${f.color}, ${f.icon})`;
+      if (f.translations) {
+        for (const [lang, name] of Object.entries(f.translations)) {
+          if (name) {
+            await sql`
+              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+              VALUES ('folder', ${f.id}, ${lang}, ${name as string}, now())
+              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+            `;
+          }
+        }
+      }
     }
 
     // Re-insert trash as soft-deleted items
