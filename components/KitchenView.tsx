@@ -145,8 +145,19 @@ export const KitchenView = () => {
             <h2 className="text-2xl font-bold text-gray-900">{t.kitchen.title}</h2>
             <p className="text-gray-500">{t.kitchen.subtitle}</p>
           </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {activeFolder !== null && !selectedRecipe && (
+            <button
+              onClick={() => setActiveFolder(null)}
+              className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base rounded-xl border border-gray-300 transition-colors shadow-sm"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              {t.kitchen.backToFolders}
+            </button>
+          )}
           {/* Language switcher for kitchen users */}
-          <div className="flex gap-1 ml-2">
+          <div className="flex gap-1">
             {(Object.keys(localeLabels) as Locale[]).map((loc) => (
               <button
                 key={loc}
@@ -163,15 +174,6 @@ export const KitchenView = () => {
             ))}
           </div>
         </div>
-        {activeFolder !== null && !selectedRecipe && (
-          <button
-            onClick={() => setActiveFolder(null)}
-            className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base rounded-xl border border-gray-300 transition-colors shadow-sm"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            {t.kitchen.backToFolders || 'Back to Folders'}
-          </button>
-        )}
       </div>
 
       {/* ── Instructions ── */}
@@ -390,7 +392,8 @@ export const KitchenView = () => {
         /* ── Step 2: Scale builder ── */
         <div className="space-y-6">
           <div className="flex items-center gap-4 print:hidden">
-            <button onClick={handleBack} className="text-sm font-medium text-gray-500 hover:text-gray-900">
+            <button onClick={handleBack} className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base rounded-xl border border-gray-300 transition-colors shadow-sm">
+              <ArrowLeft className="w-5 h-5" />
               {t.kitchen.backToRecipes}
             </button>
             <h2 className="text-xl font-bold text-gray-900">/ {getTranslatedName(selectedRecipe)}</h2>
