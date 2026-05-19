@@ -53,27 +53,33 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3 md:hidden">
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
-          aria-label="Open menu"
-        >
-          <Menu className="w-6 h-6" />
-        </button>
-        <span className="text-sm font-semibold text-gray-700">
-          {tabLabels[activeTab] || activeTab}
-        </span>
-      </div>
+      {/* Mobile header — manager only */}
+      {isManager && (
+        <div className="fixed top-0 left-0 right-0 z-40 flex items-center gap-3 bg-white border-b border-gray-200 px-4 py-3 md:hidden">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          <span className="text-sm font-semibold text-gray-700">
+            {tabLabels[activeTab] || activeTab}
+          </span>
+        </div>
+      )}
 
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={handleSetActiveTab}
-        mobileOpen={sidebarOpen}
-        onMobileClose={() => setSidebarOpen(false)}
-      />
+      {/* Sidebar — manager only */}
+      {isManager && (
+        <Sidebar
+          activeTab={activeTab}
+          setActiveTab={handleSetActiveTab}
+          mobileOpen={sidebarOpen}
+          onMobileClose={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <main className="flex-1 overflow-y-auto p-4 pt-16 md:p-8 md:pt-8">
+      <main className={`flex-1 overflow-y-auto ${isManager ? 'p-4 pt-16 md:p-8 md:pt-8' : 'p-4 md:p-8'}`}>
         {activeTab === 'dashboard' && isManager && <DashboardView />}
         {activeTab === 'ingredients' && isManager && <IngredientsView />}
         {activeTab === 'recipes' && isManager && <RecipesView />}
