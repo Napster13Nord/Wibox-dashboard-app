@@ -135,7 +135,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
       </div>
 
       <nav className="flex-1 p-4 space-y-1">
-        {tabs.map((tab) => {
+        {tabs
+          .filter((tab) => isManager || tab.id === 'kitchen')
+          .map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           return (

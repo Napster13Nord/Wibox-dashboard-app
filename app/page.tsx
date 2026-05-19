@@ -29,10 +29,10 @@ export default function Home() {
     localStorage.setItem('wibox-active-tab', activeTab);
   }, [activeTab]);
 
-  // If kitchen user somehow navigates to a manager-only tab, redirect
+  // If kitchen user somehow navigates to a manager-only tab, redirect to kitchen
   useEffect(() => {
-    if (!isManager && activeTab === 'trash') {
-      setActiveTab('dashboard');
+    if (!isManager && activeTab !== 'kitchen') {
+      setActiveTab('kitchen');
     }
   }, [isManager, activeTab]);
 
@@ -74,11 +74,11 @@ export default function Home() {
       />
 
       <main className="flex-1 overflow-y-auto p-4 pt-16 md:p-8 md:pt-8">
-        {activeTab === 'dashboard' && <DashboardView />}
-        {activeTab === 'ingredients' && <IngredientsView />}
-        {activeTab === 'recipes' && <RecipesView />}
-        {activeTab === 'dishes' && <DishesView />}
-        {activeTab === 'reports' && <ReportsView />}
+        {activeTab === 'dashboard' && isManager && <DashboardView />}
+        {activeTab === 'ingredients' && isManager && <IngredientsView />}
+        {activeTab === 'recipes' && isManager && <RecipesView />}
+        {activeTab === 'dishes' && isManager && <DishesView />}
+        {activeTab === 'reports' && isManager && <ReportsView />}
         {activeTab === 'kitchen' && <KitchenView />}
         {activeTab === 'trash' && isManager && <TrashView />}
       </main>
