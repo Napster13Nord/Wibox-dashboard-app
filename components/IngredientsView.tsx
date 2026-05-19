@@ -189,7 +189,7 @@ export const IngredientsView = () => {
       let cmp = 0;
       switch (sortField) {
         case 'name':
-          cmp = a.name.localeCompare(b.name);
+          cmp = getTranslatedName(a).localeCompare(getTranslatedName(b));
           break;
         case 'supplier':
           cmp = (a.supplier ?? '').localeCompare(b.supplier ?? '');
@@ -202,7 +202,7 @@ export const IngredientsView = () => {
     });
 
     return list;
-  }, [state.ingredients, search, sortField, sortDir]);
+  }, [state.ingredients, search, sortField, sortDir, getTranslatedName]);
 
   return (
     <div className="space-y-6">
