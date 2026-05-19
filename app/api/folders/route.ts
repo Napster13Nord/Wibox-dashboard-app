@@ -76,7 +76,6 @@ export async function PATCH(request: NextRequest) {
       const existing = await sql`SELECT name FROM folders WHERE id = ${id}`;
       const oldName = existing[0]?.name;
       await sql`UPDATE folders SET name = ${updates.name} WHERE id = ${id}`;
-      console.log('[Wibox API] PATCH /api/folders name check:', { id, oldName, newName: updates.name, willRetranslate: !!(oldName && oldName !== updates.name) });
       if (oldName && oldName !== updates.name) {
         // Re-translate on name change
         translateAndSave(sql, 'folder', id, updates.name, sourceLang).catch(() => {});

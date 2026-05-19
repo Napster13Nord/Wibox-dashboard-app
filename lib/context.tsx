@@ -490,7 +490,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const existing = stateRef.current[key]?.find((f: Folder) => f.id === id);
     const existingName = existing?.name;
     const nameChanged = folder.name !== undefined && !!existingName && existingName !== folder.name;
-    console.log('[Wibox] updateFolder called:', { type, id, folder, existingName, newName: folder.name, nameChanged });
     doUpdate(
       s => ({
         ...s,
