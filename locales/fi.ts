@@ -202,6 +202,7 @@ export const fi: T = {
     ingredients: 'ainesosia',
     weight: 'paino',
     costKg: 'Hinta/kg',
+    backToFolders: 'Takaisin Kansioihin',
   },
   trash: {
     title: 'Roskakori',

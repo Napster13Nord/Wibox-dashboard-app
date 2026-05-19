@@ -1,14 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
-import { useI18n } from '@/lib/i18n';
+import { useI18n, localeLabels, Locale } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeWeight, calculateRecipeCost } from '@/lib/calculations';
-import { ChefHat, Scale, Printer, Calculator, Search, X, Eye } from 'lucide-react';
+import { ChefHat, Scale, Printer, Calculator, Search, X, Eye, ArrowLeft } from 'lucide-react';
 import { RecipeDetailModal } from './RecipeDetailModal';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
-  const { t } = useI18n();
+  const { t, locale, setLocale } = useI18n();
   const getTranslatedName = useTranslatedName();
 
   // Step 1
@@ -140,16 +140,36 @@ export const KitchenView = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center print:hidden">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t.kitchen.title}</h2>
-          <p className="text-gray-500">{t.kitchen.subtitle}</p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{t.kitchen.title}</h2>
+            <p className="text-gray-500">{t.kitchen.subtitle}</p>
+          </div>
+          {/* Language switcher for kitchen users */}
+          <div className="flex gap-1 ml-2">
+            {(Object.keys(localeLabels) as Locale[]).map((loc) => (
+              <button
+                key={loc}
+                onClick={() => setLocale(loc)}
+                className={`text-lg px-2 py-1 rounded-lg transition-colors ${
+                  locale === loc
+                    ? 'bg-blue-100 ring-2 ring-blue-400 scale-110'
+                    : 'hover:bg-gray-100'
+                }`}
+                title={localeLabels[loc].label}
+              >
+                {localeLabels[loc].flag}
+              </button>
+            ))}
+          </div>
         </div>
         {activeFolder !== null && !selectedRecipe && (
           <button
             onClick={() => setActiveFolder(null)}
-            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex items-center gap-2 px-5 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base rounded-xl border border-gray-300 transition-colors shadow-sm"
           >
-            ← Back to Folders
+            <ArrowLeft className="w-5 h-5" />
+            {t.kitchen.backToFolders || 'Back to Folders'}
           </button>
         )}
       </div>

@@ -202,6 +202,7 @@ export const sv: T = {
     ingredients: 'ingredienser',
     weight: 'vikt',
     costKg: 'Kostnad/kg',
+    backToFolders: 'Tillbaka till Mappar',
   },
   trash: {
     title: 'Papperskorg',

@@ -210,6 +210,7 @@ export const en = {
     ingredients: 'ingredients',
     weight: 'weight',
     costKg: 'Cost/kg',
+    backToFolders: 'Back to Folders',
   },
 
   // Trash
