@@ -4,12 +4,14 @@ import { useI18n, localeLabels, Locale } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateRecipeWeight, calculateRecipeCost } from '@/lib/calculations';
 import { ChefHat, Scale, Printer, Calculator, Search, X, Eye, ArrowLeft } from 'lucide-react';
+import { useRole } from '@/hooks/useRole';
 import { RecipeDetailModal } from './RecipeDetailModal';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
   const { t, locale, setLocale } = useI18n();
   const getTranslatedName = useTranslatedName();
+  const { isManager } = useRole();
 
   // Step 1
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
@@ -156,23 +158,25 @@ export const KitchenView = () => {
               {t.kitchen.backToFolders}
             </button>
           )}
-          {/* Language switcher for kitchen users */}
-          <div className="flex gap-1">
-            {(Object.keys(localeLabels) as Locale[]).map((loc) => (
-              <button
-                key={loc}
-                onClick={() => setLocale(loc)}
-                className={`text-lg px-2 py-1 rounded-lg transition-colors ${
-                  locale === loc
-                    ? 'bg-blue-100 ring-2 ring-blue-400 scale-110'
-                    : 'hover:bg-gray-100'
-                }`}
-                title={localeLabels[loc].label}
-              >
-                {localeLabels[loc].flag}
-              </button>
-            ))}
-          </div>
+          {/* Language switcher — kitchen users only (managers use sidebar) */}
+          {!isManager && (
+            <div className="flex gap-1">
+              {(Object.keys(localeLabels) as Locale[]).map((loc) => (
+                <button
+                  key={loc}
+                  onClick={() => setLocale(loc)}
+                  className={`text-lg px-2 py-1 rounded-lg transition-colors ${
+                    locale === loc
+                      ? 'bg-blue-100 ring-2 ring-blue-400 scale-110'
+                      : 'hover:bg-gray-100'
+                  }`}
+                  title={localeLabels[loc].label}
+                >
+                  {localeLabels[loc].flag}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
