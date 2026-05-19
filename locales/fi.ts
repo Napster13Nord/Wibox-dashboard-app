@@ -250,6 +250,7 @@ export const fi: T = {
     cancel: 'Peruuta',
     delete: 'Poista',
     save: 'Tallenna',
+    edit: 'Muokkaa',
     ingredient: 'Ainesosa',
     recipe: 'Resepti',
     dish: 'Annos',

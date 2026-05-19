@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
+import { Folder as FolderType } from '@/lib/types';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
@@ -10,7 +11,7 @@ import { TranslationEditor } from './TranslationEditor';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
-  Search, FolderPlus, EyeOff, Printer,
+  Search, FolderPlus, EyeOff, Printer, Pencil,
 } from 'lucide-react';
 
 /* ── Folder config ── */
@@ -904,27 +905,32 @@ const DishModal = ({
   );
 };
 
-/* ── Add Folder Dialog ── */
-const AddFolderDialog = ({
+/* ── Folder Dialog (create + edit) ── */
+const FolderDialog = ({
   isOpen,
   onClose,
   onSave,
+  initialFolder,
 }: {
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, color: string, icon: string) => void;
+  initialFolder?: { name: string; color: string; icon: string };
 }) => {
-  const [name, setName] = useState('');
-  const [selColor, setSelColor] = useState(FOLDER_COLORS[0].color);
-  const [selIcon, setSelIcon] = useState(FOLDER_COLORS[1].icon);
+  const { t } = useI18n();
+  const [name, setName] = useState(initialFolder?.name || '');
+  const [selColor, setSelColor] = useState(initialFolder?.color || FOLDER_COLORS[0].color);
+  const [selIcon, setSelIcon] = useState(initialFolder?.icon || FOLDER_COLORS[1].icon);
 
   if (!isOpen) return null;
+
+  const isEditing = !!initialFolder;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-sm mx-4 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">New Folder</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{isEditing ? `${t.common.edit} Folder` : 'New Folder'}</h3>
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Folder Name</label>
@@ -973,14 +979,14 @@ const AddFolderDialog = ({
         </div>
         <div className="flex justify-end gap-2 mt-6">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg">
-            Cancel
+            {t.common.cancel}
           </button>
           <button
-            onClick={() => { if (name) { onSave(name, selColor, selIcon); onClose(); setName(''); } }}
+            onClick={() => { if (name) { onSave(name, selColor, selIcon); onClose(); } }}
             disabled={!name}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
           >
-            Create Folder
+            {isEditing ? t.common.save : 'Create Folder'}
           </button>
         </div>
       </div>
@@ -990,7 +996,7 @@ const AddFolderDialog = ({
 
 /* ─── Main view ─── */
 export const DishesView = () => {
-  const { state, addDish, updateDish, deleteDish, addFolder, deleteFolder, updateTranslations } = useAppContext();
+  const { state, addDish, updateDish, deleteDish, addFolder, updateFolder, deleteFolder, updateTranslations } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -1007,6 +1013,7 @@ export const DishesView = () => {
   // Delete confirmation
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<{ id: string; name: string } | null>(null);
+  const [editFolderTarget, setEditFolderTarget] = useState<FolderType | null>(null);
 
   const folders = state.dishFolders || [];
 
@@ -1163,6 +1170,13 @@ export const DishesView = () => {
                 className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
               >
                 ×
+              </button>
+              <button
+                onClick={() => setEditFolderTarget(f)}
+                className="absolute -top-1 right-4 w-4 h-4 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
+                title={t.common.edit}
+              >
+                <Pencil className="w-2.5 h-2.5" />
               </button>
             </div>
           );
@@ -1426,10 +1440,23 @@ export const DishesView = () => {
 
       {/* ── Modals ── */}
       {showAddFolder && (
-        <AddFolderDialog
+        <FolderDialog
           isOpen={true}
           onClose={() => setShowAddFolder(false)}
           onSave={(name, color, icon) => addFolder('dish', { id: Date.now().toString(), name, color, icon })}
+        />
+      )}
+
+      {editFolderTarget && (
+        <FolderDialog
+          key={editFolderTarget.id}
+          isOpen={true}
+          onClose={() => setEditFolderTarget(null)}
+          initialFolder={{ name: editFolderTarget.name, color: editFolderTarget.color, icon: editFolderTarget.icon }}
+          onSave={(name, color, icon) => {
+            updateFolder('dish', editFolderTarget.id, { name, color, icon });
+            setEditFolderTarget(null);
+          }}
         />
       )}
 

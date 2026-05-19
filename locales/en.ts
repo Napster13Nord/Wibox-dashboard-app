@@ -264,6 +264,7 @@ export const en = {
     cancel: 'Cancel',
     delete: 'Delete',
     save: 'Save',
+    edit: 'Edit',
     ingredient: 'Ingredient',
     recipe: 'Recipe',
     dish: 'Dish',

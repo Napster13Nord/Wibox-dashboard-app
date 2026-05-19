@@ -250,6 +250,7 @@ export const sv: T = {
     cancel: 'Avbryt',
     delete: 'Ta bort',
     save: 'Spara',
+    edit: 'Redigera',
     ingredient: 'Ingrediens',
     recipe: 'Recept',
     dish: 'Rätt',

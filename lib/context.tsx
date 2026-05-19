@@ -462,7 +462,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     doUpdate(
       s => ({ ...s, [key]: [...(s[key] || []), folder] }),
       () => {
-        apiPost('/api/folders', { type, ...folder });
+        apiPost('/api/folders', { type, sourceLang, ...folder });
         // Auto-translate folder name
         autoTranslateEntity('folder', folder.id, folder.name, sourceLang)
           .then(translations => {
@@ -484,13 +484,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateFolder = (type: 'recipe' | 'dish', id: string, folder: Partial<Folder>) => {
+    const sourceLang = getLocale();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
+    // Check if name is changing
+    const existing = stateRef.current[key]?.find((f: Folder) => f.id === id);
+    const nameChanged = folder.name !== undefined && existing && existing.name !== folder.name;
     doUpdate(
       s => ({
         ...s,
         [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
       }),
-      () => apiPatch('/api/folders', { id, ...folder }),
+      () => {
+        apiPatch('/api/folders', { id, sourceLang, ...folder });
+        // Re-translate if name changed
+        if (nameChanged && folder.name) {
+          autoTranslateEntity('folder', id, folder.name, sourceLang)
+            .then(translations => {
+              if (translations) {
+                const current = stateRef.current;
+                const updated = {
+                  ...current,
+                  [key]: (current[key] || []).map((f: Folder) =>
+                    f.id === id ? { ...f, translations } : f
+                  ),
+                };
+                stateRef.current = updated;
+                setState(updated);
+                saveToLocalStorage(updated);
+              }
+            });
+        }
+      },
     );
   };
 
