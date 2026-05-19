@@ -66,6 +66,14 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
     setHighlightIdx(0);
   }, [query]);
 
+  // Clear internal query when parent resets the selected value
+  useEffect(() => {
+    if (!value) {
+      setQuery('');
+      inputRef.current?.focus();
+    }
+  }, [value]);
+
   const handleSelect = (id: string) => {
     onChange(id);
     const ing = ingredients.find(i => i.id === id);
