@@ -137,6 +137,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
               onChange('');
             }
           }}
+          onClick={() => setIsOpen(true)}
           onFocus={() => {
             if (suppressNextFocusRef.current) {
               suppressNextFocusRef.current = false;
