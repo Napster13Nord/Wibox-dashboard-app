@@ -31,6 +31,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
   const [highlightIdx, setHighlightIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suppressNextFocusRef = useRef(false);
   const getTranslatedName = useTranslatedName();
 
   const selectedIng = ingredients.find(i => i.id === value);
@@ -71,6 +72,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
     if (!value) {
       setQuery('');
       setIsOpen(false);
+      suppressNextFocusRef.current = true; // prevent onFocus from reopening dropdown
       inputRef.current?.focus();
     }
   }, [value]);
@@ -135,7 +137,13 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
               onChange('');
             }
           }}
-          onFocus={() => { if (query) setIsOpen(true); }}
+          onFocus={() => {
+            if (suppressNextFocusRef.current) {
+              suppressNextFocusRef.current = false;
+              return;
+            }
+            setIsOpen(true);
+          }}
           onKeyDown={handleKeyDown}
         />
         {(value || query) && (
