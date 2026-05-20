@@ -66,10 +66,11 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
     setHighlightIdx(0);
   }, [query]);
 
-  // Clear internal query when parent resets the selected value
+  // Clear internal query and close dropdown when parent resets the selected value
   useEffect(() => {
     if (!value) {
       setQuery('');
+      setIsOpen(false);
       inputRef.current?.focus();
     }
   }, [value]);
@@ -134,7 +135,7 @@ export const IngredientCombobox: React.FC<IngredientComboboxProps> = ({
               onChange('');
             }
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => { if (query) setIsOpen(true); }}
           onKeyDown={handleKeyDown}
         />
         {(value || query) && (
