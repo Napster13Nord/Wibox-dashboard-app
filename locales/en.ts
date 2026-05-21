@@ -7,6 +7,7 @@ export const en = {
     dishBuilding: 'Dish Building',
     kitchenScale: 'Kitchen Scale',
     reports: 'Margin Reports',
+    labels: 'Labels',
     trash: 'Trash',
     undo: 'Undo',
     dataBackup: 'Data Backup',
@@ -257,6 +258,25 @@ export const en = {
     sellPrice: 'Sell Price',
     profitPortion: 'Profit/Port.',
     marginBar: 'Visual',
+  },
+
+  // Labels
+  labels: {
+    title: 'Product Labels',
+    subtitle: 'Manage product label data for printing. 503 products imported from WI-BOX catalogue.',
+    addLabel: 'Add Label',
+    searchPlaceholder: 'Search by name, EAN, or product number…',
+    productName: 'Product Name (SV / FI)',
+    weight: 'Weight',
+    bestBefore: 'Best Before',
+    actions: 'Actions',
+    days: 'days',
+    noMatch: 'No labels match',
+    empty: 'No labels found.',
+    labelsCount: 'labels',
+    deleteTitle: 'Delete Label',
+    deleteMsg: 'Are you sure you want to delete',
+    printDisabledTooltip: 'Printing available soon',
   },
 
   // Common

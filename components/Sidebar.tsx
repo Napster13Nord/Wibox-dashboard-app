@@ -4,7 +4,7 @@ import { UserButton } from '@clerk/nextjs';
 import { useRole } from '@/hooks/useRole';
 import { useAppContext } from '@/lib/context';
 import { useI18n, localeLabels, Locale } from '@/lib/i18n';
-import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2, X, Globe, Shield, Eye, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, Carrot, ChefHat, UtensilsCrossed, Scale, Download, Upload, Trash2, Undo2, X, Globe, Shield, Eye, BarChart3, Tag } from 'lucide-react';
 
 interface SidebarProps {
   activeTab: string;
@@ -27,6 +27,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, mobil
     { id: 'recipes', label: t.sidebar.recipes, icon: ChefHat },
     { id: 'dishes', label: t.sidebar.dishBuilding, icon: UtensilsCrossed },
     { id: 'reports', label: t.sidebar.reports, icon: BarChart3 },
+    { id: 'labels', label: t.sidebar.labels, icon: Tag },
     { id: 'kitchen', label: t.sidebar.kitchenScale, icon: Scale },
   ];
 

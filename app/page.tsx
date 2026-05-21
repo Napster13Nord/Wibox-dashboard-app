@@ -9,6 +9,7 @@ import { DishesView } from '@/components/DishesView';
 import { KitchenView } from '@/components/KitchenView';
 import { TrashView } from '@/components/TrashView';
 import { ReportsView } from '@/components/ReportsView';
+import { LabelsView } from '@/components/LabelsView';
 import { useI18n } from '@/lib/i18n';
 import { useRole } from '@/hooks/useRole';
 import { Menu } from 'lucide-react';
@@ -47,6 +48,7 @@ export default function Home() {
     recipes: t.sidebar.recipes,
     dishes: t.sidebar.dishBuilding,
     reports: t.sidebar.reports,
+    labels: t.sidebar.labels,
     kitchen: t.sidebar.kitchenScale,
     trash: t.sidebar.trash,
   };
@@ -85,6 +87,7 @@ export default function Home() {
         {activeTab === 'recipes' && isManager && <RecipesView />}
         {activeTab === 'dishes' && isManager && <DishesView />}
         {activeTab === 'reports' && isManager && <ReportsView />}
+        {activeTab === 'labels' && isManager && <LabelsView />}
         {activeTab === 'kitchen' && <KitchenView />}
         {activeTab === 'trash' && isManager && <TrashView />}
       </main>
