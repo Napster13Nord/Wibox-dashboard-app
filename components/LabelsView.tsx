@@ -148,7 +148,7 @@ export const LabelsView = () => {
   }, [labels, search, sortField, sortDir]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 w-full max-w-full overflow-hidden">
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
