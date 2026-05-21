@@ -148,7 +148,7 @@ export const LabelsView = () => {
   }, [labels, search, sortField, sortDir]);
 
   return (
-    <div className="space-y-6 w-full max-w-full overflow-hidden">
+    <div className="space-y-6 w-full max-w-full">
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
@@ -204,8 +204,8 @@ export const LabelsView = () => {
 
       {/* ── Table ── */}
       {!loading && !fetchError && (
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-          <table className="min-w-max w-full text-left border-collapse whitespace-nowrap">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto w-full max-w-full">
+          <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <SortHeader label={t.labels.productName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
