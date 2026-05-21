@@ -205,7 +205,7 @@ export const LabelsView = () => {
       {/* ── Table ── */}
       {!loading && !fetchError && (
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[700px] text-left border-collapse">
+          <table className="min-w-max w-full text-left border-collapse whitespace-nowrap">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
                 <SortHeader label={t.labels.productName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
