@@ -205,10 +205,10 @@ export const LabelsView = () => {
       {/* ── Table ── */}
       {!loading && !fetchError && (
         <div className="grid grid-cols-1 min-w-0 w-full overflow-hidden">
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto w-full">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto w-full max-h-[calc(100vh-16rem)]">
             <table className="min-w-full w-full text-left border-collapse whitespace-nowrap">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
+              <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm">
+                <tr className="border-b border-gray-200">
                 <SortHeader label={t.labels.productName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
                 <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.productNumber}</th>
                 <SortHeader label="EAN" field="ean" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
