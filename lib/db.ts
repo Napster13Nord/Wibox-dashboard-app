@@ -130,4 +130,51 @@ export async function ensureTables() {
       synced_at   TIMESTAMPTZ NOT NULL DEFAULT now()
     )
   `;
+
+  // ── Label printing: product label data (imported from WI-BOX_KANTA.xls) ──
+  await sql`
+    CREATE TABLE IF NOT EXISTS product_labels (
+      id               TEXT PRIMARY KEY,
+      dish_id          TEXT,                       -- optional link to a Wibox dish
+      tuotenro         TEXT,                       -- TUOTENRO (product number)
+      ean_code         TEXT,                       -- EAN-KOODI
+      name_sv          TEXT NOT NULL DEFAULT '',   -- NIMI S
+      name_fi          TEXT NOT NULL DEFAULT '',   -- NIMI FI
+      weight           TEXT DEFAULT '',            -- PAINO (free text, e.g. "560 g")
+      ingredients_sv   TEXT DEFAULT '',            -- SELOSTE S
+      ingredients_fi   TEXT DEFAULT '',            -- SELOSTE FI
+      ingredients_sv_2 TEXT DEFAULT '',            -- SELOSTE S_1 (continuation)
+      ingredients_fi_2 TEXT DEFAULT '',            -- SELOSTE FI_1 (continuation)
+      best_before_days INTEGER,                    -- PARASTA ENNEN (shelf life in days)
+      extra_line       TEXT DEFAULT '',            -- Extra2: storage temp / allergen warning
+      energy           TEXT DEFAULT '',            -- Energia
+      fat              TEXT DEFAULT '',            -- Rasva
+      fat_saturated    TEXT DEFAULT '',            -- RasvaTyydyt
+      carbs            TEXT DEFAULT '',            -- Hiilihydraatti
+      sugar            TEXT DEFAULT '',            -- Sokeri
+      protein          TEXT DEFAULT '',            -- Proteiini
+      salt             TEXT DEFAULT '',            -- Suola
+      fiber            TEXT DEFAULT '',            -- Ravintokuitu
+      notes            TEXT DEFAULT '',            -- col A: free note / status tag
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+      deleted_at       TIMESTAMPTZ
+    )
+  `;
+
+  // ── Label printing: print queue consumed by the local agent ──
+  // The bakery uses a single fixed label printer; the printer is
+  // configured on the local agent, not stored per job.
+  await sql`
+    CREATE TABLE IF NOT EXISTS print_queue (
+      id           SERIAL PRIMARY KEY,
+      label_id     TEXT NOT NULL,                  -- references product_labels.id
+      copies       INTEGER NOT NULL DEFAULT 1,
+      status       TEXT NOT NULL DEFAULT 'pending',-- pending | printing | printed | error
+      error_msg    TEXT,
+      requested_by TEXT DEFAULT '',                -- Clerk user id
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+      printed_at   TIMESTAMPTZ
+    )
+  `;
+  await sql`CREATE INDEX IF NOT EXISTS idx_print_queue_status ON print_queue (status)`;
 }

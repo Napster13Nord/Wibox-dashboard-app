@@ -73,6 +73,46 @@ export type Folder = {
   translations?: TranslationMap;
 };
 
+// ── Label printing ──
+export type ProductLabel = {
+  id: string;
+  dishId?: string;           // optional link to a Wibox dish
+  tuotenro?: string;         // product number
+  eanCode?: string;          // EAN barcode
+  nameSv: string;
+  nameFi: string;
+  weight?: string;           // free text, e.g. "560 g"
+  ingredientsSv?: string;
+  ingredientsFi?: string;
+  ingredientsSv2?: string;   // continuation line
+  ingredientsFi2?: string;
+  bestBeforeDays?: number;   // shelf life in days
+  extraLine?: string;        // storage temp / allergen warning
+  energy?: string;
+  fat?: string;
+  fatSaturated?: string;
+  carbs?: string;
+  sugar?: string;
+  protein?: string;
+  salt?: string;
+  fiber?: string;
+  notes?: string;
+  updatedAt?: string;
+};
+
+export type PrintJobStatus = 'pending' | 'printing' | 'printed' | 'error';
+
+export type PrintJob = {
+  id: number;
+  labelId: string;
+  copies: number;
+  status: PrintJobStatus;
+  errorMsg?: string;
+  requestedBy?: string;
+  createdAt?: string;
+  printedAt?: string;
+};
+
 // ── Trash system ──
 export type TrashedItem = {
   id: string;
