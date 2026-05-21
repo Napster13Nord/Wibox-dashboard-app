@@ -209,11 +209,19 @@ export const LabelsView = () => {
             <table className="min-w-full w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <SortHeader label={t.labels.productName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-                  <SortHeader label="EAN" field="ean" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={t.labels.weight} field="weight" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-                  <SortHeader label={t.labels.bestBefore} field="bestBefore" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
-                  <th className="p-4 font-medium text-gray-600 text-right">{t.labels.actions}</th>
+                <SortHeader label={t.labels.productName} field="name" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.productNumber}</th>
+                <SortHeader label="EAN" field="ean" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+                <SortHeader label={t.labels.weight} field="weight" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+                <SortHeader label={t.labels.bestBefore} field="bestBefore" activeField={sortField} activeDir={sortDir} onSort={handleSort} />
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.ingredientsSv}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.ingredientsFi}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.energy}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.fat}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.carbs}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.protein}</th>
+                <th className="p-4 font-medium text-gray-600 whitespace-nowrap">{t.labels.salt}</th>
+                <th className="p-4 font-medium text-gray-600 text-right whitespace-nowrap">{t.labels.actions}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -244,6 +252,9 @@ export const LabelsView = () => {
                       </div>
                     </td>
                     <td className="p-4 text-sm text-gray-600 font-mono">
+                      {label.tuotenro || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 font-mono">
                       {label.eanCode || <span className="text-gray-300 italic">—</span>}
                     </td>
                     <td className="p-4 text-sm text-gray-600">
@@ -255,6 +266,27 @@ export const LabelsView = () => {
                       ) : (
                         <span className="text-gray-300 italic">—</span>
                       )}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 max-w-[200px] truncate" title={label.ingredientsSv}>
+                      {label.ingredientsSv || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600 max-w-[200px] truncate" title={label.ingredientsFi}>
+                      {label.ingredientsFi || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {label.energy || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {label.fat || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {label.carbs || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {label.protein || <span className="text-gray-300 italic">—</span>}
+                    </td>
+                    <td className="p-4 text-sm text-gray-600">
+                      {label.salt || <span className="text-gray-300 italic">—</span>}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-1">
