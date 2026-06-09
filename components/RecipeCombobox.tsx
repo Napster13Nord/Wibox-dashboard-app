@@ -80,7 +80,7 @@ export const RecipeCombobox: React.FC<RecipeComboboxProps> = ({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter') {
+      if (e.key === 'ArrowDown') {
         setIsOpen(true);
         e.preventDefault();
       }

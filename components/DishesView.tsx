@@ -254,7 +254,7 @@ const DishIngredientsEditor = ({
         <p className="text-xs text-gray-400 mb-3 italic">No direct ingredients added.</p>
       )}
 
-      <div className="flex flex-col gap-3">
+      <form onSubmit={e => { e.preventDefault(); handleAdd(); }} className="flex flex-col gap-3">
         <div className="w-full">
           <label className="block text-xs font-medium text-gray-500 mb-1">Search Ingredient</label>
           <IngredientCombobox
@@ -279,14 +279,14 @@ const DishIngredientsEditor = ({
             />
           </div>
           <button
-            onClick={handleAdd}
+            type="submit"
             disabled={!selectedIngredient || !quantity}
             className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
           >
             Add
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
@@ -410,7 +410,7 @@ const DishRecipesEditor = ({
         <p className="text-xs text-gray-400 mb-3 italic">No recipe components added.</p>
       )}
 
-      <div className="flex flex-col gap-3">
+      <form onSubmit={e => { e.preventDefault(); handleAdd(); }} className="flex flex-col gap-3">
         <div className="w-full">
           <label className="block text-xs font-medium text-gray-500 mb-1">Add Recipe Component</label>
           <select
@@ -443,14 +443,14 @@ const DishRecipesEditor = ({
             />
           </div>
           <button
-            onClick={handleAdd}
+            type="submit"
             disabled={!selectedRecipe || !quantity}
             className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
           >
             Add
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 };
@@ -747,7 +747,7 @@ const DishModal = ({
             {dishRecipes.length === 0 && (
               <p className="text-xs text-gray-400 mb-3 italic">{t.dishes.noRecipeComponents || 'No recipe components added.'}</p>
             )}
-            <div className="flex flex-col gap-3">
+            <form onSubmit={e => { e.preventDefault(); addRecipe(); }} className="flex flex-col gap-3">
               <div className="w-full">
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.addRecipeComponent || 'Add Recipe Component'}</label>
                 <RecipeCombobox
@@ -773,14 +773,14 @@ const DishModal = ({
                   />
                 </div>
                 <button
-                  onClick={addRecipe}
+                  type="submit"
                   disabled={!selectedRecipe || !recipeQty}
                   className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
                 >
                   Add
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* ── Direct Ingredients ── */}
@@ -844,7 +844,7 @@ const DishModal = ({
             {dishDirectIngredients.length === 0 && (
               <p className="text-xs text-gray-400 mb-3 italic">{t.dishes.noDirectIngredients || 'No direct ingredients added.'}</p>
             )}
-            <div className="flex flex-col gap-3">
+            <form onSubmit={e => { e.preventDefault(); addIngredient(); }} className="flex flex-col gap-3">
               <div className="w-full">
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.searchIngredient || 'Search Ingredient'}</label>
                 <IngredientCombobox
@@ -869,14 +869,14 @@ const DishModal = ({
                   />
                 </div>
                 <button
-                  onClick={addIngredient}
+                  type="submit"
                   disabled={!selectedIngredient || !ingredientQty}
                   className="px-4 py-2 bg-gray-900 text-white rounded-md text-sm hover:bg-gray-800 disabled:opacity-50"
                 >
                   Add
                 </button>
               </div>
-            </div>
+            </form>
           </div>
 
           {/* ── Margin Calculator ── */}

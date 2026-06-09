@@ -265,7 +265,7 @@ export const IngredientsView = () => {
 
             {/* ── Add row ── */}
             {isAdding && (
-              <tr className="bg-blue-50/50">
+              <tr className="bg-blue-50/50" onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAdd(); } }}>
                 <td className="p-4">
                   <input
                     type="text"
@@ -349,6 +349,7 @@ export const IngredientsView = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2"
                         value={editForm.name}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
                       />
                       <TranslationEditor
                         compact
@@ -375,6 +376,7 @@ export const IngredientsView = () => {
                           onChange={(e) =>
                             setEditForm({ ...editForm, pricePerKg: parseFloat(e.target.value) || 0 })
                           }
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
                         />
                       </div>
                     </td>
@@ -386,6 +388,7 @@ export const IngredientsView = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={editForm.supplier}
                         onChange={(e) => setEditForm({ ...editForm, supplier: e.target.value })}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
                       />
                     </td>
                     <td className="p-4">
@@ -394,6 +397,7 @@ export const IngredientsView = () => {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                         value={editForm.lastUpdate}
                         onChange={(e) => setEditForm({ ...editForm, lastUpdate: e.target.value })}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
                       />
                     </td>
                     <td className="p-4 text-right">
