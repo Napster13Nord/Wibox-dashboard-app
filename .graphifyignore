@@ -1,0 +1,11 @@
+# Exclude documentation and media to enable local code-only AST graph building without LLM API keys
+*.md
+*.pdf
+*.txt
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.webp
+*.ico
