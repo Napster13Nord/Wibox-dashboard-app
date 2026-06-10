@@ -1323,19 +1323,19 @@ export const DishesView = () => {
                   {/* ── Key metrics ── */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="bg-blue-50 rounded-xl p-3 text-center">
-                      <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-1">Total Cost</p>
-                      <p className="text-lg font-bold text-blue-700">€{metrics.totalCost.toFixed(2)}</p>
+                      <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-1">{t.dishes.sellPriceShort}</p>
+                      <p className="text-lg font-bold text-blue-700">€{dish.sellingPrice.toFixed(2)}</p>
                     </div>
                     <div className="bg-gray-50 rounded-xl p-3 text-center border border-gray-200">
-                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Cost/Portion</p>
+                      <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{t.dishes.costPrice}</p>
                       <p className="text-lg font-bold text-gray-700">€{metrics.costPerPortion.toFixed(2)}</p>
                     </div>
                     <div className={`rounded-xl p-3 text-center ${isProfitable ? 'bg-green-50' : 'bg-red-50'}`}>
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>Food Cost</p>
+                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>{t.dishes.foodCostPercent}</p>
                       <p className={`text-lg font-bold ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>{metrics.foodCostPercentage.toFixed(1)}%</p>
                     </div>
                     <div className={`rounded-xl p-3 text-center ${isProfitable ? 'bg-green-50' : 'bg-red-50'}`}>
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>Margin</p>
+                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${isProfitable ? 'text-green-500' : 'text-red-500'}`}>{t.dishes.marginPercent}</p>
                       <p className={`text-lg font-bold ${isProfitable ? 'text-green-700' : 'text-red-700'}`}>{metrics.profitMargin.toFixed(1)}%</p>
                     </div>
                   </div>
