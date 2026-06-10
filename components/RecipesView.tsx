@@ -215,19 +215,19 @@ const RecipeModal = ({
           {/* ── Live cost summary ── */}
           <div className="flex items-center gap-6 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100">
             <div>
-              <span className="text-xs text-blue-600 font-medium">Live Cost</span>
-              <p className="text-lg font-bold text-blue-700">€{liveCost.toFixed(2)}</p>
+              <span className="text-xs text-blue-600 font-medium">{t.recipes.costPerKg} (€/kg)</span>
+              <p className="text-2xl font-bold text-blue-700">
+                {liveWeight > 0 ? `€${((liveCost / liveWeight) * 1000).toFixed(2)}` : '—'}
+              </p>
+            </div>
+            <div className="border-l border-blue-200 pl-6">
+              <span className="text-xs text-blue-600 font-medium">{t.recipes.liveCost}</span>
+              <p className="text-sm font-semibold text-blue-700">€{liveCost.toFixed(2)}</p>
             </div>
             <div>
-              <span className="text-xs text-blue-600 font-medium">Weight</span>
-              <p className="text-lg font-bold text-blue-700">{liveWeight.toFixed(0)}g</p>
+              <span className="text-xs text-blue-600 font-medium">{t.recipes.weight}</span>
+              <p className="text-sm font-semibold text-blue-700">{liveWeight.toFixed(0)}g</p>
             </div>
-            {liveWeight > 0 && (
-              <div>
-                <span className="text-xs text-blue-600 font-medium">Cost/kg</span>
-                <p className="text-lg font-bold text-blue-700">€{((liveCost / liveWeight) * 1000).toFixed(2)}</p>
-              </div>
-            )}
           </div>
 
           {/* ── Ingredients table ── */}
