@@ -109,17 +109,19 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
 
           {/* Key metrics */}
           <div className="grid grid-cols-3 gap-3">
+            <div className="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-200">
+              <p className="text-xs text-indigo-500 font-medium uppercase tracking-wide mb-1">{t.recipes.costPerKg} (€/kg)</p>
+              <p className="text-3xl font-bold text-indigo-700">
+                {totalWeight > 0 ? `€${costPerKg.toFixed(2)}` : '—'}
+              </p>
+            </div>
             <div className="bg-blue-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-1">Total Cost</p>
-              <p className="text-2xl font-bold text-blue-700">€{totalCost.toFixed(2)}</p>
+              <p className="text-xs text-blue-500 font-medium uppercase tracking-wide mb-1">{t.recipes.liveCost}</p>
+              <p className="text-lg font-bold text-blue-700">€{totalCost.toFixed(2)}</p>
             </div>
             <div className="bg-gray-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">Total Weight</p>
-              <p className="text-2xl font-bold text-gray-700">{totalWeight.toFixed(0)}g</p>
-            </div>
-            <div className="bg-indigo-50 rounded-xl p-4 text-center">
-              <p className="text-xs text-indigo-500 font-medium uppercase tracking-wide mb-1">Cost / kg</p>
-              <p className="text-2xl font-bold text-indigo-700">€{costPerKg.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{t.recipes.weight}</p>
+              <p className="text-lg font-bold text-gray-700">{totalWeight.toFixed(0)}g</p>
             </div>
           </div>
 
