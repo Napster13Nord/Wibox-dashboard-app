@@ -11,7 +11,7 @@ import { TranslationEditor } from './TranslationEditor';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
-  Search, FolderPlus, EyeOff, Printer, Pencil,
+  Search, FolderPlus, EyeOff, Printer, Pencil, ArrowLeft,
 } from 'lucide-react';
 
 /* ── Folder config ── */
@@ -1100,29 +1100,34 @@ export const DishesView = () => {
     <div className="space-y-6">
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-        <div>
+        <div className="flex items-center gap-4">
           {activeFolder !== null && (
             <button
               onClick={() => { setActiveFolder(null); setSearch(''); setExpandedId(null); }}
-              className="mb-2 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm rounded-xl border border-gray-300 transition-colors shadow-sm"
             >
-              ← {t.dishes.backToFolders}
+              <ArrowLeft className="w-4 h-4" />
+              {t.dishes.backToFolders}
             </button>
           )}
-          <h2 className="text-2xl font-bold text-gray-900">{t.dishes.title}</h2>
-          <p className="text-gray-500">{t.dishes.subtitle}</p>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{t.dishes.title}</h2>
+            <p className="text-gray-500">{t.dishes.subtitle}</p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
-          <button
-            onClick={() => setShowAddFolder(true)}
-            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
-          >
-            <FolderPlus className="w-4 h-4" />
-            {t.dishes.newFolder}
-          </button>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          {activeFolder !== null && (
+            <button
+              onClick={() => setShowAddFolder(true)}
+              className="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm shrink-0"
+            >
+              <FolderPlus className="w-4 h-4" />
+              {t.dishes.newFolder}
+            </button>
+          )}
           <button
             onClick={() => { setModalKey(k => k + 1); setIsAdding(true); }}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shrink-0"
           >
             <Plus className="w-4 h-4" />
             {t.dishes.createDish}
@@ -1130,45 +1135,59 @@ export const DishesView = () => {
         </div>
       </div>
 
-      {/* ── Step 0: Folder Grid ── */}
-      {activeFolder === null && (
+      {/* ── Step 0: Folder grid (when no folder selected) ── */}
+      {activeFolder === null ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {/* All Dishes */}
+          {/* All dishes */}
           <button
             onClick={() => setActiveFolder('all')}
-            className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-blue-200 hover:border-blue-400 hover:shadow-md transition-all text-center group"
+            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all gap-3 group"
           >
-            <span className="text-3xl">🍽️</span>
-            <span className="font-semibold text-gray-800 text-sm">{t.dishes.all}</span>
-            <span className="text-xs text-gray-400">{state.dishes.length} {t.dishes.dishesCount}</span>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 text-xl group-hover:bg-blue-200 transition-colors">
+              🍽️
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-gray-900">{t.dishes.all}</h3>
+              <p className="text-sm text-gray-500">{state.dishes.length} {t.dishes.dishesCount}</p>
+            </div>
           </button>
 
-          {/* Custom folders */}
+          {/* Named folders */}
           {folders.map(f => {
             const count = state.dishes.filter(d => d.folder === f.id).length;
             return (
-              <div key={f.id} className="group relative">
+              <div key={f.id} className="relative group">
                 <button
                   onClick={() => setActiveFolder(f.id)}
-                  className="w-full flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 hover:shadow-md transition-all text-center"
-                  style={{ borderColor: `${f.color}60` }}
+                  className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all gap-3 relative overflow-hidden"
                 >
-                  <span className="text-3xl">{f.icon}</span>
-                  <span className="font-semibold text-gray-800 text-sm">{getTranslatedName(f)}</span>
-                  <span className="text-xs text-gray-400">{count} {t.dishes.dishesCount}</span>
+                  <div
+                    className="absolute top-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ backgroundColor: f.color }}
+                  />
+                  <div
+                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: `${f.color}20`, color: f.color }}
+                  >
+                    {f.icon}
+                  </div>
+                  <div className="text-center">
+                    <h3 className="font-semibold text-gray-900">{getTranslatedName(f)}</h3>
+                    <p className="text-sm text-gray-500">{count} {t.dishes.dishesCount}</p>
+                  </div>
                 </button>
-                {/* Edit folder */}
+                {/* Edit button */}
                 <button
-                  onClick={e => { e.stopPropagation(); setEditFolderTarget(f); }}
+                  onClick={() => setEditFolderTarget(f)}
+                  className="absolute top-2 right-8 w-6 h-6 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-blue-600 transition-colors"
                   title={t.dishes.editFolder}
-                  className="absolute top-2 right-8 w-6 h-6 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex shadow"
                 >
                   <Pencil className="w-3 h-3" />
                 </button>
-                {/* Delete folder */}
+                {/* Delete button */}
                 <button
-                  onClick={e => { e.stopPropagation(); setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) }); }}
-                  className="absolute top-2 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex shadow"
+                  onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
+                  className="absolute top-2 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-red-600 transition-colors"
                 >
                   ×
                 </button>
@@ -1180,28 +1199,34 @@ export const DishesView = () => {
           {uncategorizedCount > 0 && (
             <button
               onClick={() => setActiveFolder('uncategorized')}
-              className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-gray-200 hover:border-gray-400 hover:shadow-md transition-all text-center"
+              className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 transition-all gap-3 group"
             >
-              <span className="text-3xl">📂</span>
-              <span className="font-semibold text-gray-800 text-sm">{t.dishes.uncategorized}</span>
-              <span className="text-xs text-gray-400">{uncategorizedCount} {t.dishes.dishesCount}</span>
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xl group-hover:bg-gray-200 transition-colors">
+                📁
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-gray-900">{t.dishes.uncategorized}</h3>
+                <p className="text-sm text-gray-500">{uncategorizedCount} {t.dishes.dishesCount}</p>
+              </div>
             </button>
           )}
 
-          {/* New folder shortcut */}
+          {/* Add new folder card */}
           <button
             onClick={() => setShowAddFolder(true)}
-            className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all text-center text-gray-400 hover:text-blue-500"
+            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 transition-all gap-3 group"
           >
-            <FolderPlus className="w-8 h-8" />
-            <span className="text-sm font-medium">{t.dishes.newFolder}</span>
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
+              <FolderPlus className="w-6 h-6" />
+            </div>
+            <div className="text-center">
+              <h3 className="font-semibold text-gray-500 group-hover:text-blue-600 transition-colors">{t.dishes.newFolder}</h3>
+            </div>
           </button>
         </div>
-      )}
-
-      {/* ── Step 1: Search + Tabs + Dish List ── */}
-      {activeFolder !== null && (
+      ) : (
         <>
+          {/* ── Step 1: Search + Tabs + Dish List ── */}
           {/* Search */}
           <div className="relative max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
