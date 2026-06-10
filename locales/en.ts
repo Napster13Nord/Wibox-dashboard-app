@@ -245,6 +245,9 @@ export const en = {
     permanentMsg: 'Permanently delete',
     permanentMsgSuffix: 'This cannot be undone.',
     permanentConfirm: 'Delete Forever',
+    searchPlaceholder: 'Search deleted items…',
+    newestFirst: 'Newest first',
+    oldestFirst: 'Oldest first',
   },
 
   // Reports

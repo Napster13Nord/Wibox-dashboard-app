@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
-import { Trash2, RotateCcw, Carrot, ChefHat, UtensilsCrossed } from 'lucide-react';
+import { Trash2, RotateCcw, Carrot, ChefHat, UtensilsCrossed, Search, X, ArrowUpDown } from 'lucide-react';
 
 const formatDate = (iso: string, locale: string) => {
   try {
@@ -49,8 +49,25 @@ export const TrashView = () => {
   const getTranslatedName = useTranslatedName();
   const [confirmEmpty, setConfirmEmpty] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+  const [search, setSearch] = useState('');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const trash = state.trash || [];
+
+  const filteredTrash = useMemo(() => {
+    let list = trash.filter(item => {
+      if (!search) return true;
+      const data = item.data as any;
+      const name = data.translations ? getTranslatedName(data) : (data.name || '');
+      return name.toLowerCase().includes(search.toLowerCase());
+    });
+    list.sort((a, b) => {
+      const da = new Date(a.deletedAt).getTime();
+      const db = new Date(b.deletedAt).getTime();
+      return sortOrder === 'newest' ? db - da : da - db;
+    });
+    return list;
+  }, [trash, search, sortOrder, getTranslatedName]);
 
   return (
     <div className="space-y-6">
@@ -69,6 +86,37 @@ export const TrashView = () => {
           </button>
         )}
       </div>
+
+      {/* ── Search & Sort ── */}
+      {trash.length > 0 && (
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative max-w-sm flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={t.trash.searchPlaceholder}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => setSortOrder(o => o === 'newest' ? 'oldest' : 'newest')}
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors shrink-0"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5" />
+            {sortOrder === 'newest' ? t.trash.newestFirst : t.trash.oldestFirst}
+          </button>
+        </div>
+      )}
 
       {trash.length === 0 && (
         <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
@@ -90,7 +138,7 @@ export const TrashView = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {trash.map(item => {
+              {filteredTrash.map(item => {
                 const data = item.data as any;
                 const name = data.translations ? getTranslatedName(data) : (data.name || 'Unknown');
                 return (

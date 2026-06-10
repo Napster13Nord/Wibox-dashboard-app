@@ -235,6 +235,9 @@ export const fi: T = {
     permanentMsg: 'Poista pysyvästi',
     permanentMsgSuffix: 'Tätä ei voi perua.',
     permanentConfirm: 'Poista Pysyvästi',
+    searchPlaceholder: 'Hae poistettuja kohteita…',
+    newestFirst: 'Uusimmat ensin',
+    oldestFirst: 'Vanhimmat ensin',
   },
   reports: {
     title: 'Kateraportit',

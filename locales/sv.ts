@@ -235,6 +235,9 @@ export const sv: T = {
     permanentMsg: 'Ta bort permanent',
     permanentMsgSuffix: 'Kan ej ångras.',
     permanentConfirm: 'Ta bort Permanent',
+    searchPlaceholder: 'Sök borttagna objekt…',
+    newestFirst: 'Nyaste först',
+    oldestFirst: 'Äldsta först',
   },
   reports: {
     title: 'Marginalrapporter',
