@@ -187,6 +187,9 @@ export const sv: T = {
     costPrice: 'Kostnadspris',
     foodCostPercent: 'Råvarukost. %',
     marginPercent: 'Marginal %',
+    backToFolders: 'Tillbaka till Mappar',
+    dishesCount: 'rätter',
+    editFolder: 'Redigera Mapp',
   },
   kitchen: {
     title: 'Köksvåg',

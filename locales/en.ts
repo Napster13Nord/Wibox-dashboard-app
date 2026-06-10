@@ -193,6 +193,9 @@ export const en = {
     costPrice: 'Cost Price',
     foodCostPercent: 'Food Cost %',
     marginPercent: 'Margin %',
+    backToFolders: 'Back to Folders',
+    dishesCount: 'dishes',
+    editFolder: 'Edit Folder',
   },
 
   // Kitchen

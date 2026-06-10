@@ -187,6 +187,9 @@ export const fi: T = {
     costPrice: 'Kustannushinta',
     foodCostPercent: 'Raaka-ainekust. %',
     marginPercent: 'Kate %',
+    backToFolders: 'Takaisin Kansioihin',
+    dishesCount: 'annosta',
+    editFolder: 'Muokkaa Kansiota',
   },
   kitchen: {
     title: 'Keittiövaaka',

@@ -1003,7 +1003,7 @@ export const DishesView = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [modalKey, setModalKey] = useState(0);
   const [search, setSearch] = useState('');
-  const [activeFolder, setActiveFolder] = useState<string>('all');
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
@@ -1026,7 +1026,7 @@ export const DishesView = () => {
       sellingPrice: data.sellingPrice || 0,
       portions: data.portions || 1,
       priceIncludesVat: data.priceIncludesVat || false,
-      folder: data.folder || (activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''),
+      folder: data.folder || (activeFolder !== null && activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''),
       vatRate: data.vatRate ?? 13.5,
     });
     setIsAdding(false);
@@ -1094,101 +1094,183 @@ export const DishesView = () => {
     });
   }, [state.dishes, search, activeFolder]);
 
+  const uncategorizedCount = state.dishes.filter(d => !d.folder).length;
+
   return (
     <div className="space-y-6">
       {/* ── Header ── */}
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
         <div>
+          {activeFolder !== null && (
+            <button
+              onClick={() => { setActiveFolder(null); setSearch(''); setExpandedId(null); }}
+              className="mb-2 flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors"
+            >
+              ← {t.dishes.backToFolders}
+            </button>
+          )}
           <h2 className="text-2xl font-bold text-gray-900">{t.dishes.title}</h2>
-          <p className="text-gray-500">
-            {t.dishes.subtitle}
-          </p>
+          <p className="text-gray-500">{t.dishes.subtitle}</p>
         </div>
-        <button
-          onClick={() => { setModalKey(k => k + 1); setIsAdding(true); }}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors self-start md:self-auto shrink-0"
-        >
-          <Plus className="w-4 h-4" />
-          {t.dishes.createDish}
-        </button>
-      </div>
-
-      {/* ── Search ── */}
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-        <input
-          type="text"
-          placeholder={t.dishes.searchPlaceholder}
-          className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
-        {search && (
-          <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-            <X className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <button
+            onClick={() => setShowAddFolder(true)}
+            className="flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+          >
+            <FolderPlus className="w-4 h-4" />
+            {t.dishes.newFolder}
           </button>
-        )}
+          <button
+            onClick={() => { setModalKey(k => k + 1); setIsAdding(true); }}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            {t.dishes.createDish}
+          </button>
+        </div>
       </div>
 
-      {/* ── Folder tabs ── */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={() => setActiveFolder('all')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          {t.dishes.all} ({state.dishes.length})
-        </button>
-        <button
-          onClick={() => setActiveFolder('uncategorized')}
-          className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-            activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          {t.dishes.uncategorized} ({state.dishes.filter(d => !d.folder).length})
-        </button>
-        {folders.map(f => {
-          const count = state.dishes.filter(d => d.folder === f.id).length;
-          return (
-            <div key={f.id} className="group relative">
-              <button
-                onClick={() => setActiveFolder(f.id)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                  activeFolder === f.id ? 'text-white' : 'text-gray-700 hover:opacity-80'
-                }`}
-                style={{
-                  backgroundColor: activeFolder === f.id ? f.color : `${f.color}20`,
-                }}
-              >
-                <span>{f.icon}</span>
-                <span>{getTranslatedName(f)}</span>
-                <span className="text-xs opacity-75">({count})</span>
+      {/* ── Step 0: Folder Grid ── */}
+      {activeFolder === null && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {/* All Dishes */}
+          <button
+            onClick={() => setActiveFolder('all')}
+            className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-blue-200 hover:border-blue-400 hover:shadow-md transition-all text-center group"
+          >
+            <span className="text-3xl">🍽️</span>
+            <span className="font-semibold text-gray-800 text-sm">{t.dishes.all}</span>
+            <span className="text-xs text-gray-400">{state.dishes.length} {t.dishes.dishesCount}</span>
+          </button>
+
+          {/* Custom folders */}
+          {folders.map(f => {
+            const count = state.dishes.filter(d => d.folder === f.id).length;
+            return (
+              <div key={f.id} className="group relative">
+                <button
+                  onClick={() => setActiveFolder(f.id)}
+                  className="w-full flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 hover:shadow-md transition-all text-center"
+                  style={{ borderColor: `${f.color}60` }}
+                >
+                  <span className="text-3xl">{f.icon}</span>
+                  <span className="font-semibold text-gray-800 text-sm">{getTranslatedName(f)}</span>
+                  <span className="text-xs text-gray-400">{count} {t.dishes.dishesCount}</span>
+                </button>
+                {/* Edit folder */}
+                <button
+                  onClick={e => { e.stopPropagation(); setEditFolderTarget(f); }}
+                  title={t.dishes.editFolder}
+                  className="absolute top-2 right-8 w-6 h-6 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex shadow"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                {/* Delete folder */}
+                <button
+                  onClick={e => { e.stopPropagation(); setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) }); }}
+                  className="absolute top-2 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex shadow"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+
+          {/* Uncategorized */}
+          {uncategorizedCount > 0 && (
+            <button
+              onClick={() => setActiveFolder('uncategorized')}
+              className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-gray-200 hover:border-gray-400 hover:shadow-md transition-all text-center"
+            >
+              <span className="text-3xl">📂</span>
+              <span className="font-semibold text-gray-800 text-sm">{t.dishes.uncategorized}</span>
+              <span className="text-xs text-gray-400">{uncategorizedCount} {t.dishes.dishesCount}</span>
+            </button>
+          )}
+
+          {/* New folder shortcut */}
+          <button
+            onClick={() => setShowAddFolder(true)}
+            className="flex flex-col items-center justify-center gap-2 p-5 bg-white rounded-2xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-all text-center text-gray-400 hover:text-blue-500"
+          >
+            <FolderPlus className="w-8 h-8" />
+            <span className="text-sm font-medium">{t.dishes.newFolder}</span>
+          </button>
+        </div>
+      )}
+
+      {/* ── Step 1: Search + Tabs + Dish List ── */}
+      {activeFolder !== null && (
+        <>
+          {/* Search */}
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="text"
+              placeholder={t.dishes.searchPlaceholder}
+              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <X className="w-3.5 h-3.5" />
               </button>
-              <button
-                onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
-                className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
-              >
-                ×
-              </button>
-              <button
-                onClick={() => setEditFolderTarget(f)}
-                className="absolute -top-1 right-4 w-4 h-4 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
-                title={t.common.edit}
-              >
-                <Pencil className="w-2.5 h-2.5" />
-              </button>
-            </div>
-          );
-        })}
-        <button
-          onClick={() => setShowAddFolder(true)}
-          className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-400 border border-dashed border-gray-300 hover:border-gray-400 hover:text-gray-500 transition-colors flex items-center gap-1"
-        >
-          <FolderPlus className="w-3.5 h-3.5" />
-          {t.dishes.newFolder}
-        </button>
-      </div>
+            )}
+          </div>
+
+          {/* Folder tabs */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setActiveFolder('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {t.dishes.all} ({state.dishes.length})
+            </button>
+            <button
+              onClick={() => setActiveFolder('uncategorized')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {t.dishes.uncategorized} ({uncategorizedCount})
+            </button>
+            {folders.map(f => {
+              const count = state.dishes.filter(d => d.folder === f.id).length;
+              return (
+                <div key={f.id} className="group relative">
+                  <button
+                    onClick={() => setActiveFolder(f.id)}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      activeFolder === f.id ? 'text-white' : 'text-gray-700 hover:opacity-80'
+                    }`}
+                    style={{ backgroundColor: activeFolder === f.id ? f.color : `${f.color}20` }}
+                  >
+                    <span>{f.icon}</span>
+                    <span>{getTranslatedName(f)}</span>
+                    <span className="text-xs opacity-75">({count})</span>
+                  </button>
+                  <button
+                    onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
+                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
+                  >
+                    ×
+                  </button>
+                  <button
+                    onClick={() => setEditFolderTarget(f)}
+                    className="absolute -top-1 right-4 w-4 h-4 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
+                    title={t.dishes.editFolder}
+                  >
+                    <Pencil className="w-2.5 h-2.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* ── Edit dish modal ── */}
       {editingDish && (
@@ -1220,7 +1302,8 @@ export const DishesView = () => {
         onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
       />
 
-      {/* ── Dish cards ── */}
+      {/* ── Dish cards (only in Step 1) ── */}
+      {activeFolder !== null && (
       <div className="space-y-3">
         {filteredDishes.length === 0 && !isAdding && (
           <div className="text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
@@ -1437,6 +1520,7 @@ export const DishesView = () => {
           );
         })}
       </div>
+      )}
 
       {/* ── Modals ── */}
       {showAddFolder && (
