@@ -122,6 +122,9 @@ export const sv: T = {
     createFolder: 'Skapa Mapp',
     unknownIngredient: 'Okänd ingrediens — finns inte i huvudlistan',
     hasUnknownIngredients: 'Detta recept innehåller ingredienser som inte längre finns i huvudlistan. Granska och ersätt dem.',
+    backToFolders: 'Tillbaka till Mappar',
+    recipesCount: 'recept',
+    editFolder: 'Redigera Mapp',
   },
   dishes: {
     title: 'Rättbyggare & Marginaler',

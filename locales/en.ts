@@ -126,6 +126,9 @@ export const en = {
     createFolder: 'Create Folder',
     unknownIngredient: 'Unknown ingredient — not found in the master list',
     hasUnknownIngredients: 'This recipe contains ingredients that no longer exist in the master list. Review and replace them.',
+    backToFolders: 'Back to Folders',
+    recipesCount: 'recipes',
+    editFolder: 'Edit Folder',
   },
 
   // Dishes

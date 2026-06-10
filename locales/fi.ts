@@ -122,6 +122,9 @@ export const fi: T = {
     createFolder: 'Luo Kansio',
     unknownIngredient: 'Tuntematon ainesosa — ei löydy pääluettelosta',
     hasUnknownIngredients: 'Tämä resepti sisältää ainesosia, joita ei enää ole pääluettelossa. Tarkista ja korvaa ne.',
+    backToFolders: 'Takaisin Kansioihin',
+    recipesCount: 'reseptiä',
+    editFolder: 'Muokkaa Kansiota',
   },
   dishes: {
     title: 'Annosrakentaja & Katteet',
