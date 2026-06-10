@@ -172,6 +172,10 @@ export const sv: T = {
     color: 'Färg',
     createFolder: 'Skapa Mapp',
     searchIngredient: 'Sök Ingrediens',
+    sellPriceShort: 'Säljpris',
+    costPrice: 'Kostnadspris',
+    foodCostPercent: 'Råvarukost. %',
+    marginPercent: 'Marginal %',
   },
   kitchen: {
     title: 'Köksvåg',

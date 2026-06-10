@@ -172,6 +172,10 @@ export const fi: T = {
     color: 'Väri',
     createFolder: 'Luo Kansio',
     searchIngredient: 'Hae Ainesosaa',
+    sellPriceShort: 'Myyntihinta',
+    costPrice: 'Kustannushinta',
+    foodCostPercent: 'Raaka-ainekust. %',
+    marginPercent: 'Kate %',
   },
   kitchen: {
     title: 'Keittiövaaka',

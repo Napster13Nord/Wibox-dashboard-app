@@ -178,6 +178,10 @@ export const en = {
     color: 'Color',
     createFolder: 'Create Folder',
     searchIngredient: 'Search Ingredient',
+    sellPriceShort: 'Selling Price',
+    costPrice: 'Cost Price',
+    foodCostPercent: 'Food Cost %',
+    marginPercent: 'Margin %',
   },
 
   // Kitchen

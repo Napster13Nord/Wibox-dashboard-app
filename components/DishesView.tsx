@@ -640,21 +640,21 @@ const DishModal = ({
           {/* ── Live metrics bar ── */}
           <div className="bg-blue-50 rounded-xl px-4 py-3 flex flex-wrap gap-4 items-center text-sm">
             <div>
-              <span className="text-blue-600 font-semibold">Cost: </span>
-              <span className="font-bold text-blue-800">€{totalCost.toFixed(2)}</span>
+              <span className="text-blue-600 font-semibold">{t.dishes.sellPriceShort}: </span>
+              <span className="font-bold text-blue-800">€{sellingPrice.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-blue-600 font-semibold">Per Portion: </span>
+              <span className="text-blue-600 font-semibold">{t.dishes.costPrice}: </span>
               <span className="font-bold text-blue-800">€{costPerPortion.toFixed(2)}</span>
             </div>
             <div>
-              <span className="text-blue-600 font-semibold">Food Cost: </span>
+              <span className="text-blue-600 font-semibold">{t.dishes.foodCostPercent}: </span>
               <span className={`font-bold ${foodCostPct <= 30 ? 'text-green-600' : 'text-red-500'}`}>
                 {foodCostPct.toFixed(1)}%
               </span>
             </div>
             <div>
-              <span className="text-blue-600 font-semibold">Margin: </span>
+              <span className="text-blue-600 font-semibold">{t.dishes.marginPercent}: </span>
               <span className={`font-bold ${marginPct >= 70 ? 'text-green-600' : 'text-red-500'}`}>
                 {marginPct.toFixed(1)}%
               </span>
