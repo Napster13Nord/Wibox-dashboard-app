@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
@@ -173,8 +173,8 @@ export const IngredientsView = () => {
     }
   };
 
-  /* Filtered & sorted list */
-  const filtered = useMemo(() => {
+  /* Filtered & sorted list — computed normally */
+  const sortedList = useMemo(() => {
     let list = state.ingredients.filter((ing) => {
       const q = search.toLowerCase();
       const translatedName = getTranslatedName(ing).toLowerCase();
@@ -204,6 +204,16 @@ export const IngredientsView = () => {
 
     return list;
   }, [state.ingredients, search, sortField, sortDir, getTranslatedName]);
+
+  /* Freeze list order while editing so the row doesn't jump */
+  const frozenListRef = useRef(sortedList);
+  useEffect(() => {
+    if (!editingId) {
+      frozenListRef.current = sortedList;
+    }
+  }, [sortedList, editingId]);
+
+  const filtered = editingId ? frozenListRef.current : sortedList;
 
   return (
     <div className="space-y-6">
