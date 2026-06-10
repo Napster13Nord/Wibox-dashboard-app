@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const sql = getSQL();
     const rows = await sql`SELECT * FROM recipes WHERE deleted_at IS NULL ORDER BY name`;
-    const allRI = await sql`SELECT * FROM recipe_ingredients`;
+    const allRI = await sql`SELECT * FROM recipe_ingredients ORDER BY sort_order, id`;
     const allRP = await sql`SELECT * FROM recipe_presets`;
 
     // Load translations for all recipes
@@ -57,10 +57,11 @@ export async function POST(request: NextRequest) {
       VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.notes || null}, ${rec.folder || null}, now())
     `;
 
-    for (const ri of (rec.ingredients || [])) {
+    for (let idx = 0; idx < (rec.ingredients || []).length; idx++) {
+      const ri = rec.ingredients[idx];
       await sql`
-        INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams)
-        VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})
+        INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
+        VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
       `;
     }
     for (const pr of (rec.presets || [])) {
@@ -112,10 +113,11 @@ export async function PATCH(request: NextRequest) {
     // Replace ingredients if provided
     if (updates.ingredients !== undefined) {
       await sql`DELETE FROM recipe_ingredients WHERE recipe_id = ${id}`;
-      for (const ri of updates.ingredients) {
+      for (let idx = 0; idx < updates.ingredients.length; idx++) {
+        const ri = updates.ingredients[idx];
         await sql`
-          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams)
-          VALUES (${ri.id}, ${id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})
+          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
+          VALUES (${ri.id}, ${id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
         `;
       }
     }

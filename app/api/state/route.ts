@@ -23,7 +23,7 @@ export async function GET() {
     const dishFolderRows = await sql`SELECT * FROM folders WHERE type = 'dish' ORDER BY name`;
 
     // ── Recipe sub-data ──
-    const allRecipeIngredients = await sql`SELECT * FROM recipe_ingredients`;
+    const allRecipeIngredients = await sql`SELECT * FROM recipe_ingredients ORDER BY sort_order, id`;
     const allRecipePresets = await sql`SELECT * FROM recipe_presets`;
 
     // ── Dish sub-data ──
@@ -243,10 +243,11 @@ export async function POST(request: NextRequest) {
         INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id)
         VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.notes || null}, ${rec.folder || null})
       `;
-      for (const ri of (rec.ingredients || [])) {
+      for (let idx = 0; idx < (rec.ingredients || []).length; idx++) {
+        const ri = rec.ingredients[idx];
         await sql`
-          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams)
-          VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})
+          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
+          VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
         `;
       }
       for (const pr of (rec.presets || [])) {

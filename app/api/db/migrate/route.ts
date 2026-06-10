@@ -77,10 +77,11 @@ export async function POST() {
         ON CONFLICT (id) DO NOTHING
       `;
 
-      for (const ri of (rec.ingredients || [])) {
+      for (let idx = 0; idx < (rec.ingredients || []).length; idx++) {
+        const ri = rec.ingredients[idx];
         await sql`
-          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams)
-          VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})
+          INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
+          VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
           ON CONFLICT (id) DO NOTHING
         `;
       }
@@ -166,10 +167,11 @@ export async function POST() {
           VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${d.folder || null}, ${deletedAt})
           ON CONFLICT (id) DO NOTHING
         `;
-        for (const ri of (d.ingredients || [])) {
+        for (let idx = 0; idx < (d.ingredients || []).length; idx++) {
+          const ri = d.ingredients[idx];
           await sql`
-            INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams)
-            VALUES (${ri.id}, ${d.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})
+            INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
+            VALUES (${ri.id}, ${d.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
             ON CONFLICT (id) DO NOTHING
           `;
         }

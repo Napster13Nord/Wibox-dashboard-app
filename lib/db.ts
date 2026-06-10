@@ -63,9 +63,17 @@ export async function ensureTables() {
       id              TEXT PRIMARY KEY,
       recipe_id       TEXT NOT NULL,
       ingredient_id   TEXT NOT NULL,
-      quantity_grams  NUMERIC(10,2) NOT NULL DEFAULT 0
+      quantity_grams  NUMERIC(10,2) NOT NULL DEFAULT 0,
+      sort_order      INTEGER NOT NULL DEFAULT 0
     )
   `;
+
+  // Migrate: add sort_order to existing recipe_ingredients tables
+  try {
+    await sql`ALTER TABLE recipe_ingredients ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0`;
+  } catch (err) {
+    // Column already exists or unsupported — safe to ignore
+  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS recipe_presets (

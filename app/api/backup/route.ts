@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
         INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, folder_id)
         VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.hiddenCosts || 0}, ${rec.folder || null})
       `;
-      for (const ri of (rec.ingredients || [])) {
-        await sql`INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams) VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0})`;
+      for (let idx = 0; idx < (rec.ingredients || []).length; idx++) {
+        const ri = rec.ingredients[idx];
+        await sql`INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order) VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})`;
       }
       for (const pr of (rec.presets || [])) {
         await sql`INSERT INTO recipe_presets (id, recipe_id, name, target_weight_grams) VALUES (${pr.id}, ${rec.id}, ${pr.name}, ${pr.targetWeightGrams || 0})`;

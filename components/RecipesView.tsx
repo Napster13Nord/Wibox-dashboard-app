@@ -10,6 +10,7 @@ import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType } from '@/
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
   Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye, Pencil, AlertTriangle,
+  GripVertical,
 } from 'lucide-react';
 import { RecipeDetailModal } from './RecipeDetailModal';
 
@@ -71,6 +72,10 @@ const RecipeModal = ({
   const [editingIngId, setEditingIngId] = useState<string | null>(null);
   const [editingIngQty, setEditingIngQty] = useState<number>(0);
 
+  // Drag-and-drop reordering state
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [dropTargetIdx, setDropTargetIdx] = useState<number | null>(null);
+
   if (!isOpen) return null;
 
   const addIngredient = () => {
@@ -93,6 +98,62 @@ const RecipeModal = ({
       prev.map(ri => ri.id === riId ? { ...ri, quantityInGrams: editingIngQty } : ri)
     );
     setEditingIngId(null);
+  };
+
+  // ── Drag-and-drop handlers ──
+  const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    setDraggedIdx(index);
+    e.dataTransfer.effectAllowed = 'move';
+    // Needed for Firefox
+    e.dataTransfer.setData('text/plain', String(index));
+    // Make the dragged row semi-transparent
+    requestAnimationFrame(() => {
+      (e.target as HTMLElement).style.opacity = '0.4';
+    });
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (draggedIdx === null || draggedIdx === index) {
+      setDropTargetIdx(null);
+      return;
+    }
+    // Calculate whether to place above or below the hovered row
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const midY = rect.top + rect.height / 2;
+    const insertIdx = e.clientY < midY ? index : index + 1;
+    // Don't show indicator at the dragged item's original position
+    if (insertIdx === draggedIdx || insertIdx === draggedIdx + 1) {
+      setDropTargetIdx(null);
+    } else {
+      setDropTargetIdx(insertIdx);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLTableRowElement>) => {
+    e.preventDefault();
+    if (draggedIdx === null || dropTargetIdx === null) {
+      setDraggedIdx(null);
+      setDropTargetIdx(null);
+      return;
+    }
+    setRecipeIngredients(prev => {
+      const next = [...prev];
+      const [moved] = next.splice(draggedIdx, 1);
+      // Adjust target index after removal
+      const adjustedTarget = dropTargetIdx > draggedIdx ? dropTargetIdx - 1 : dropTargetIdx;
+      next.splice(adjustedTarget, 0, moved);
+      return next;
+    });
+    setDraggedIdx(null);
+    setDropTargetIdx(null);
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLTableRowElement>) => {
+    (e.target as HTMLElement).style.opacity = '1';
+    setDraggedIdx(null);
+    setDropTargetIdx(null);
   };
 
   const addPreset = () => {
@@ -244,6 +305,7 @@ const RecipeModal = ({
             <table className="w-full text-left text-sm mb-3">
               <thead>
                 <tr className="text-xs text-gray-500 border-b">
+                  <th className="py-1.5 w-8"></th>
                   <th className="py-1.5 font-medium">{t.recipes.ingredient}</th>
                   <th className="py-1.5 font-medium">{t.recipes.quantity}</th>
                   <th className="py-1.5 font-medium">{t.recipes.cost}</th>
@@ -251,7 +313,7 @@ const RecipeModal = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {recipeIngredients.map(ri => {
+                {recipeIngredients.map((ri, index) => {
                   const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
                   const isUnknown = !ing;
                   const cost = ing
@@ -259,56 +321,87 @@ const RecipeModal = ({
                       ? ing.pricePerKg * ri.quantityInGrams
                       : (ing.pricePerKg / 1000) * ri.quantityInGrams
                     : 0;
+                  const showDropBefore = dropTargetIdx === index;
                   return (
-                    <tr key={ri.id} className={isUnknown ? 'bg-red-50 border-l-2 border-red-400' : ''}>
-                      <td className="py-2 text-sm">
-                        {isUnknown ? (
-                          <span className="flex items-center gap-1.5 text-red-600 font-medium">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            {t.recipes.unknownIngredient}
-                          </span>
-                        ) : (
-                          getTranslatedName(ing)
-                        )}
-                      </td>
-                      <td className="py-2 text-sm">
-                        {editingIngId === ri.id ? (
-                          <div className="flex items-center gap-1">
-                            <input
-                              type="number"
-                              className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              value={editingIngQty}
-                              onChange={e => setEditingIngQty(parseFloat(e.target.value) || 0)}
-                              autoFocus
-                            />
-                            <button onClick={() => saveIngredientQty(ri.id)} className="text-green-600 hover:text-green-800">
-                              <Save className="w-3.5 h-3.5" />
-                            </button>
-                            <button onClick={() => setEditingIngId(null)} className="text-gray-400 hover:text-gray-600">
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <span
-                            className="cursor-pointer hover:text-blue-600 hover:underline"
-                            onClick={() => { setEditingIngId(ri.id); setEditingIngQty(ri.quantityInGrams); }}
-                          >
-                            {ri.quantityInGrams}g
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
-                      <td className="py-2 text-right">
-                        <button onClick={() => removeIngredient(ri.id)} className="text-red-500 hover:text-red-700">
-                          <X className="w-4 h-4 inline" />
-                        </button>
-                      </td>
-                    </tr>
+                    <React.Fragment key={ri.id}>
+                      {showDropBefore && (
+                        <tr aria-hidden>
+                          <td colSpan={5} className="p-0">
+                            <div className="h-0.5 bg-blue-500 rounded-full mx-2" />
+                          </td>
+                        </tr>
+                      )}
+                      <tr
+                        draggable
+                        onDragStart={e => handleDragStart(e, index)}
+                        onDragOver={e => handleDragOver(e, index)}
+                        onDrop={handleDrop}
+                        onDragEnd={handleDragEnd}
+                        className={`${
+                          isUnknown ? 'bg-red-50 border-l-2 border-red-400' : ''
+                        } ${draggedIdx === index ? 'opacity-40' : ''} transition-opacity`}
+                        style={{ cursor: 'grab' }}
+                      >
+                        <td className="py-2 pr-1 text-gray-400 w-8">
+                          <GripVertical className="w-4 h-4" />
+                        </td>
+                        <td className="py-2 text-sm">
+                          {isUnknown ? (
+                            <span className="flex items-center gap-1.5 text-red-600 font-medium">
+                              <AlertTriangle className="w-3.5 h-3.5" />
+                              {t.recipes.unknownIngredient}
+                            </span>
+                          ) : (
+                            getTranslatedName(ing)
+                          )}
+                        </td>
+                        <td className="py-2 text-sm">
+                          {editingIngId === ri.id ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                type="number"
+                                className="w-20 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={editingIngQty}
+                                onChange={e => setEditingIngQty(parseFloat(e.target.value) || 0)}
+                                autoFocus
+                              />
+                              <button onClick={() => saveIngredientQty(ri.id)} className="text-green-600 hover:text-green-800">
+                                <Save className="w-3.5 h-3.5" />
+                              </button>
+                              <button onClick={() => setEditingIngId(null)} className="text-gray-400 hover:text-gray-600">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <span
+                              className="cursor-pointer hover:text-blue-600 hover:underline"
+                              onClick={() => { setEditingIngId(ri.id); setEditingIngQty(ri.quantityInGrams); }}
+                            >
+                              {ri.quantityInGrams}g
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2 text-sm">€{cost.toFixed(2)}</td>
+                        <td className="py-2 text-right">
+                          <button onClick={() => removeIngredient(ri.id)} className="text-red-500 hover:text-red-700">
+                            <X className="w-4 h-4 inline" />
+                          </button>
+                        </td>
+                      </tr>
+                    </React.Fragment>
                   );
                 })}
+                {/* Drop indicator at the end of the list */}
+                {dropTargetIdx === recipeIngredients.length && recipeIngredients.length > 0 && (
+                  <tr aria-hidden>
+                    <td colSpan={5} className="p-0">
+                      <div className="h-0.5 bg-blue-500 rounded-full mx-2" />
+                    </td>
+                  </tr>
+                )}
                 {recipeIngredients.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="py-3 text-center text-gray-400 text-xs italic">
+                    <td colSpan={5} className="py-3 text-center text-gray-400 text-xs italic">
                       {t.recipes.noIngredients}
                     </td>
                   </tr>
