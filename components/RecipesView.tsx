@@ -670,17 +670,22 @@ export const RecipesView = () => {
           const totalWeight = calculateRecipeWeight(recipe);
           const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
           const folderInfo = folders.find(f => f.id === recipe.folder);
+          const hasUnknown = recipe.ingredients.some(ri => !state.ingredients.find(i => i.id === ri.ingredientId));
 
           return (
             <div
               key={recipe.id}
-              className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer group"
+              className={`rounded-xl border shadow-sm hover:shadow-md transition-all cursor-pointer group ${
+                hasUnknown
+                  ? 'bg-red-50 border-red-300 hover:border-red-400'
+                  : 'bg-white border-gray-200 hover:border-blue-200'
+              }`}
               onClick={() => setViewingRecipeId(recipe.id)}
             >
               <div className="p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-lg font-semibold text-gray-900">{getTranslatedName(recipe)}</h3>
+                    <h3 className={`text-lg font-semibold ${hasUnknown ? 'text-red-900' : 'text-gray-900'}`}>{getTranslatedName(recipe)}</h3>
                     {folderInfo && (
                       <span
                         className="text-xs px-2 py-0.5 rounded-full font-medium"
@@ -689,13 +694,19 @@ export const RecipesView = () => {
                         {folderInfo.icon} {getTranslatedName(folderInfo)}
                       </span>
                     )}
+                    {hasUnknown && (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-100 border border-red-200 px-2 py-0.5 rounded-full">
+                        <AlertTriangle className="w-3 h-3" />
+                        {t.recipes.unknownIngredient}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex gap-x-4 gap-y-1 mt-1 text-sm text-gray-500 flex-wrap">
+                  <div className={`flex gap-x-4 gap-y-1 mt-1 text-sm flex-wrap ${hasUnknown ? 'text-red-500' : 'text-gray-500'}`}>
                     <span>Yield: {recipe.yieldPercentage}%</span>
                     <span>Work Time: {recipe.workTimeMinutes} mins</span>
                     <span>Total Weight: {totalWeight.toFixed(0)}g</span>
                     {recipe.notes && (
-                      <span className="text-gray-400 max-w-xs truncate" title={recipe.notes}>
+                      <span className={`max-w-xs truncate ${hasUnknown ? 'text-red-400' : 'text-gray-400'}`} title={recipe.notes}>
                         Notes: {recipe.notes}
                       </span>
                     )}
@@ -708,9 +719,9 @@ export const RecipesView = () => {
                 </div>
                 <div className="flex items-center gap-4 md:gap-6">
                   <div className="text-left md:text-right">
-                    <p className="text-sm text-gray-500">Live Cost</p>
-                    <p className="text-lg font-bold text-blue-600">€{totalCost.toFixed(2)}</p>
-                    <p className="text-xs text-gray-400">€{costPerKg.toFixed(2)} / kg</p>
+                    <p className={`text-sm ${hasUnknown ? 'text-red-500' : 'text-gray-500'}`}>Live Cost</p>
+                    <p className={`text-lg font-bold ${hasUnknown ? 'text-red-600' : 'text-blue-600'}`}>€{totalCost.toFixed(2)}</p>
+                    <p className={`text-xs ${hasUnknown ? 'text-red-400' : 'text-gray-400'}`}>€{costPerKg.toFixed(2)} / kg</p>
                   </div>
                   <div className="flex items-center gap-2 ml-auto md:ml-0">
                     <button
