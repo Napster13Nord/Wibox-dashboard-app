@@ -124,6 +124,8 @@ export const en = {
     icon: 'Icon',
     color: 'Color',
     createFolder: 'Create Folder',
+    unknownIngredient: 'Unknown ingredient — not found in the master list',
+    hasUnknownIngredients: 'This recipe contains ingredients that no longer exist in the master list. Review and replace them.',
   },
 
   // Dishes

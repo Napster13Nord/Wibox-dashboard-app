@@ -120,6 +120,8 @@ export const fi: T = {
     icon: 'Kuvake',
     color: 'Väri',
     createFolder: 'Luo Kansio',
+    unknownIngredient: 'Tuntematon ainesosa — ei löydy pääluettelosta',
+    hasUnknownIngredients: 'Tämä resepti sisältää ainesosia, joita ei enää ole pääluettelossa. Tarkista ja korvaa ne.',
   },
   dishes: {
     title: 'Annosrakentaja & Katteet',

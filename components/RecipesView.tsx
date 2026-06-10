@@ -9,7 +9,7 @@ import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType } from '@/lib/types';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
-  Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye, Pencil,
+  Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye, Pencil, AlertTriangle,
 } from 'lucide-react';
 import { RecipeDetailModal } from './RecipeDetailModal';
 
@@ -212,6 +212,14 @@ const RecipeModal = ({
             />
           )}
 
+          {/* ── Unknown ingredients warning ── */}
+          {recipeIngredients.some(ri => !ingredients.find((i: any) => i.id === ri.ingredientId)) && (
+            <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
+              <p className="text-sm text-red-700 font-medium">{t.recipes.hasUnknownIngredients}</p>
+            </div>
+          )}
+
           {/* ── Live cost summary ── */}
           <div className="flex items-center gap-6 px-4 py-3 bg-blue-50 rounded-lg border border-blue-100">
             <div>
@@ -245,14 +253,24 @@ const RecipeModal = ({
               <tbody className="divide-y divide-gray-100">
                 {recipeIngredients.map(ri => {
                   const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
+                  const isUnknown = !ing;
                   const cost = ing
                     ? ing.priceType === 'perUnit'
                       ? ing.pricePerKg * ri.quantityInGrams
                       : (ing.pricePerKg / 1000) * ri.quantityInGrams
                     : 0;
                   return (
-                    <tr key={ri.id}>
-                      <td className="py-2 text-sm">{ing ? getTranslatedName(ing) : 'Unknown'}</td>
+                    <tr key={ri.id} className={isUnknown ? 'bg-red-50 border-l-2 border-red-400' : ''}>
+                      <td className="py-2 text-sm">
+                        {isUnknown ? (
+                          <span className="flex items-center gap-1.5 text-red-600 font-medium">
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            {t.recipes.unknownIngredient}
+                          </span>
+                        ) : (
+                          getTranslatedName(ing)
+                        )}
+                      </td>
                       <td className="py-2 text-sm">
                         {editingIngId === ri.id ? (
                           <div className="flex items-center gap-1">

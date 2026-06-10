@@ -120,6 +120,8 @@ export const sv: T = {
     icon: 'Ikon',
     color: 'Färg',
     createFolder: 'Skapa Mapp',
+    unknownIngredient: 'Okänd ingrediens — finns inte i huvudlistan',
+    hasUnknownIngredients: 'Detta recept innehåller ingredienser som inte längre finns i huvudlistan. Granska och ersätt dem.',
   },
   dishes: {
     title: 'Rättbyggare & Marginaler',
