@@ -4,7 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
-import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown, Info } from 'lucide-react';
 
 type PriceType = 'perKg' | 'perUnit';
 type SortField = 'name' | 'supplier' | 'lastUpdate';
@@ -106,6 +106,7 @@ export const IngredientsView = () => {
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [search, setSearch] = useState('');
+  const [showInstructions, setShowInstructions] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -220,6 +221,37 @@ export const IngredientsView = () => {
           {t.ingredients.addIngredient}
         </button>
       </div>
+
+      {/* ── Instructions panel ── */}
+      {showInstructions && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <Info className="w-4.5 h-4.5 text-blue-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-semibold text-blue-900 mb-2">{t.ingredients.instructionTitle}</h3>
+              <ul className="text-sm text-blue-800 space-y-2">
+                <li>
+                  <strong>{t.ingredients.instructionGenericName}:</strong>{' '}
+                  {t.ingredients.instructionGenericDesc}
+                </li>
+                <li>
+                  <strong>{t.ingredients.instructionSupplierName}:</strong>{' '}
+                  {t.ingredients.instructionSupplierDesc}
+                </li>
+              </ul>
+              <p className="text-xs text-blue-500 mt-2">💡 {t.ingredients.instructionNote}</p>
+            </div>
+            <button
+              onClick={() => setShowInstructions(false)}
+              className="p-1.5 text-blue-400 hover:text-blue-600 hover:bg-blue-100 rounded-lg transition-colors shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Search box ── */}
       <div className="relative max-w-sm">

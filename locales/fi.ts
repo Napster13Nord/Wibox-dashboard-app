@@ -53,6 +53,12 @@ export const fi: T = {
     deleteMsg: 'Haluatko varmasti poistaa',
     deleteConfirm: 'Siirrä Roskakoriin',
     trashNote: 'Se siirretään roskakoriin, josta voit palauttaa sen.',
+    instructionTitle: 'Kuinka lisätä ainesosia oikein',
+    instructionGenericName: 'Yleinen tuotenimi',
+    instructionGenericDesc: 'Syötä ainesosan yleisnimi (esim. Sokeri, Maissitärkkelys, Voi). Tämä nimi tulee kääntää kaikille tuetuille kielille (esim. Sugar / Sokeri / Socker).',
+    instructionSupplierName: 'Toimittajan tuotenimi',
+    instructionSupplierDesc: 'Syötä Toimittaja-kenttään toimittajalta ostamasi tuotteen tarkka nimi (esim. yleisnimi "Maissitärkkelys" → toimittajan tuote "Metro Maissitärkkelys 2kg").',
+    instructionNote: 'Tämä erottelu on tärkeä: yleisnimeä käytetään resepteissä ja käännöksissä, kun taas toimittajan nimi yksilöi tarkan ostamasi tuotteen hintaseurantaa varten.',
   },
   recipes: {
     title: 'Vakioreseptit',

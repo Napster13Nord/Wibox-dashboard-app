@@ -53,6 +53,12 @@ export const sv: T = {
     deleteMsg: 'Är du säker att du vill ta bort',
     deleteConfirm: 'Flytta till Papperskorgen',
     trashNote: 'Den flyttas till papperskorgen där du kan återställa den.',
+    instructionTitle: 'Hur man lägger till ingredienser korrekt',
+    instructionGenericName: 'Allmänt produktnamn',
+    instructionGenericDesc: 'Ange det generiska ingrediensnamnet (t.ex. Socker, Majsstärkelse, Smör). Detta namn ska översättas till alla stödda språk (t.ex. Sugar / Sokeri / Socker).',
+    instructionSupplierName: 'Leverantörens produktnamn',
+    instructionSupplierDesc: 'I Leverantör-fältet, ange det exakta produktnamnet från din leverantör (t.ex. generiskt namn "Majsstärkelse" → leverantörens produkt "Metro Maissitärkkelys 2kg").',
+    instructionNote: 'Denna uppdelning är viktig: det generiska namnet används i recept och översättningar, medan leverantörsnamnet identifierar den exakta produkten du köper för prisspårning.',
   },
   recipes: {
     title: 'Standardrecept',

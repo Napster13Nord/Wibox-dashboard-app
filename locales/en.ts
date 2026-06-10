@@ -55,6 +55,12 @@ export const en = {
     deleteMsg: 'Are you sure you want to delete',
     deleteConfirm: 'Move to Trash',
     trashNote: 'It will be moved to the trash where you can recover it later.',
+    instructionTitle: 'How to add ingredients correctly',
+    instructionGenericName: 'General Product Name',
+    instructionGenericDesc: 'Enter the generic ingredient name (e.g. Sugar, Cornstarch, Butter). This name should be translated into all supported languages (e.g. Sugar / Sokeri / Socker).',
+    instructionSupplierName: 'Supplier Product Name',
+    instructionSupplierDesc: 'In the Supplier field, enter the exact product name from your supplier (e.g. for generic name "Cornstarch" → supplier product "Metro Maissitärkkelys 2kg").',
+    instructionNote: 'This separation is important: the generic name is used in recipes and translations, while the supplier name identifies the exact product you purchase for price tracking.',
   },
 
   // Recipes
