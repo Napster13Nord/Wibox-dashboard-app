@@ -111,29 +111,6 @@ export async function saveTranslations(
 }
 
 /**
- * Loads all translations for a given entity type.
- * Returns a map: { entityId: { en: '...', sv: '...', fi: '...' } }
- */
-export async function loadTranslations(
-  sql: ReturnType<typeof import('@/lib/db').getSQL>,
-  entityType: string
-): Promise<Record<string, Record<string, string>>> {
-  const rows = await sql`
-    SELECT entity_id, lang, name
-    FROM translations
-    WHERE entity_type = ${entityType}
-  `;
-
-  const result: Record<string, Record<string, string>> = {};
-  for (const row of rows) {
-    const id = row.entity_id as string;
-    if (!result[id]) result[id] = {};
-    result[id][row.lang as string] = row.name as string;
-  }
-  return result;
-}
-
-/**
  * Translates a name and saves the results to the DB.
  * Fire-and-forget wrapper for use in POST/PATCH handlers.
  */

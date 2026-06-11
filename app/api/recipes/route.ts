@@ -1,43 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
-import { translateAndSave, loadTranslations } from '@/lib/translate';
+import { translateAndSave } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/recipes — list all active recipes with nested ingredients, presets & translations */
-export async function GET() {
-  try {
-    const sql = getSQL();
-    const rows = await sql`SELECT * FROM recipes WHERE deleted_at IS NULL ORDER BY name`;
-    const allRI = await sql`SELECT * FROM recipe_ingredients ORDER BY sort_order, id`;
-    const allRP = await sql`SELECT * FROM recipe_presets`;
-
-    // Load translations for all recipes
-    const translationMap = await loadTranslations(sql, 'recipe');
-
-    const recipes = rows.map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      yieldPercentage: Number(r.yield_percentage),
-      workTimeMinutes: Number(r.work_time_min),
-      hiddenCosts: Number(r.hidden_costs) || 0,
-      folder: r.folder_id || '',
-      ingredients: allRI.filter((ri: any) => ri.recipe_id === r.id).map((ri: any) => ({
-        id: ri.id, ingredientId: ri.ingredient_id, quantityInGrams: Number(ri.quantity_grams),
-      })),
-      presets: allRP.filter((p: any) => p.recipe_id === r.id).map((p: any) => ({
-        id: p.id, name: p.name, targetWeightGrams: Number(p.target_weight_grams),
-      })),
-      translations: translationMap[r.id] || {},
-    }));
-
-    return NextResponse.json(recipes, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
-  } catch (err) {
-    console.error('[Wibox API] GET /api/recipes error:', err);
-    return NextResponse.json([], { status: 500 });
-  }
-}
+// NOTE: reads happen via GET /api/state (assembled from all tables). This route
+// only exposes the granular writes used by the client (POST/PATCH/DELETE).
 
 /** POST /api/recipes — create recipe with nested ingredients, presets & auto-translate */
 export async function POST(request: NextRequest) {

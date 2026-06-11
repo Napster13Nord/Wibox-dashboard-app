@@ -1,37 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
-import { translateAndSave, loadTranslations } from '@/lib/translate';
+import { translateAndSave } from '@/lib/translate';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/ingredients — list all active ingredients with translations */
-export async function GET() {
-  try {
-    const sql = getSQL();
-    const rows = await sql`SELECT * FROM ingredients WHERE deleted_at IS NULL ORDER BY name`;
-
-    // Load translations for all ingredients
-    const translationMap = await loadTranslations(sql, 'ingredient');
-
-    const ingredients = rows.map((r: any) => ({
-      id: r.id,
-      name: r.name,
-      pricePerKg: Number(r.price_per_kg),
-      priceType: r.price_type,
-      supplier: r.supplier || '',
-      lastUpdate: r.updated_at ? new Date(r.updated_at).toISOString().split('T')[0] : '',
-      lemonsoftId: r.lemonsoft_id || undefined,
-      translations: translationMap[r.id] || {},
-    }));
-    return NextResponse.json(ingredients, {
-      headers: { 'Cache-Control': 'no-store, max-age=0' },
-    });
-  } catch (err) {
-    console.error('[Wibox API] GET /api/ingredients error:', err);
-    return NextResponse.json([], { status: 500 });
-  }
-}
+// NOTE: reads happen via GET /api/state (assembled from all tables). This route
+// only exposes the granular writes used by the client (POST/PATCH/DELETE).
 
 /** POST /api/ingredients — create a new ingredient + auto-translate */
 export async function POST(request: NextRequest) {

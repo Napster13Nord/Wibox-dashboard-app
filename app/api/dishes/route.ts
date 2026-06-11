@@ -1,45 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
-import { translateAndSave, loadTranslations } from '@/lib/translate';
+import { translateAndSave } from '@/lib/translate';
 import { DEFAULT_VAT_RATE } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
-/** GET /api/dishes — list all active dishes with nested recipes, direct ingredients & translations */
-export async function GET() {
-  try {
-    const sql = getSQL();
-    const rows = await sql`SELECT * FROM dishes WHERE deleted_at IS NULL ORDER BY name`;
-    const allDR = await sql`SELECT * FROM dish_recipes`;
-    const allDI = await sql`SELECT * FROM dish_ingredients`;
-
-    // Load translations for all dishes
-    const translationMap = await loadTranslations(sql, 'dish');
-
-    const dishes = rows.map((d: any) => ({
-      id: d.id,
-      name: d.name,
-      sellingPrice: Number(d.selling_price),
-      portions: Number(d.portions),
-      priceIncludesVat: d.price_includes_vat,
-      vatRate: Number(d.vat_rate),
-      folder: d.folder_id || '',
-      recipes: allDR.filter((dr: any) => dr.dish_id === d.id).map((dr: any) => ({
-        id: dr.id, recipeId: dr.recipe_id, quantityInGrams: Number(dr.quantity_grams),
-      })),
-      directIngredients: allDI.filter((di: any) => di.dish_id === d.id).map((di: any) => ({
-        id: di.id, ingredientId: di.ingredient_id, quantity: Number(di.quantity),
-      })),
-      translations: translationMap[d.id] || {},
-    }));
-
-    return NextResponse.json(dishes, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
-  } catch (err) {
-    console.error('[Wibox API] GET /api/dishes error:', err);
-    return NextResponse.json([], { status: 500 });
-  }
-}
+// NOTE: reads happen via GET /api/state (assembled from all tables). This route
+// only exposes the granular writes used by the client (POST/PATCH/DELETE).
 
 /** POST /api/dishes — create dish with nested recipe refs, direct ingredients & auto-translate */
 export async function POST(request: NextRequest) {
