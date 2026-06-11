@@ -38,6 +38,11 @@ type AppContextType = {
 
   undo: () => void;
   canUndo: boolean;
+
+  // ── Server sync status ──
+  syncError: boolean;       // true when a write to the server failed
+  isSyncing: boolean;       // true while a manual re-sync is in flight
+  retrySync: () => void;    // push the full local state to the server again
 };
 
 const defaultState: AppState = {
@@ -75,43 +80,38 @@ const migrateState = (raw: any): AppState => ({
   trash: raw.trash || [],
 });
 
-// ── API helpers — fire-and-forget with error logging ──
+// ── API helpers — async, throw on failure so callers can surface it ──
 
-function apiPost(url: string, body: any) {
-  fetch(url, {
+async function apiPost(url: string, body: any) {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }).catch(err => console.error(`[Wibox] POST ${url} failed:`, err));
+  });
+  if (!res.ok) throw new Error(`POST ${url} failed (${res.status})`);
 }
 
-function apiPatch(url: string, body: any) {
-  fetch(url, {
+async function apiPatch(url: string, body: any) {
+  const res = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  }).catch(err => console.error(`[Wibox] PATCH ${url} failed:`, err));
+  });
+  if (!res.ok) throw new Error(`PATCH ${url} failed (${res.status})`);
 }
 
-function apiDelete(url: string) {
-  fetch(url, { method: 'DELETE' })
-    .catch(err => console.error(`[Wibox] DELETE ${url} failed:`, err));
+async function apiDelete(url: string) {
+  const res = await fetch(url, { method: 'DELETE' });
+  if (!res.ok) throw new Error(`DELETE ${url} failed (${res.status})`);
 }
 
-function apiPatchTranslation(entityType: string, entityId: string, translations: Record<string, string>) {
-  fetch('/api/translate', {
+async function apiPatchTranslation(entityType: string, entityId: string, translations: Record<string, string>) {
+  const res = await fetch('/api/translate', {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ entityType, entityId, translations }),
-  })
-    .then(res => {
-      if (!res.ok) {
-        console.error(`[Wibox] PATCH /api/translate returned ${res.status}`);
-      } else {
-        console.log(`[Wibox] PATCH /api/translate OK for ${entityType}/${entityId}`);
-      }
-    })
-    .catch(err => console.error(`[Wibox] PATCH /api/translate failed:`, err));
+  });
+  if (!res.ok) throw new Error(`PATCH /api/translate failed (${res.status})`);
 }
 
 /** Read the current dashboard locale from localStorage */
@@ -150,12 +150,13 @@ async function autoTranslateEntity(
   return null;
 }
 
-function syncFullState(data: AppState) {
-  fetch('/api/state', {
+async function syncFullState(data: AppState) {
+  const res = await fetch('/api/state', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
-  }).catch(err => console.error('[Wibox] Full state sync failed:', err));
+  });
+  if (!res.ok) throw new Error(`Full state sync failed (${res.status})`);
 }
 
 function saveToLocalStorage(data: AppState) {
@@ -174,6 +175,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, setState] = useState<AppState>(defaultState);
   const [isLoaded, setIsLoaded] = useState(false);
   const [history, setHistory] = useState<AppState[]>([]);
+  const [syncError, setSyncError] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  // Watch a critical save promise; flag a visible sync error if it rejects.
+  const track = (p: Promise<unknown> | void) => {
+    if (!p || typeof (p as Promise<unknown>).then !== 'function') return;
+    (p as Promise<unknown>).catch((err: unknown) => {
+      console.error('[Wibox] save to server failed:', err);
+      setSyncError(true);
+    });
+  };
 
   // A ref that always holds the latest state — used so doUpdate can
   // read the current state synchronously without stale closures.
@@ -239,8 +251,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   // ── Core update helper — computes new state, persists it, then sets it ──
-  // apiAction: optional callback for the granular API call
-  const doUpdate = (updater: (prev: AppState) => AppState, apiAction?: () => void) => {
+  // apiAction: optional callback for the granular API call. If it returns a
+  // promise, we track it so a failed server write surfaces a visible error.
+  const doUpdate = (updater: (prev: AppState) => AppState, apiAction?: () => Promise<unknown> | void) => {
     // Read current state from ref (always fresh, no stale closures)
     const prev = stateRef.current;
 
@@ -263,9 +276,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Save to localStorage immediately (for undo/offline resilience)
     saveToLocalStorage(next);
 
-    // Fire the granular API call (non-blocking)
+    // Fire the granular API call (non-blocking) and track its outcome
     if (apiAction) {
-      apiAction();
+      track(apiAction());
     }
   };
 
@@ -279,12 +292,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState(last);
       saveToLocalStorage(last);
       // Full state sync for undo — ensures DB matches
-      syncFullState(last);
+      track(syncFullState(last));
       return next;
     });
   };
 
   const canUndo = history.length > 0;
+
+  // ── Manual re-sync: push the whole local state to the server again ──
+  // Used to recover after a failed write — local state is the source of truth.
+  const retrySync = () => {
+    setIsSyncing(true);
+    syncFullState(stateRef.current)
+      .then(() => setSyncError(false))
+      .catch((err: unknown) => console.error('[Wibox] manual re-sync failed:', err))
+      .finally(() => setIsSyncing(false));
+  };
 
   // ── Ingredients ──
   const addIngredient = (ingredient: Ingredient) => {
@@ -292,8 +315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     doUpdate(
       s => ({ ...s, ingredients: [...s.ingredients, ingredient] }),
       () => {
-        apiPost('/api/ingredients', { ...ingredient, sourceLang });
-        // Auto-translate and feed results back to state
+        // Auto-translate is best-effort and feeds results back to state (not tracked)
         autoTranslateEntity('ingredient', ingredient.id, ingredient.name, sourceLang)
           .then(translations => {
             if (translations) {
@@ -310,6 +332,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               saveToLocalStorage(updated);
             }
           });
+        return apiPost('/api/ingredients', { ...ingredient, sourceLang });
       },
     );
   };
@@ -349,8 +372,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     doUpdate(
       s => ({ ...s, recipes: [...s.recipes, recipe] }),
       () => {
-        apiPost('/api/recipes', { ...recipe, sourceLang });
-        // Auto-translate and feed results back to state
+        // Auto-translate is best-effort and feeds results back to state (not tracked)
         autoTranslateEntity('recipe', recipe.id, recipe.name, sourceLang)
           .then(translations => {
             if (translations) {
@@ -366,6 +388,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               saveToLocalStorage(updated);
             }
           });
+        return apiPost('/api/recipes', { ...recipe, sourceLang });
       },
     );
   };
@@ -405,8 +428,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     doUpdate(
       s => ({ ...s, dishes: [...s.dishes, dish] }),
       () => {
-        apiPost('/api/dishes', { ...dish, sourceLang });
-        // Auto-translate and feed results back to state
+        // Auto-translate is best-effort and feeds results back to state (not tracked)
         autoTranslateEntity('dish', dish.id, dish.name, sourceLang)
           .then(translations => {
             if (translations) {
@@ -422,6 +444,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               saveToLocalStorage(updated);
             }
           });
+        return apiPost('/api/dishes', { ...dish, sourceLang });
       },
     );
   };
@@ -462,8 +485,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     doUpdate(
       s => ({ ...s, [key]: [...(s[key] || []), folder] }),
       () => {
-        apiPost('/api/folders', { type, sourceLang, ...folder });
-        // Auto-translate folder name
+        // Auto-translate folder name (best-effort, not tracked)
         autoTranslateEntity('folder', folder.id, folder.name, sourceLang)
           .then(translations => {
             if (translations) {
@@ -479,6 +501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               saveToLocalStorage(updated);
             }
           });
+        return apiPost('/api/folders', { type, sourceLang, ...folder });
       },
     );
   };
@@ -496,8 +519,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
       }),
       () => {
-        apiPatch('/api/folders', { id, sourceLang, ...folder });
-        // Re-translate if name changed
+        // Re-translate if name changed (best-effort, not tracked)
         if (nameChanged && folder.name) {
           autoTranslateEntity('folder', id, folder.name, sourceLang)
             .then(translations => {
@@ -515,6 +537,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
             });
         }
+        return apiPatch('/api/folders', { id, sourceLang, ...folder });
       },
     );
   };
@@ -560,7 +583,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           // Item was just restored, check previous state
           history[history.length - 1]?.trash.find(t => t.id === id);
         if (trashItem) {
-          apiPost('/api/trash', {
+          return apiPost('/api/trash', {
             entityType: trashItem.originalType,
             entityId: trashItem.data.id,
           });
@@ -575,7 +598,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       s => ({ ...s, trash: s.trash.filter(t => t.id !== id) }),
       () => {
         if (trashItem) {
-          apiDelete(`/api/trash?entityType=${trashItem.originalType}&entityId=${trashItem.data.id}`);
+          return apiDelete(`/api/trash?entityType=${trashItem.originalType}&entityId=${trashItem.data.id}`);
         }
       },
     );
@@ -627,6 +650,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       restoreFromTrash, permanentlyDelete, emptyTrash,
       updateTranslations,
       undo, canUndo,
+      syncError, isSyncing, retrySync,
     }}>
       {children}
     </AppContext.Provider>

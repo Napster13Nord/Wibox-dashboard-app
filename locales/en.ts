@@ -317,5 +317,8 @@ export const en = {
     ingredient: 'Ingredient',
     recipe: 'Recipe',
     dish: 'Dish',
+    syncFailed: 'Some changes may not have been saved to the server.',
+    retry: 'Retry',
+    retrying: 'Saving…',
   },
 };

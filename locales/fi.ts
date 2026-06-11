@@ -301,5 +301,8 @@ export const fi: T = {
     ingredient: 'Ainesosa',
     recipe: 'Resepti',
     dish: 'Annos',
+    syncFailed: 'Joitakin muutoksia ei ehkä tallennettu palvelimelle.',
+    retry: 'Yritä uudelleen',
+    retrying: 'Tallennetaan…',
   },
 };

@@ -10,6 +10,7 @@ import { KitchenView } from '@/components/KitchenView';
 import { TrashView } from '@/components/TrashView';
 import { ReportsView } from '@/components/ReportsView';
 import { LabelsView } from '@/components/LabelsView';
+import { SyncStatusBanner } from '@/components/SyncStatusBanner';
 import { useI18n } from '@/lib/i18n';
 import { useRole } from '@/hooks/useRole';
 import { Menu } from 'lucide-react';
@@ -91,6 +92,9 @@ export default function Home() {
         {activeTab === 'kitchen' && <KitchenView />}
         {activeTab === 'trash' && isManager && <TrashView />}
       </main>
+
+      {/* Global server-sync error banner (all roles) */}
+      <SyncStatusBanner />
     </div>
   );
 }

@@ -301,5 +301,8 @@ export const sv: T = {
     ingredient: 'Ingrediens',
     recipe: 'Recept',
     dish: 'Rätt',
+    syncFailed: 'Vissa ändringar kanske inte sparades på servern.',
+    retry: 'Försök igen',
+    retrying: 'Sparar…',
   },
 };
