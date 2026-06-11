@@ -206,158 +206,131 @@ export async function POST(request: NextRequest) {
     const sql = getSQL();
     await ensureTables();
 
-    // Clear all tables (child tables first)
-    await sql`DELETE FROM translations`;
-    await sql`DELETE FROM dish_ingredients`;
-    await sql`DELETE FROM dish_recipes`;
-    await sql`DELETE FROM recipe_presets`;
-    await sql`DELETE FROM recipe_ingredients`;
-    await sql`DELETE FROM dishes`;
-    await sql`DELETE FROM recipes`;
-    await sql`DELETE FROM ingredients`;
-    await sql`DELETE FROM folders`;
+    // Build every statement up front, then run them as ONE atomic transaction.
+    // neon-http transactions are non-interactive (no reads between writes), which
+    // is fine here: this is a blind wipe-and-reinsert. If any statement fails the
+    // whole batch rolls back, so the existing data is never left half-deleted.
+    const queries: ReturnType<typeof sql>[] = [];
 
-    // Re-insert ingredients
+    const pushTranslations = (
+      entityType: string,
+      entityId: string,
+      translations: Record<string, string> | undefined,
+    ) => {
+      if (!translations) return;
+      for (const [lang, name] of Object.entries(translations)) {
+        if (name) {
+          queries.push(sql`
+            INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
+            VALUES (${entityType}, ${entityId}, ${lang}, ${name as string}, now())
+            ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
+          `);
+        }
+      }
+    };
+
+    // ── Clear all tables (child tables first) ──
+    queries.push(sql`DELETE FROM translations`);
+    queries.push(sql`DELETE FROM dish_ingredients`);
+    queries.push(sql`DELETE FROM dish_recipes`);
+    queries.push(sql`DELETE FROM recipe_presets`);
+    queries.push(sql`DELETE FROM recipe_ingredients`);
+    queries.push(sql`DELETE FROM dishes`);
+    queries.push(sql`DELETE FROM recipes`);
+    queries.push(sql`DELETE FROM ingredients`);
+    queries.push(sql`DELETE FROM folders`);
+
+    // ── Ingredients ──
     for (const ing of (data.ingredients || [])) {
-      await sql`
+      queries.push(sql`
         INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
         VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.lastUpdate ? new Date(ing.lastUpdate).toISOString() : new Date().toISOString()})
-      `;
-      // Re-insert translations if available
-      if (ing.translations) {
-        for (const [lang, name] of Object.entries(ing.translations)) {
-          if (name) {
-            await sql`
-              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
-              VALUES ('ingredient', ${ing.id}, ${lang}, ${name as string}, now())
-              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
-            `;
-          }
-        }
-      }
+      `);
+      pushTranslations('ingredient', ing.id, ing.translations);
     }
 
-    // Re-insert recipes
+    // ── Recipes ──
     for (const rec of (data.recipes || [])) {
-      await sql`
+      queries.push(sql`
         INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id)
         VALUES (${rec.id}, ${rec.name}, ${rec.yieldPercentage || 100}, ${rec.workTimeMinutes || 0}, ${rec.notes || null}, ${rec.folder || null})
-      `;
+      `);
       for (let idx = 0; idx < (rec.ingredients || []).length; idx++) {
         const ri = rec.ingredients[idx];
-        await sql`
+        queries.push(sql`
           INSERT INTO recipe_ingredients (id, recipe_id, ingredient_id, quantity_grams, sort_order)
           VALUES (${ri.id}, ${rec.id}, ${ri.ingredientId}, ${ri.quantityInGrams || 0}, ${idx})
-        `;
+        `);
       }
       for (const pr of (rec.presets || [])) {
-        await sql`
+        queries.push(sql`
           INSERT INTO recipe_presets (id, recipe_id, name, target_weight_grams)
           VALUES (${pr.id}, ${rec.id}, ${pr.name}, ${pr.targetWeightGrams || 0})
-        `;
+        `);
       }
-      // Re-insert translations if available
-      if (rec.translations) {
-        for (const [lang, name] of Object.entries(rec.translations)) {
-          if (name) {
-            await sql`
-              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
-              VALUES ('recipe', ${rec.id}, ${lang}, ${name as string}, now())
-              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
-            `;
-          }
-        }
-      }
+      pushTranslations('recipe', rec.id, rec.translations);
     }
 
-    // Re-insert dishes
+    // ── Dishes ──
     for (const dish of (data.dishes || [])) {
-      await sql`
+      queries.push(sql`
         INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id)
         VALUES (${dish.id}, ${dish.name}, ${dish.sellingPrice || 0}, ${dish.portions || 1}, ${dish.priceIncludesVat || false}, ${dish.vatRate ?? 14}, ${dish.folder || null})
-      `;
+      `);
       for (const dr of (dish.recipes || [])) {
-        await sql`
+        queries.push(sql`
           INSERT INTO dish_recipes (id, dish_id, recipe_id, quantity_grams)
           VALUES (${dr.id}, ${dish.id}, ${dr.recipeId}, ${dr.quantityInGrams || 0})
-        `;
+        `);
       }
       for (const di of (dish.directIngredients || [])) {
-        await sql`
+        queries.push(sql`
           INSERT INTO dish_ingredients (id, dish_id, ingredient_id, quantity)
           VALUES (${di.id}, ${dish.id}, ${di.ingredientId}, ${di.quantity || 0})
-        `;
+        `);
       }
-      // Re-insert translations if available
-      if (dish.translations) {
-        for (const [lang, name] of Object.entries(dish.translations)) {
-          if (name) {
-            await sql`
-              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
-              VALUES ('dish', ${dish.id}, ${lang}, ${name as string}, now())
-              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
-            `;
-          }
-        }
-      }
+      pushTranslations('dish', dish.id, dish.translations);
     }
 
-    // Re-insert folders
+    // ── Folders ──
     for (const f of (data.recipeFolders || [])) {
-      await sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'recipe', ${f.name}, ${f.color}, ${f.icon})`;
-      if (f.translations) {
-        for (const [lang, name] of Object.entries(f.translations)) {
-          if (name) {
-            await sql`
-              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
-              VALUES ('folder', ${f.id}, ${lang}, ${name as string}, now())
-              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
-            `;
-          }
-        }
-      }
+      queries.push(sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'recipe', ${f.name}, ${f.color}, ${f.icon})`);
+      pushTranslations('folder', f.id, f.translations);
     }
     for (const f of (data.dishFolders || [])) {
-      await sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'dish', ${f.name}, ${f.color}, ${f.icon})`;
-      if (f.translations) {
-        for (const [lang, name] of Object.entries(f.translations)) {
-          if (name) {
-            await sql`
-              INSERT INTO translations (entity_type, entity_id, lang, name, updated_at)
-              VALUES ('folder', ${f.id}, ${lang}, ${name as string}, now())
-              ON CONFLICT (entity_type, entity_id, lang) DO UPDATE SET name = ${name as string}, updated_at = now()
-            `;
-          }
-        }
-      }
+      queries.push(sql`INSERT INTO folders (id, type, name, color, icon) VALUES (${f.id}, 'dish', ${f.name}, ${f.color}, ${f.icon})`);
+      pushTranslations('folder', f.id, f.translations);
     }
 
-    // Re-insert trash as soft-deleted items
+    // ── Trash (soft-deleted rows) ──
     for (const t of (data.trash || [])) {
       const d = t.data;
       const deletedAt = t.deletedAt || new Date().toISOString();
       if (t.originalType === 'ingredient' && d) {
-        await sql`
+        queries.push(sql`
           INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${deletedAt})
           ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}
-        `;
+        `);
       } else if (t.originalType === 'recipe' && d) {
-        await sql`
+        queries.push(sql`
           INSERT INTO recipes (id, name, yield_percentage, work_time_min, notes, folder_id, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.notes || null}, ${d.folder || null}, ${deletedAt})
           ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}
-        `;
+        `);
       } else if (t.originalType === 'dish' && d) {
-        await sql`
+        queries.push(sql`
           INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? 14}, ${d.folder || null}, ${deletedAt})
           ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}
-        `;
+        `);
       }
     }
 
-    console.log('[Wibox API] Full state synced to normalized tables');
+    // Run the whole batch atomically — all or nothing.
+    await sql.transaction(queries);
+
+    console.log(`[Wibox API] Full state synced atomically (${queries.length} statements)`);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST /api/state error:', err);
