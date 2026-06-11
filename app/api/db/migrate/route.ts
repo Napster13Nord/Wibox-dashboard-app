@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { DEFAULT_VAT_RATE } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,7 +108,7 @@ export async function POST() {
           ${dish.sellingPrice || 0},
           ${dish.portions || 1},
           ${dish.priceIncludesVat || false},
-          ${dish.vatRate ?? 14},
+          ${dish.vatRate ?? DEFAULT_VAT_RATE},
           ${dish.folder || null}
         )
         ON CONFLICT (id) DO NOTHING
@@ -178,7 +179,7 @@ export async function POST() {
       } else if (t.originalType === 'dish' && d) {
         await sql`
           INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id, deleted_at)
-          VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? 14}, ${d.folder || null}, ${deletedAt})
+          VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? DEFAULT_VAT_RATE}, ${d.folder || null}, ${deletedAt})
           ON CONFLICT (id) DO NOTHING
         `;
       }

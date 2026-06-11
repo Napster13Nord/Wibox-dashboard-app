@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
 import { translateAndSave, loadTranslations } from '@/lib/translate';
+import { DEFAULT_VAT_RATE } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
 
     await sql`
       INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id)
-      VALUES (${dish.id}, ${dish.name}, ${dish.sellingPrice || 0}, ${dish.portions || 1}, ${dish.priceIncludesVat || false}, ${dish.vatRate ?? 14}, ${dish.folder || null})
+      VALUES (${dish.id}, ${dish.name}, ${dish.sellingPrice || 0}, ${dish.portions || 1}, ${dish.priceIncludesVat || false}, ${dish.vatRate ?? DEFAULT_VAT_RATE}, ${dish.folder || null})
     `;
 
     for (const dr of (dish.recipes || [])) {

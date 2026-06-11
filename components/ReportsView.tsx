@@ -5,6 +5,7 @@ import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { calculateDishMetrics, calculateDishCost } from '@/lib/calculations';
+import { DEFAULT_VAT_RATE } from '@/lib/constants';
 import { Dish } from '@/lib/types';
 import {
   TrendingUp, TrendingDown, AlertTriangle, Lightbulb, ChevronDown, ChevronUp,
@@ -392,8 +393,8 @@ export const ReportsView: React.FC = () => {
                               <div className="bg-white rounded-xl p-4 border border-gray-100">
                                 <p className="text-gray-400 font-semibold uppercase tracking-wider mb-2">Pricing</p>
                                 <p className="text-gray-600">Sell (excl. VAT): <b className="text-gray-900">{fmt(d.dish.sellingPrice || 0)}</b></p>
-                                <p className="text-gray-600">VAT rate: <b className="text-gray-900">{d.dish.vatRate ?? 13.5}%</b></p>
-                                <p className="text-gray-600">Sell (incl. VAT): <b className="text-gray-900">{fmt((d.dish.sellingPrice || 0) * (1 + (d.dish.vatRate ?? 13.5) / 100))}</b></p>
+                                <p className="text-gray-600">VAT rate: <b className="text-gray-900">{d.dish.vatRate ?? DEFAULT_VAT_RATE}%</b></p>
+                                <p className="text-gray-600">Sell (incl. VAT): <b className="text-gray-900">{fmt((d.dish.sellingPrice || 0) * (1 + (d.dish.vatRate ?? DEFAULT_VAT_RATE) / 100))}</b></p>
                               </div>
                               <div className="bg-white rounded-xl p-4 border border-gray-100">
                                 <p className="text-gray-400 font-semibold uppercase tracking-wider mb-2">Target Pricing</p>

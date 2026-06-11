@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Ingredient, Recipe, Dish, Folder, TrashedItem } from './types';
 import { newId } from './utils';
+import { DEFAULT_VAT_RATE } from './constants';
 
 type AppState = {
   ingredients: Ingredient[];
@@ -73,7 +74,7 @@ const migrateState = (raw: any): AppState => ({
     portions: 1,
     priceIncludesVat: false,
     folder: '',
-    vatRate: 13.5,
+    vatRate: DEFAULT_VAT_RATE,
     ...d,
   })),
   recipeFolders: raw.recipeFolders || [],

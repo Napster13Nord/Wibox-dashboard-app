@@ -5,6 +5,7 @@ import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { Folder as FolderType } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { newId } from '@/lib/utils';
+import { DEFAULT_VAT_RATE } from '@/lib/constants';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
@@ -490,7 +491,7 @@ const DishModal = ({
   const [sellingPrice, setSellingPrice] = useState(initialData?.sellingPrice ?? 0);
   const [portions, setPortions] = useState(initialData?.portions ?? 1);
   const [folder, setFolder] = useState(initialData?.folder || defaultFolder || '');
-  const [vatRate, setVatRate] = useState(initialData?.vatRate ?? 13.5);
+  const [vatRate, setVatRate] = useState(initialData?.vatRate ?? DEFAULT_VAT_RATE);
 
   // Recipe components
   const [dishRecipes, setDishRecipes] = useState<any[]>(initialData?.recipes || []);
@@ -1031,7 +1032,7 @@ export const DishesView = () => {
       portions: data.portions || 1,
       priceIncludesVat: data.priceIncludesVat || false,
       folder: data.folder || (activeFolder !== null && activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''),
-      vatRate: data.vatRate ?? 13.5,
+      vatRate: data.vatRate ?? DEFAULT_VAT_RATE,
     });
     setIsAdding(false);
   };
@@ -1045,7 +1046,7 @@ export const DishesView = () => {
       sellingPrice: data.sellingPrice || 0,
       portions: data.portions || 1,
       folder: data.folder || '',
-      vatRate: data.vatRate ?? 13.5,
+      vatRate: data.vatRate ?? DEFAULT_VAT_RATE,
     });
     setEditingDish(null);
   };
@@ -1349,7 +1350,7 @@ export const DishesView = () => {
 
         {filteredDishes.map((dish) => {
           const isExpanded = expandedId === dish.id;
-          const vatRate = dish.vatRate ?? 13.5;
+          const vatRate = dish.vatRate ?? DEFAULT_VAT_RATE;
           const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
           const isProfitable = metrics.foodCostPercentage <= 30;
           const folderInfo = folders.find(f => f.id === dish.folder);
@@ -1617,7 +1618,7 @@ export const DishesView = () => {
       {(() => {
         const dish = expandedId ? state.dishes.find(d => d.id === expandedId) : null;
         if (!dish) return null;
-        const vatRate = dish.vatRate ?? 13.5;
+        const vatRate = dish.vatRate ?? DEFAULT_VAT_RATE;
         const metrics = calculateDishMetrics(dish, state.recipes, state.ingredients);
         const vat = getVatBreakdown(dish.sellingPrice, vatRate);
         const folderInfo = folders.find(f => f.id === dish.folder);

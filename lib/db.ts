@@ -91,7 +91,7 @@ export async function ensureTables() {
       selling_price      NUMERIC(10,2) NOT NULL DEFAULT 0,
       portions           INTEGER NOT NULL DEFAULT 1,
       price_includes_vat BOOLEAN DEFAULT false,
-      vat_rate           NUMERIC(5,2) DEFAULT 14,
+      vat_rate           NUMERIC(5,2) DEFAULT 13.5,  -- keep in sync with DEFAULT_VAT_RATE in lib/constants.ts
       folder_id          TEXT,
       updated_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
       deleted_at         TIMESTAMPTZ

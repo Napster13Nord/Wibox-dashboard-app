@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
 import { saveTranslations } from '@/lib/translate';
+import { DEFAULT_VAT_RATE } from '@/lib/constants';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +81,7 @@ export async function POST(request: NextRequest) {
     for (const dish of (data.dishes || [])) {
       await sql`
         INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id)
-        VALUES (${dish.id}, ${dish.name}, ${dish.sellingPrice || 0}, ${dish.portions || 1}, ${dish.priceIncludesVat || false}, ${dish.vatRate ?? 14}, ${dish.folder || null})
+        VALUES (${dish.id}, ${dish.name}, ${dish.sellingPrice || 0}, ${dish.portions || 1}, ${dish.priceIncludesVat || false}, ${dish.vatRate ?? DEFAULT_VAT_RATE}, ${dish.folder || null})
       `;
       for (const dr of (dish.recipes || [])) {
         await sql`INSERT INTO dish_recipes (id, dish_id, recipe_id, quantity_grams) VALUES (${dr.id}, ${dish.id}, ${dr.recipeId}, ${dr.quantityInGrams || 0})`;
@@ -105,7 +106,7 @@ export async function POST(request: NextRequest) {
       } else if (t.originalType === 'recipe' && d) {
         await sql`INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, deleted_at) VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
       } else if (t.originalType === 'dish' && d) {
-        await sql`INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, deleted_at) VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? 14}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
+        await sql`INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, deleted_at) VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? DEFAULT_VAT_RATE}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
       }
     }
 
