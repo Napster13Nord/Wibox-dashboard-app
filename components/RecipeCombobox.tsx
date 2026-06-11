@@ -30,6 +30,7 @@ export const RecipeCombobox: React.FC<RecipeComboboxProps> = ({
   const [highlightIdx, setHighlightIdx] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const suppressNextFocusRef = useRef(false);
   const getTranslatedName = useTranslatedName();
 
   const selectedRecipe = recipes.find(r => r.id === value);
@@ -63,6 +64,17 @@ export const RecipeCombobox: React.FC<RecipeComboboxProps> = ({
   useEffect(() => {
     setHighlightIdx(0);
   }, [query]);
+
+  // Clear internal query and close dropdown when parent resets the selected value
+  // (e.g. after adding a recipe component, so the box is ready for the next pick)
+  useEffect(() => {
+    if (!value) {
+      setQuery('');
+      setIsOpen(false);
+      suppressNextFocusRef.current = true; // prevent onFocus from reopening dropdown
+      inputRef.current?.focus();
+    }
+  }, [value]);
 
   const handleSelect = (id: string) => {
     onChange(id);
@@ -120,7 +132,14 @@ export const RecipeCombobox: React.FC<RecipeComboboxProps> = ({
             setIsOpen(true);
             if (!e.target.value && value) onChange('');
           }}
-          onFocus={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+          onFocus={() => {
+            if (suppressNextFocusRef.current) {
+              suppressNextFocusRef.current = false;
+              return;
+            }
+            setIsOpen(true);
+          }}
           onKeyDown={handleKeyDown}
         />
         {(value || query) && (
