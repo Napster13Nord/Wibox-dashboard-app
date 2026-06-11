@@ -8,6 +8,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
+import { newId } from '@/lib/utils';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
   Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye, Pencil, AlertTriangle,
@@ -85,7 +86,7 @@ const RecipeModal = ({
     if (selIngId && selQty) {
       setRecipeIngredients(prev => [
         ...prev,
-        { id: Date.now().toString(), ingredientId: selIngId, quantityInGrams: Number(selQty) },
+        { id: newId(), ingredientId: selIngId, quantityInGrams: Number(selQty) },
       ]);
       setSelIngId('');
       setSelQty('');
@@ -163,7 +164,7 @@ const RecipeModal = ({
     if (presetName && presetGrams) {
       setPresets(prev => [
         ...prev,
-        { id: Date.now().toString(), name: presetName, targetWeightGrams: Number(presetGrams) },
+        { id: newId(), name: presetName, targetWeightGrams: Number(presetGrams) },
       ]);
       setPresetName('');
       setPresetGrams('');
@@ -635,7 +636,7 @@ export const RecipesView = () => {
     } else {
       // Creating
       addRecipe({
-        id: Date.now().toString(),
+        id: newId(),
         name: data.name,
         yieldPercentage: data.yieldPercentage,
         workTimeMinutes: data.workTimeMinutes,
@@ -1009,7 +1010,7 @@ export const RecipesView = () => {
         <FolderDialog
           isOpen={true}
           onClose={() => setShowAddFolder(false)}
-          onSave={(name, color, icon) => addFolder('recipe', { id: Date.now().toString(), name, color, icon })}
+          onSave={(name, color, icon) => addFolder('recipe', { id: newId(), name, color, icon })}
         />
       )}
 

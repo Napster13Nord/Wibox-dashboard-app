@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSQL } from '@/lib/db';
 import { isManager } from '@/lib/auth';
+import { newId } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // INSERT — generate id if not provided
-    const id = label.id || `lbl_${Date.now()}`;
+    const id = label.id || newId('lbl');
     await sql`
       INSERT INTO product_labels (
         id, dish_id, tuotenro, ean_code, name_sv, name_fi, weight,

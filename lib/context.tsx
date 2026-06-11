@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { Ingredient, Recipe, Dish, Folder, TrashedItem } from './types';
+import { newId } from './utils';
 
 type AppState = {
   ingredients: Ingredient[];
@@ -355,7 +356,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...s,
           ingredients: s.ingredients.filter(i => i.id !== id),
           trash: item ? [...s.trash, {
-            id: Date.now().toString(),
+            id: newId(),
             originalType: 'ingredient' as const,
             data: item,
             deletedAt: new Date().toISOString(),
@@ -411,7 +412,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...s,
           recipes: s.recipes.filter(r => r.id !== id),
           trash: item ? [...s.trash, {
-            id: Date.now().toString(),
+            id: newId(),
             originalType: 'recipe' as const,
             data: item,
             deletedAt: new Date().toISOString(),
@@ -467,7 +468,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...s,
           dishes: s.dishes.filter(d => d.id !== id),
           trash: item ? [...s.trash, {
-            id: Date.now().toString(),
+            id: newId(),
             originalType: 'dish' as const,
             data: item,
             deletedAt: new Date().toISOString(),

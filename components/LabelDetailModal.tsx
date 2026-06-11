@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ProductLabel } from '@/lib/types';
 import { useI18n } from '@/lib/i18n';
 import { X, Save, Loader2, Tag } from 'lucide-react';
+import { newId } from '@/lib/utils';
 
 interface LabelDetailModalProps {
   label: ProductLabel | null; // null = create new
@@ -62,7 +63,7 @@ export const LabelDetailModal: React.FC<LabelDetailModalProps> = ({
     try {
       const body = { ...form };
       if (!isEditing) {
-        body.id = `lbl_${Date.now()}`;
+        body.id = newId('lbl');
       }
       const res = await fetch('/api/labels', {
         method: 'POST',

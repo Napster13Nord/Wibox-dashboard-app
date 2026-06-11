@@ -5,6 +5,7 @@ import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
 import { Plus, Trash2, Edit2, Save, X, Weight, Package, Search, ArrowUpDown, ArrowUp, ArrowDown, Info } from 'lucide-react';
+import { newId } from '@/lib/utils';
 
 type PriceType = 'perKg' | 'perUnit';
 type SortField = 'name' | 'supplier' | 'lastUpdate';
@@ -144,7 +145,7 @@ export const IngredientsView = () => {
   const handleAdd = () => {
     if (!newIngredient.name) return;
     addIngredient({
-      id: Date.now().toString(),
+      id: newId(),
       name: newIngredient.name,
       pricePerKg: newIngredient.pricePerKg,
       priceType: newIngredient.priceType,

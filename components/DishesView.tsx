@@ -4,6 +4,7 @@ import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { Folder as FolderType } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
+import { newId } from '@/lib/utils';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
@@ -514,7 +515,7 @@ const DishModal = ({
     if (selectedRecipe && recipeQty) {
       setDishRecipes(prev => [
         ...prev,
-        { id: Date.now().toString(), recipeId: selectedRecipe, quantityInGrams: Number(recipeQty) },
+        { id: newId(), recipeId: selectedRecipe, quantityInGrams: Number(recipeQty) },
       ]);
       setSelectedRecipe('');
       setRecipeQty('');
@@ -530,7 +531,7 @@ const DishModal = ({
     if (selectedIngredient && ingredientQty) {
       setDishDirectIngredients(prev => [
         ...prev,
-        { id: Date.now().toString(), ingredientId: selectedIngredient, quantity: Number(ingredientQty) },
+        { id: newId(), ingredientId: selectedIngredient, quantity: Number(ingredientQty) },
       ]);
       setSelectedIngredient('');
       setIngredientQty('');
@@ -1022,7 +1023,7 @@ export const DishesView = () => {
 
   const handleAddDish = (data: any) => {
     addDish({
-      id: data.id || Date.now().toString(),
+      id: data.id || newId(),
       name: data.name,
       recipes: data.recipes || [],
       directIngredients: data.directIngredients || [],
@@ -1054,7 +1055,7 @@ export const DishesView = () => {
     const dish = state.dishes.find(d => d.id === dishId);
     if (dish) {
       updateDish(dishId, {
-        recipes: [...dish.recipes, { id: Date.now().toString(), recipeId, quantityInGrams }],
+        recipes: [...dish.recipes, { id: newId(), recipeId, quantityInGrams }],
       });
     }
   };
@@ -1073,7 +1074,7 @@ export const DishesView = () => {
       updateDish(dishId, {
         directIngredients: [
           ...(dish.directIngredients || []),
-          { id: Date.now().toString(), ingredientId, quantity },
+          { id: newId(), ingredientId, quantity },
         ],
       });
     }
@@ -1562,7 +1563,7 @@ export const DishesView = () => {
         <FolderDialog
           isOpen={true}
           onClose={() => setShowAddFolder(false)}
-          onSave={(name, color, icon) => addFolder('dish', { id: Date.now().toString(), name, color, icon })}
+          onSave={(name, color, icon) => addFolder('dish', { id: newId(), name, color, icon })}
         />
       )}
 
