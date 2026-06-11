@@ -6,6 +6,7 @@ import { calculateRecipeWeight, calculateRecipeCost } from '@/lib/calculations';
 import { ChefHat, Scale, Printer, Calculator, Search, X, Eye, ArrowLeft } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import { RecipeDetailModal } from './RecipeDetailModal';
+import { fuzzyFilter } from '@/lib/fuzzySearch';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
@@ -42,16 +43,13 @@ export const KitchenView = () => {
 
   const folders = state.recipeFolders || [];
 
-  // Filtered recipes (folder + search)
+  // Filtered recipes — multilingual fuzzy search (EN/SV/FI), then folder filter
   const filteredRecipes = useMemo(() => {
-    return state.recipes.filter(r => {
-      const matchesSearch = !kitchenSearch
-        || getTranslatedName(r).toLowerCase().includes(kitchenSearch.toLowerCase())
-        || r.name.toLowerCase().includes(kitchenSearch.toLowerCase());
-      const matchesFolder = activeFolder === 'all'
+    const byFolder = state.recipes.filter(r => {
+      return activeFolder === null || activeFolder === 'all'
         || (activeFolder === 'uncategorized' ? !r.folder : r.folder === activeFolder);
-      return matchesSearch && matchesFolder;
     });
+    return fuzzyFilter(byFolder, kitchenSearch);
   }, [state.recipes, kitchenSearch, activeFolder]);
 
   // ── Safe quantity display ──
@@ -202,8 +200,27 @@ export const KitchenView = () => {
         </div>
       )}
 
-      {/* ── Step 0: Pick a folder ── */}
-      {activeFolder === null && !selectedRecipe ? (
+      {/* ── Search (always available before scaling, incl. on the folder grid) ── */}
+      {!selectedRecipe && (
+        <div className="relative max-w-sm print:hidden">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder={t.kitchen.searchPlaceholder}
+            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+            value={kitchenSearch}
+            onChange={e => setKitchenSearch(e.target.value)}
+          />
+          {kitchenSearch && (
+            <button onClick={() => setKitchenSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Step 0: Pick a folder (hidden while searching) ── */}
+      {activeFolder === null && !kitchenSearch && !selectedRecipe ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 print:hidden">
           <button
             onClick={() => setActiveFolder('all')}
@@ -261,26 +278,10 @@ export const KitchenView = () => {
           )}
         </div>
       ) : !selectedRecipe ? (
-        /* ── Step 1: Pick a recipe ── */
+        /* ── Step 1: Pick a recipe (search box is rendered above) ── */
         <>
-          {/* Search box */}
-          <div className="relative max-w-sm print:hidden">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder={t.kitchen.searchPlaceholder}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
-              value={kitchenSearch}
-              onChange={e => setKitchenSearch(e.target.value)}
-            />
-            {kitchenSearch && (
-              <button onClick={() => setKitchenSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* ── Folder tabs ── */}
+          {/* ── Folder tabs — only inside a folder; hidden during a global search from the grid ── */}
+          {activeFolder !== null && (
           <div className="flex items-center gap-2 flex-wrap print:hidden">
             <button
               onClick={() => setActiveFolder('all')}
@@ -318,6 +319,7 @@ export const KitchenView = () => {
               );
             })}
           </div>
+          )}
 
           {/* ── Recipe cards (consistent with Dishes/Recipes style) ── */}
           <div className="space-y-3 print:hidden">

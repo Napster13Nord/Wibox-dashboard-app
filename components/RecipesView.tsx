@@ -7,6 +7,7 @@ import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
 import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType } from '@/lib/types';
+import { fuzzyFilter } from '@/lib/fuzzySearch';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, Save, X, Search,
   Edit2, FolderPlus, Folder, Clock, EyeOff, Printer, Eye, Pencil, AlertTriangle,
@@ -645,16 +646,34 @@ export const RecipesView = () => {
     setEditingRecipe(null);
   };
 
-  /* Filtered recipes */
+  /* Filtered recipes — multilingual fuzzy search (EN/SV/FI), then folder filter */
   const filteredRecipes = useMemo(() => {
-    return state.recipes.filter(r => {
-      const matchesSearch = !search || getTranslatedName(r).toLowerCase().includes(search.toLowerCase()) || r.name.toLowerCase().includes(search.toLowerCase());
-      const matchesFolder = !activeFolder || activeFolder === 'all' || (activeFolder === 'uncategorized' ? !r.folder : r.folder === activeFolder);
-      return matchesSearch && matchesFolder;
+    const byFolder = state.recipes.filter(r => {
+      return !activeFolder || activeFolder === 'all' || (activeFolder === 'uncategorized' ? !r.folder : r.folder === activeFolder);
     });
+    return fuzzyFilter(byFolder, search);
   }, [state.recipes, search, activeFolder]);
 
   const folders = state.recipeFolders || [];
+
+  /* ── Shared search box (works on folder grid + inside a folder) ── */
+  const searchBox = (
+    <div className="relative max-w-sm">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      <input
+        type="text"
+        placeholder={t.recipes.searchPlaceholder}
+        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      {search && (
+        <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -695,8 +714,11 @@ export const RecipesView = () => {
         </div>
       </div>
 
-      {/* ── Step 0: Folder grid (when no folder selected) ── */}
-      {activeFolder === null ? (
+      {/* ── Search (always available, incl. on the folder grid) ── */}
+      {searchBox}
+
+      {/* ── Step 0: Folder grid (when no folder selected and not searching) ── */}
+      {activeFolder === null && !search ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {/* All recipes */}
           <button
@@ -786,24 +808,9 @@ export const RecipesView = () => {
         </div>
       ) : (
         <>
-          {/* ── Step 1: Search + folder tabs + recipe list ── */}
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder={t.recipes.searchPlaceholder}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Folder tabs */}
+          {/* ── Step 1: folder tabs + recipe list (search box is rendered above) ── */}
+          {/* Folder tabs — only inside a folder; hidden during a global search from the grid */}
+          {activeFolder !== null && (
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveFolder('all')}
@@ -855,6 +862,7 @@ export const RecipesView = () => {
               );
             })}
           </div>
+          )}
 
           {/* Recipe cards */}
           <div className="space-y-4">

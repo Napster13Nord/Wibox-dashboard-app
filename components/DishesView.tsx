@@ -3,6 +3,7 @@ import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
 import { Folder as FolderType } from '@/lib/types';
+import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
@@ -1085,16 +1086,34 @@ export const DishesView = () => {
     }
   };
 
-  /* Filtered dishes */
+  /* Filtered dishes — multilingual fuzzy search (EN/SV/FI), then folder filter */
   const filteredDishes = useMemo(() => {
-    return state.dishes.filter(d => {
-      const matchesSearch = !search || getTranslatedName(d).toLowerCase().includes(search.toLowerCase()) || d.name.toLowerCase().includes(search.toLowerCase());
-      const matchesFolder = activeFolder === 'all' || (activeFolder === 'uncategorized' ? !d.folder : d.folder === activeFolder);
-      return matchesSearch && matchesFolder;
+    const byFolder = state.dishes.filter(d => {
+      return activeFolder === null || activeFolder === 'all' || (activeFolder === 'uncategorized' ? !d.folder : d.folder === activeFolder);
     });
+    return fuzzyFilter(byFolder, search);
   }, [state.dishes, search, activeFolder]);
 
   const uncategorizedCount = state.dishes.filter(d => !d.folder).length;
+
+  /* ── Shared search box (works on folder grid + inside a folder) ── */
+  const searchBox = (
+    <div className="relative max-w-sm">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      <input
+        type="text"
+        placeholder={t.dishes.searchPlaceholder}
+        className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+      />
+      {search && (
+        <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -1135,8 +1154,11 @@ export const DishesView = () => {
         </div>
       </div>
 
-      {/* ── Step 0: Folder grid (when no folder selected) ── */}
-      {activeFolder === null ? (
+      {/* ── Search (always available, incl. on the folder grid) ── */}
+      {searchBox}
+
+      {/* ── Step 0: Folder grid (when no folder selected and not searching) ── */}
+      {activeFolder === null && !search ? (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {/* All dishes */}
           <button
@@ -1226,25 +1248,9 @@ export const DishesView = () => {
         </div>
       ) : (
         <>
-          {/* ── Step 1: Search + Tabs + Dish List ── */}
-          {/* Search */}
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              placeholder={t.dishes.searchPlaceholder}
-              className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          {/* Folder tabs */}
+          {/* ── Step 1: Tabs + Dish List (search box is rendered above) ── */}
+          {/* Folder tabs — only inside a folder; hidden during a global search from the grid */}
+          {activeFolder !== null && (
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveFolder('all')}
@@ -1294,6 +1300,7 @@ export const DishesView = () => {
               );
             })}
           </div>
+          )}
         </>
       )}
 
@@ -1327,8 +1334,8 @@ export const DishesView = () => {
         onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
       />
 
-      {/* ── Dish cards (only in Step 1) ── */}
-      {activeFolder !== null && (
+      {/* ── Dish cards (in a folder, or during a global search from the grid) ── */}
+      {(activeFolder !== null || search) && (
       <div className="space-y-3">
         {filteredDishes.length === 0 && !isAdding && (
           <div className="text-center p-8 bg-white rounded-xl border border-gray-200 text-gray-500">
