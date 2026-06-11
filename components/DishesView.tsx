@@ -6,7 +6,7 @@ import { Folder as FolderType } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { newId } from '@/lib/utils';
 import { DEFAULT_VAT_RATE } from '@/lib/constants';
-import { calculateDishMetrics, calculateDishCost, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
+import { calculateDishMetrics, calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { RecipeCombobox } from './RecipeCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -546,13 +546,10 @@ const DishModal = ({
     onClose();
   };
 
-  // Live cost calculation
+  // Live cost calculation — reuse the shared metric formula (single source of truth)
   const tempDish = { recipes: dishRecipes, directIngredients: dishDirectIngredients, sellingPrice, portions, vatRate, priceIncludesVat: false } as any;
-  const totalCost = calculateDishCost(tempDish, recipes, ingredients);
-  const portionCount = portions > 0 ? portions : 1;
-  const costPerPortion = totalCost / portionCount;
-  const foodCostPct = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
-  const marginPct = sellingPrice > 0 ? ((sellingPrice - costPerPortion) / sellingPrice) * 100 : 0;
+  const { costPerPortion, foodCostPercentage: foodCostPct, profitMargin: marginPct } =
+    calculateDishMetrics(tempDish, recipes, ingredients);
 
   // VAT calc
   const vatAmount = sellingPrice * (vatRate / 100);
