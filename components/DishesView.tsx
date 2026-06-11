@@ -466,6 +466,7 @@ const DishModal = ({
   ingredients,
   folders,
   isEditing,
+  defaultFolder,
   onUpdateTranslations,
   onViewRecipe,
 }: {
@@ -477,6 +478,7 @@ const DishModal = ({
   ingredients: any[];
   folders: any[];
   isEditing: boolean;
+  defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
   onViewRecipe?: (recipeId: string) => void;
 }) => {
@@ -486,7 +488,7 @@ const DishModal = ({
   const [name, setName] = useState(initialData?.name || '');
   const [sellingPrice, setSellingPrice] = useState(initialData?.sellingPrice ?? 0);
   const [portions, setPortions] = useState(initialData?.portions ?? 1);
-  const [folder, setFolder] = useState(initialData?.folder || '');
+  const [folder, setFolder] = useState(initialData?.folder || defaultFolder || '');
   const [vatRate, setVatRate] = useState(initialData?.vatRate ?? 13.5);
 
   // Recipe components
@@ -1331,6 +1333,7 @@ export const DishesView = () => {
         ingredients={state.ingredients}
         folders={folders}
         isEditing={false}
+        defaultFolder={activeFolder && activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''}
         onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
       />
 

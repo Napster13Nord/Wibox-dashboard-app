@@ -38,6 +38,7 @@ const RecipeModal = ({
   ingredients,
   folders,
   isEditing,
+  defaultFolder,
   onUpdateTranslations,
 }: {
   isOpen: boolean;
@@ -47,6 +48,7 @@ const RecipeModal = ({
   ingredients: any[];
   folders: any[];
   isEditing: boolean;
+  defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
 }) => {
   const { t } = useI18n();
@@ -55,7 +57,7 @@ const RecipeModal = ({
   const [yieldPercentage, setYieldPercentage] = useState(initialData?.yieldPercentage ?? 100);
   const [workTimeMinutes, setWorkTimeMinutes] = useState(initialData?.workTimeMinutes ?? 0);
   const [notes, setNotes] = useState(initialData?.notes || '');
-  const [folder, setFolder] = useState(initialData?.folder || '');
+  const [folder, setFolder] = useState(initialData?.folder || defaultFolder || '');
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>(
     initialData?.ingredients || []
   );
@@ -998,6 +1000,7 @@ export const RecipesView = () => {
           ingredients={state.ingredients}
           folders={folders}
           isEditing={!!editingRecipe}
+          defaultFolder={!editingRecipe && activeFolder && activeFolder !== 'all' && activeFolder !== 'uncategorized' ? activeFolder : ''}
           onUpdateTranslations={editingRecipe ? (tr) => updateTranslations('recipe', editingRecipe.id, tr) : undefined}
         />
       )}
