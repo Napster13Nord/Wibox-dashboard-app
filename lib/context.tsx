@@ -357,9 +357,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // ── Trash ──
   const restoreFromTrash = (id: string) => {
+    // Capture the trash item up front — by the time the apiAction runs, doUpdate
+    // has already removed it from state, so looking it up there finds nothing and
+    // the server restore (un-delete) would silently never fire, letting the next
+    // focus/reconcile pull the still-deleted server row back over local state.
+    const trashItem = stateRef.current.trash.find(t => t.id === id);
     doUpdate(
       s => {
-        const trashItem = s.trash.find(t => t.id === id);
         if (!trashItem) return s;
         const newState = { ...s, trash: s.trash.filter(t => t.id !== id) };
         switch (trashItem.originalType) {
@@ -375,18 +379,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
         return newState;
       },
-      () => {
-        // Find the trash item to get the entity details
-        const trashItem = stateRef.current.trash.find(t => t.id === id) ||
-          // Item was just restored, check previous state
-          history[history.length - 1]?.trash.find(t => t.id === id);
-        if (trashItem) {
-          return apiPost('/api/trash', {
+      () => trashItem
+        ? apiPost('/api/trash', {
             entityType: trashItem.originalType,
             entityId: trashItem.data.id,
-          });
-        }
-      },
+          })
+        : undefined,
     );
   };
 
