@@ -171,6 +171,23 @@ function saveToLocalStorage(data: AppState) {
   }
 }
 
+/**
+ * Synchronously read a previously-cached state from localStorage (client only).
+ * Used to seed the app on boot so a returning user sees their data instantly —
+ * the skeleton then only appears on the very first login, when no cache exists.
+ * Returns null on the server, when there's no cache, or when it's corrupt.
+ */
+function readCachedState(): AppState | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const saved = localStorage.getItem('wibox-data');
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    if (parsed && typeof parsed === 'object') return migrateState(parsed);
+  } catch { /* ignore corrupt cache */ }
+  return null;
+}
+
 const MAX_UNDO = 20;
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -182,8 +199,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // retries against redirected requests.
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
 
-  const [state, setState] = useState<AppState>(defaultState);
-  const [isLoaded, setIsLoaded] = useState(false);
+  // Seed from cache so a returning user renders instantly (no skeleton); the
+  // skeleton is reserved for the first login, when there's nothing cached yet.
+  const [bootCache] = useState(readCachedState);
+  const [state, setState] = useState<AppState>(bootCache ?? defaultState);
+  const [isLoaded, setIsLoaded] = useState<boolean>(bootCache !== null);
   const [history, setHistory] = useState<AppState[]>([]);
   const [syncError, setSyncError] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
