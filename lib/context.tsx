@@ -180,13 +180,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [syncError, setSyncError] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
 
+  // Number of server writes currently in flight. The focus/online reconcile
+  // uses it to avoid overwriting local edits the server hasn't confirmed yet.
+  const pendingWritesRef = useRef(0);
+
   // Watch a critical save promise; flag a visible sync error if it rejects.
   const track = (p: Promise<unknown> | void) => {
     if (!p || typeof (p as Promise<unknown>).then !== 'function') return;
-    (p as Promise<unknown>).catch((err: unknown) => {
-      console.error('[Wibox] save to server failed:', err);
-      setSyncError(true);
-    });
+    pendingWritesRef.current++;
+    (p as Promise<unknown>).then(
+      () => { pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1); },
+      (err: unknown) => {
+        pendingWritesRef.current = Math.max(0, pendingWritesRef.current - 1);
+        console.error('[Wibox] save to server failed:', err);
+        setSyncError(true);
+      },
+    );
   };
 
   // A ref that always holds the latest state — used so doUpdate can
@@ -276,6 +285,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     load();
     return () => { cancelled = true; };
   }, [authLoaded, isSignedIn]);
+
+  // ── Heal on focus / reconnect ──
+  // A granular write can fail silently between full syncs, leaving the server
+  // behind local state — or another device may have changed things. When the
+  // tab regains focus or the network comes back, refetch the canonical state
+  // and reconcile. Skip while writes are in flight or a sync error is pending
+  // (local state is the source of truth then — the retry banner handles it),
+  // so we never clobber un-synced local edits.
+  useEffect(() => {
+    if (!authLoaded || !isSignedIn) return;
+
+    let cancelled = false;
+
+    const reconcile = async () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (pendingWritesRef.current > 0 || syncError) return;
+      try {
+        const res = await fetch('/api/state', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data || typeof data !== 'object' || !(data.ingredients || data.recipes || data.dishes)) return;
+        // Re-check the guards after the await — an edit may have started meanwhile.
+        if (cancelled || pendingWritesRef.current > 0 || syncError) return;
+        const migrated = migrateState(data);
+        setState(migrated);
+        stateRef.current = migrated;
+        saveToLocalStorage(migrated);
+      } catch { /* offline / transient — ignore, we'll try again next focus */ }
+    };
+
+    const onVisibility = () => { if (document.visibilityState === 'visible') reconcile(); };
+    window.addEventListener('online', reconcile);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', reconcile);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [authLoaded, isSignedIn, syncError]);
 
   // ── Core update helper — computes new state, persists it, then sets it ──
   // apiAction: optional callback for the granular API call. If it returns a

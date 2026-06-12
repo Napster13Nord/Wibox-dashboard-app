@@ -216,7 +216,7 @@ Today there are two sources of truth (localStorage + Postgres) reconciled by han
 write-failure path is now visible (banner) and the full sync is atomic, but divergence can
 still happen silently between writes. **Improve, do not rewrite.**
 
-- [ ] **5.1 Heal-on-reconnect/focus.** In `AppProvider`, refetch `GET /api/state` when the
+- [x] **5.1 Heal-on-reconnect/focus.** In `AppProvider`, refetch `GET /api/state` when the
   window regains focus or the network comes back online (`visibilitychange` / `online`
   events), and reconcile — so a missed write self-corrects. Guard against clobbering
   in-flight local edits.
