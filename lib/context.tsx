@@ -58,20 +58,37 @@ const defaultState: AppState = {
   trash: [],
 };
 
-const migrateState = (raw: any): AppState => ({
-  ingredients: (raw.ingredients || []).map((i: any) => ({
-    priceType: 'perKg',
+/**
+ * Shape of state read from older caches / the legacy blob. Fields that
+ * `migrateState` backfills with defaults are optional on the raw input.
+ * `hiddenCosts` is a legacy column the current Recipe type no longer carries
+ * (see app/api/db/migrate/route.ts) — kept defaulted for the sync routes.
+ */
+type RawEntity<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+type RawState = {
+  ingredients?: RawEntity<Ingredient, 'priceType' | 'supplier' | 'lastUpdate'>[];
+  recipes?: (RawEntity<Recipe, 'presets' | 'folder'> & { hiddenCosts?: number })[];
+  dishes?: RawEntity<Dish, 'directIngredients' | 'portions' | 'priceIncludesVat' | 'folder' | 'vatRate'>[];
+  recipeFolders?: Folder[];
+  dishFolders?: Folder[];
+  trash?: TrashedItem[];
+};
+
+const migrateState = (raw: RawState): AppState => ({
+  ingredients: (raw.ingredients || []).map(i => ({
+    priceType: 'perKg' as const,
     supplier: '',
     lastUpdate: '',
     ...i,
   })),
-  recipes: (raw.recipes || []).map((r: any) => ({
+  recipes: (raw.recipes || []).map(r => ({
     presets: [],
     folder: '',
     hiddenCosts: 0,
     ...r,
   })),
-  dishes: (raw.dishes || []).map((d: any) => ({
+  dishes: (raw.dishes || []).map(d => ({
     directIngredients: [],
     portions: 1,
     priceIncludesVat: false,
@@ -86,7 +103,7 @@ const migrateState = (raw: any): AppState => ({
 
 // ── API helpers — async, throw on failure so callers can surface it ──
 
-async function apiPost(url: string, body: any) {
+async function apiPost(url: string, body: unknown) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,7 +112,7 @@ async function apiPost(url: string, body: any) {
   if (!res.ok) throw new Error(`POST ${url} failed (${res.status})`);
 }
 
-async function apiPatch(url: string, body: any) {
+async function apiPatch(url: string, body: unknown) {
   const res = await fetch(url, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -116,6 +133,11 @@ async function apiPatchTranslation(entityType: string, entityId: string, transla
     body: JSON.stringify({ entityType, entityId, translations }),
   });
   if (!res.ok) throw new Error(`PATCH /api/translate failed (${res.status})`);
+}
+
+/** Immutably patch the item with the given id inside a typed array. */
+function patchById<T extends { id: string }>(items: T[], id: string, patch: Partial<T>): T[] {
+  return items.map(item => (item.id === id ? { ...item, ...patch } : item));
 }
 
 /** Read the current dashboard locale from localStorage */
@@ -524,16 +546,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteFolder = (type: 'recipe' | 'dish', id: string) => {
-    const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    const itemsKey = type === 'recipe' ? 'recipes' : 'dishes';
     doUpdate(
-      s => ({
-        ...s,
-        [key]: (s[key] || []).filter((f: Folder) => f.id !== id),
-        [itemsKey]: (s[itemsKey] as any[]).map((item: any) =>
-          item.folder === id ? { ...item, folder: '' } : item
-        ),
-      }),
+      s => type === 'recipe'
+        ? {
+            ...s,
+            recipeFolders: s.recipeFolders.filter(f => f.id !== id),
+            recipes: s.recipes.map(r => r.folder === id ? { ...r, folder: '' } : r),
+          }
+        : {
+            ...s,
+            dishFolders: s.dishFolders.filter(f => f.id !== id),
+            dishes: s.dishes.map(d => d.folder === id ? { ...d, folder: '' } : d),
+          },
       () => apiDelete(`/api/folders?id=${id}&type=${type}`),
     );
   };
@@ -598,23 +622,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     entityId: string,
     translations: Record<string, string>
   ) => {
-    let key: keyof AppState;
-    if (entityType === 'folder') {
-      // Folders: search both recipeFolders and dishFolders
-      const inRecipe = stateRef.current.recipeFolders.some((f: Folder) => f.id === entityId);
-      key = inRecipe ? 'recipeFolders' : 'dishFolders';
-    } else {
-      key = entityType === 'ingredient' ? 'ingredients'
-            : entityType === 'recipe' ? 'recipes'
-            : 'dishes';
-    }
     doUpdate(
-      s => ({
-        ...s,
-        [key]: (s[key] as any[]).map((item: any) =>
-          item.id === entityId ? { ...item, translations } : item
-        ),
-      }),
+      s => {
+        if (entityType === 'ingredient') return { ...s, ingredients: patchById(s.ingredients, entityId, { translations }) };
+        if (entityType === 'recipe') return { ...s, recipes: patchById(s.recipes, entityId, { translations }) };
+        if (entityType === 'dish') return { ...s, dishes: patchById(s.dishes, entityId, { translations }) };
+        // folder: live in either recipeFolders or dishFolders
+        return s.recipeFolders.some(f => f.id === entityId)
+          ? { ...s, recipeFolders: patchById(s.recipeFolders, entityId, { translations }) }
+          : { ...s, dishFolders: patchById(s.dishFolders, entityId, { translations }) };
+      },
       () => apiPatchTranslation(entityType, entityId, translations),
     );
   };
