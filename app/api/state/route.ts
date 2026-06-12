@@ -2,9 +2,46 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
 import { isManager } from '@/lib/auth';
 import { DEFAULT_VAT_RATE } from '@/lib/constants';
+import {
+  Ingredient, Recipe, Dish, Folder, RecipeIngredient, RecipePreset,
+  DishRecipe, DishIngredient, TranslationMap, TrashedItem,
+} from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
+
+// ── DB row shapes (snake_case, as returned by Neon) ──
+// Numeric columns come back as strings over the HTTP driver, hence string | number.
+type IngredientRow = {
+  id: string; name: string; price_per_kg: string | number; price_type: string;
+  supplier: string | null; lemonsoft_id: string | null;
+  updated_at: string | null; deleted_at: string | null;
+};
+type RecipeRow = {
+  id: string; name: string; yield_percentage: string | number;
+  work_time_min: string | number; notes: string | null; folder_id: string | null;
+  updated_at: string | null; deleted_at: string | null;
+};
+type DishRow = {
+  id: string; name: string; selling_price: string | number; portions: string | number;
+  price_includes_vat: boolean; vat_rate: string | number; folder_id: string | null;
+  updated_at: string | null; deleted_at: string | null;
+};
+type FolderRow = { id: string; type: string; name: string; color: string; icon: string };
+type RecipeIngredientRow = {
+  id: string; recipe_id: string; ingredient_id: string;
+  quantity_grams: string | number; sort_order: number;
+};
+type RecipePresetRow = {
+  id: string; recipe_id: string; name: string; target_weight_grams: string | number;
+};
+type DishRecipeRow = {
+  id: string; dish_id: string; recipe_id: string; quantity_grams: string | number;
+};
+type DishIngredientRow = {
+  id: string; dish_id: string; ingredient_id: string; quantity: string | number;
+};
+type TranslationRow = { entity_type: string; entity_id: string; lang: string; name: string };
 
 /**
  * GET /api/state
@@ -24,67 +61,60 @@ export async function GET() {
     const dishFolderRows = await sql`SELECT * FROM folders WHERE type = 'dish' ORDER BY name`;
 
     // ── Recipe sub-data ──
-    const allRecipeIngredients = await sql`SELECT * FROM recipe_ingredients ORDER BY sort_order, id`;
-    const allRecipePresets = await sql`SELECT * FROM recipe_presets`;
+    const allRecipeIngredients = (await sql`SELECT * FROM recipe_ingredients ORDER BY sort_order, id`) as RecipeIngredientRow[];
+    const allRecipePresets = (await sql`SELECT * FROM recipe_presets`) as RecipePresetRow[];
 
     // ── Dish sub-data ──
-    const allDishRecipes = await sql`SELECT * FROM dish_recipes`;
-    const allDishIngredients = await sql`SELECT * FROM dish_ingredients`;
+    const allDishRecipes = (await sql`SELECT * FROM dish_recipes`) as DishRecipeRow[];
+    const allDishIngredients = (await sql`SELECT * FROM dish_ingredients`) as DishIngredientRow[];
 
     // ── Translations (single query for all entities) ──
-    const allTranslations = await sql`SELECT * FROM translations`;
-    const translationIndex: Record<string, Record<string, string>> = {};
+    const allTranslations = (await sql`SELECT * FROM translations`) as TranslationRow[];
+    const translationIndex: Record<string, TranslationMap> = {};
     for (const t of allTranslations) {
       const key = `${t.entity_type}:${t.entity_id}`;
-      if (!translationIndex[key]) translationIndex[key] = {} as Record<string, string>;
-      (translationIndex[key] as Record<string, string>)[t.lang as string] = t.name as string;
+      if (!translationIndex[key]) translationIndex[key] = {};
+      (translationIndex[key] as Record<string, string>)[t.lang] = t.name;
     }
-    const getTranslations = (type: string, id: string) => translationIndex[`${type}:${id}`] || {};
+    const getTranslations = (type: string, id: string): TranslationMap =>
+      translationIndex[`${type}:${id}`] || {};
 
-    // ── Trashed items ──
-    const trashedIngredients = await sql`SELECT * FROM ingredients WHERE deleted_at IS NOT NULL`;
-    const trashedRecipes = await sql`SELECT * FROM recipes WHERE deleted_at IS NOT NULL`;
-    const trashedDishes = await sql`SELECT * FROM dishes WHERE deleted_at IS NOT NULL`;
+    // ── Typed row → domain mappers (keep coercions identical to the schema) ──
+    const rowToRecipeIngredient = (ri: RecipeIngredientRow): RecipeIngredient => ({
+      id: ri.id, ingredientId: ri.ingredient_id, quantityInGrams: Number(ri.quantity_grams),
+    });
+    const rowToRecipePreset = (p: RecipePresetRow): RecipePreset => ({
+      id: p.id, name: p.name, targetWeightGrams: Number(p.target_weight_grams),
+    });
+    const rowToDishRecipe = (dr: DishRecipeRow): DishRecipe => ({
+      id: dr.id, recipeId: dr.recipe_id, quantityInGrams: Number(dr.quantity_grams),
+    });
+    const rowToDishIngredient = (di: DishIngredientRow): DishIngredient => ({
+      id: di.id, ingredientId: di.ingredient_id, quantity: Number(di.quantity),
+    });
 
-    // ── Assemble ingredients ──
-    const ingredients = ingredientRows.map((r: any) => ({
+    const rowToIngredient = (r: IngredientRow): Ingredient => ({
       id: r.id,
       name: r.name,
       pricePerKg: Number(r.price_per_kg),
-      priceType: r.price_type,
+      priceType: r.price_type as Ingredient['priceType'],
       supplier: r.supplier || '',
       lastUpdate: r.updated_at ? new Date(r.updated_at).toISOString().split('T')[0] : '',
       lemonsoftId: r.lemonsoft_id || undefined,
       translations: getTranslations('ingredient', r.id),
-    }));
-
-    // ── Assemble recipes ──
-    const recipes = recipeRows.map((r: any) => ({
+    });
+    const rowToRecipe = (r: RecipeRow): Recipe => ({
       id: r.id,
       name: r.name,
       yieldPercentage: Number(r.yield_percentage),
       workTimeMinutes: Number(r.work_time_min),
       notes: r.notes || '',
       folder: r.folder_id || '',
-      ingredients: allRecipeIngredients
-        .filter((ri: any) => ri.recipe_id === r.id)
-        .map((ri: any) => ({
-          id: ri.id,
-          ingredientId: ri.ingredient_id,
-          quantityInGrams: Number(ri.quantity_grams),
-        })),
-      presets: allRecipePresets
-        .filter((p: any) => p.recipe_id === r.id)
-        .map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          targetWeightGrams: Number(p.target_weight_grams),
-        })),
+      ingredients: allRecipeIngredients.filter(ri => ri.recipe_id === r.id).map(rowToRecipeIngredient),
+      presets: allRecipePresets.filter(p => p.recipe_id === r.id).map(rowToRecipePreset),
       translations: getTranslations('recipe', r.id),
-    }));
-
-    // ── Assemble dishes ──
-    const dishes = dishRows.map((d: any) => ({
+    });
+    const rowToDish = (d: DishRow): Dish => ({
       id: d.id,
       name: d.name,
       sellingPrice: Number(d.selling_price),
@@ -92,91 +122,52 @@ export async function GET() {
       priceIncludesVat: d.price_includes_vat,
       vatRate: Number(d.vat_rate),
       folder: d.folder_id || '',
-      recipes: allDishRecipes
-        .filter((dr: any) => dr.dish_id === d.id)
-        .map((dr: any) => ({
-          id: dr.id,
-          recipeId: dr.recipe_id,
-          quantityInGrams: Number(dr.quantity_grams),
-        })),
-      directIngredients: allDishIngredients
-        .filter((di: any) => di.dish_id === d.id)
-        .map((di: any) => ({
-          id: di.id,
-          ingredientId: di.ingredient_id,
-          quantity: Number(di.quantity),
-        })),
+      recipes: allDishRecipes.filter(dr => dr.dish_id === d.id).map(rowToDishRecipe),
+      directIngredients: allDishIngredients.filter(di => di.dish_id === d.id).map(rowToDishIngredient),
       translations: getTranslations('dish', d.id),
-    }));
-
-    // ── Assemble folders ──
-    const recipeFolders = recipeFolderRows.map((f: any) => ({
+    });
+    const rowToFolder = (f: FolderRow): Folder => ({
       id: f.id, name: f.name, color: f.color, icon: f.icon,
       translations: getTranslations('folder', f.id),
-    }));
-    const dishFolders = dishFolderRows.map((f: any) => ({
-      id: f.id, name: f.name, color: f.color, icon: f.icon,
-      translations: getTranslations('folder', f.id),
-    }));
+    });
 
-    // ── Assemble trash ──
-    const trash: any[] = [];
+    // ── Active data → domain objects ──
+    const ingredients = (ingredientRows as IngredientRow[]).map(rowToIngredient);
+    const recipes = (recipeRows as RecipeRow[]).map(rowToRecipe);
+    const dishes = (dishRows as DishRow[]).map(rowToDish);
+    const recipeFolders = (recipeFolderRows as FolderRow[]).map(rowToFolder);
+    const dishFolders = (dishFolderRows as FolderRow[]).map(rowToFolder);
 
-    for (const r of trashedIngredients) {
-      trash.push({
+    // ── Trashed items (soft-deleted rows) ──
+    const trashedIngredients = (await sql`SELECT * FROM ingredients WHERE deleted_at IS NOT NULL`) as IngredientRow[];
+    const trashedRecipes = (await sql`SELECT * FROM recipes WHERE deleted_at IS NOT NULL`) as RecipeRow[];
+    const trashedDishes = (await sql`SELECT * FROM dishes WHERE deleted_at IS NOT NULL`) as DishRow[];
+
+    const trash: TrashedItem[] = [
+      ...trashedIngredients.map((r): TrashedItem => ({
         id: `trash-ing-${r.id}`,
         originalType: 'ingredient',
+        // Trash keeps the legacy shape: no lemonsoftId, blank lastUpdate.
         data: {
           id: r.id, name: r.name, pricePerKg: Number(r.price_per_kg),
-          priceType: r.price_type, supplier: r.supplier || '', lastUpdate: '',
-          translations: getTranslations('ingredient', r.id),
+          priceType: r.price_type as Ingredient['priceType'], supplier: r.supplier || '',
+          lastUpdate: '', translations: getTranslations('ingredient', r.id),
         },
-        deletedAt: r.deleted_at,
-      });
-    }
-
-    for (const r of trashedRecipes) {
-      const recIngredients = allRecipeIngredients
-        .filter((ri: any) => ri.recipe_id === r.id)
-        .map((ri: any) => ({ id: ri.id, ingredientId: ri.ingredient_id, quantityInGrams: Number(ri.quantity_grams) }));
-      const recPresets = allRecipePresets
-        .filter((p: any) => p.recipe_id === r.id)
-        .map((p: any) => ({ id: p.id, name: p.name, targetWeightGrams: Number(p.target_weight_grams) }));
-
-      trash.push({
+        deletedAt: r.deleted_at || new Date().toISOString(),
+      })),
+      ...trashedRecipes.map((r): TrashedItem => ({
         id: `trash-rec-${r.id}`,
         originalType: 'recipe',
-        data: {
-          id: r.id, name: r.name, yieldPercentage: Number(r.yield_percentage),
-          workTimeMinutes: Number(r.work_time_min), notes: r.notes || '',
-          folder: r.folder_id || '', ingredients: recIngredients, presets: recPresets,
-          translations: getTranslations('recipe', r.id),
-        },
-        deletedAt: r.deleted_at,
-      });
-    }
-
-    for (const d of trashedDishes) {
-      const dRecipes = allDishRecipes
-        .filter((dr: any) => dr.dish_id === d.id)
-        .map((dr: any) => ({ id: dr.id, recipeId: dr.recipe_id, quantityInGrams: Number(dr.quantity_grams) }));
-      const dIngredients = allDishIngredients
-        .filter((di: any) => di.dish_id === d.id)
-        .map((di: any) => ({ id: di.id, ingredientId: di.ingredient_id, quantity: Number(di.quantity) }));
-
-      trash.push({
+        data: rowToRecipe(r),
+        deletedAt: r.deleted_at || new Date().toISOString(),
+      })),
+      ...trashedDishes.map((d): TrashedItem => ({
         id: `trash-dish-${d.id}`,
         originalType: 'dish',
-        data: {
-          id: d.id, name: d.name, sellingPrice: Number(d.selling_price),
-          portions: Number(d.portions), priceIncludesVat: d.price_includes_vat,
-          vatRate: Number(d.vat_rate), folder: d.folder_id || '',
-          recipes: dRecipes, directIngredients: dIngredients,
-          translations: getTranslations('dish', d.id),
-        },
-        deletedAt: d.deleted_at,
-      });
-    }
+        data: rowToDish(d),
+        deletedAt: d.deleted_at || new Date().toISOString(),
+      })),
+    ];
 
     const state = { ingredients, recipes, dishes, recipeFolders, dishFolders, trash };
 
