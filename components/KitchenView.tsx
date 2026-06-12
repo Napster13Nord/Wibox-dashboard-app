@@ -7,6 +7,7 @@ import { ChefHat, Scale, Printer, Calculator, Search, X, Eye, ArrowLeft } from '
 import { useRole } from '@/hooks/useRole';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
+import { FolderGrid } from './shared/FolderGrid';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
@@ -221,62 +222,18 @@ export const KitchenView = () => {
 
       {/* ── Step 0: Pick a folder (hidden while searching) ── */}
       {activeFolder === null && !kitchenSearch && !selectedRecipe ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 print:hidden">
-          <button
-            onClick={() => setActiveFolder('all')}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-900 transition-all gap-3 group"
-          >
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-700 text-xl group-hover:bg-gray-200 transition-colors">
-              🍽️
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-gray-900">{t.kitchen.all}</h3>
-              <p className="text-sm text-gray-500">{state.recipes.length} recipes</p>
-            </div>
-          </button>
-
-          {folders.map(f => {
-            const count = state.recipes.filter(r => r.folder === f.id).length;
-            if (count === 0) return null; // Hide empty folders to reduce clutter
-            return (
-              <button
-                key={f.id}
-                onClick={() => setActiveFolder(f.id)}
-                className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all gap-3 relative overflow-hidden group"
-              >
-                <div
-                  className="absolute top-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ backgroundColor: f.color }}
-                />
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-transform group-hover:scale-110"
-                  style={{ backgroundColor: `${f.color}20`, color: f.color }}
-                >
-                  {f.icon}
-                </div>
-                <div className="text-center">
-                  <h3 className="font-semibold text-gray-900">{getTranslatedName(f)}</h3>
-                  <p className="text-sm text-gray-500">{count} recipes</p>
-                </div>
-              </button>
-            );
-          })}
-
-          {state.recipes.some(r => !r.folder) && (
-            <button
-              onClick={() => setActiveFolder('uncategorized')}
-              className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 transition-all gap-3 group"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xl group-hover:bg-gray-200 transition-colors">
-                📁
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-gray-900">{t.kitchen.uncategorized}</h3>
-                <p className="text-sm text-gray-500">{state.recipes.filter(r => !r.folder).length} recipes</p>
-              </div>
-            </button>
-          )}
-        </div>
+        <FolderGrid
+          folders={folders}
+          totalCount={state.recipes.length}
+          uncategorizedCount={state.recipes.filter(r => !r.folder).length}
+          folderCount={id => state.recipes.filter(r => r.folder === id).length}
+          countNoun="recipes"
+          labels={{ all: t.kitchen.all, uncategorized: t.kitchen.uncategorized }}
+          onPick={setActiveFolder}
+          hideEmptyFolders
+          allAccent="neutral"
+          className="print:hidden"
+        />
       ) : !selectedRecipe ? (
         /* ── Step 1: Pick a recipe (search box is rendered above) ── */
         <>

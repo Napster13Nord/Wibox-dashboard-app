@@ -11,6 +11,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import { FolderDialog } from './FolderDialog';
 import { DishModal, DishFormData } from './dishes/DishModal';
+import { FolderGrid } from './shared/FolderGrid';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Edit2,
   Search, FolderPlus, Printer, Pencil, ArrowLeft,
@@ -191,93 +192,19 @@ export const DishesView = () => {
 
       {/* ── Step 0: Folder grid (when no folder selected and not searching) ── */}
       {activeFolder === null && !search ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {/* All dishes */}
-          <button
-            onClick={() => setActiveFolder('all')}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all gap-3 group"
-          >
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 text-xl group-hover:bg-blue-200 transition-colors">
-              🍽️
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-gray-900">{t.dishes.all}</h3>
-              <p className="text-sm text-gray-500">{state.dishes.length} {t.dishes.dishesCount}</p>
-            </div>
-          </button>
-
-          {/* Named folders */}
-          {folders.map(f => {
-            const count = state.dishes.filter(d => d.folder === f.id).length;
-            return (
-              <div key={f.id} className="relative group">
-                <button
-                  onClick={() => setActiveFolder(f.id)}
-                  className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all gap-3 relative overflow-hidden"
-                >
-                  <div
-                    className="absolute top-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: f.color }}
-                  />
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${f.color}20`, color: f.color }}
-                  >
-                    {f.icon}
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-900">{getTranslatedName(f)}</h3>
-                    <p className="text-sm text-gray-500">{count} {t.dishes.dishesCount}</p>
-                  </div>
-                </button>
-                {/* Edit button */}
-                <button
-                  onClick={() => setEditFolderTarget(f)}
-                  className="absolute top-2 right-8 w-6 h-6 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-blue-600 transition-colors"
-                  title={t.dishes.editFolder}
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                {/* Delete button */}
-                <button
-                  onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
-                  className="absolute top-2 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-red-600 transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-
-          {/* Uncategorized */}
-          {uncategorizedCount > 0 && (
-            <button
-              onClick={() => setActiveFolder('uncategorized')}
-              className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 transition-all gap-3 group"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xl group-hover:bg-gray-200 transition-colors">
-                📁
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-gray-900">{t.dishes.uncategorized}</h3>
-                <p className="text-sm text-gray-500">{uncategorizedCount} {t.dishes.dishesCount}</p>
-              </div>
-            </button>
-          )}
-
-          {/* Add new folder card */}
-          <button
-            onClick={() => setShowAddFolder(true)}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 transition-all gap-3 group"
-          >
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
-              <FolderPlus className="w-6 h-6" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-gray-500 group-hover:text-blue-600 transition-colors">{t.dishes.newFolder}</h3>
-            </div>
-          </button>
-        </div>
+        <FolderGrid
+          folders={folders}
+          totalCount={state.dishes.length}
+          uncategorizedCount={uncategorizedCount}
+          folderCount={id => state.dishes.filter(d => d.folder === id).length}
+          countNoun={t.dishes.dishesCount}
+          labels={{ all: t.dishes.all, uncategorized: t.dishes.uncategorized, newFolder: t.dishes.newFolder }}
+          onPick={setActiveFolder}
+          onEdit={setEditFolderTarget}
+          onDelete={f => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
+          onNew={() => setShowAddFolder(true)}
+          editFolderTitle={t.dishes.editFolder}
+        />
       ) : (
         <>
           {/* ── Step 1: Tabs + Dish List (search box is rendered above) ── */}

@@ -9,6 +9,7 @@ import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { newId } from '@/lib/utils';
 import { FolderDialog } from './FolderDialog';
 import { RecipeModal, RecipeFormData } from './recipes/RecipeModal';
+import { FolderGrid } from './shared/FolderGrid';
 import {
   Plus, Trash2, X, Search,
   Edit2, FolderPlus, Folder, Printer, Eye, Pencil, AlertTriangle,
@@ -137,93 +138,19 @@ export const RecipesView = () => {
 
       {/* ── Step 0: Folder grid (when no folder selected and not searching) ── */}
       {activeFolder === null && !search ? (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {/* All recipes */}
-          <button
-            onClick={() => setActiveFolder('all')}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-400 transition-all gap-3 group"
-          >
-            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 text-xl group-hover:bg-blue-200 transition-colors">
-              🍽️
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-gray-900">{t.recipes.all}</h3>
-              <p className="text-sm text-gray-500">{state.recipes.length} {t.recipes.recipesCount}</p>
-            </div>
-          </button>
-
-          {/* Named folders */}
-          {folders.map(f => {
-            const count = state.recipes.filter(r => r.folder === f.id).length;
-            return (
-              <div key={f.id} className="relative group">
-                <button
-                  onClick={() => setActiveFolder(f.id)}
-                  className="w-full flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all gap-3 relative overflow-hidden"
-                >
-                  <div
-                    className="absolute top-0 left-0 w-full h-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ backgroundColor: f.color }}
-                  />
-                  <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-xl transition-transform group-hover:scale-110"
-                    style={{ backgroundColor: `${f.color}20`, color: f.color }}
-                  >
-                    {f.icon}
-                  </div>
-                  <div className="text-center">
-                    <h3 className="font-semibold text-gray-900">{getTranslatedName(f)}</h3>
-                    <p className="text-sm text-gray-500">{count} {t.recipes.recipesCount}</p>
-                  </div>
-                </button>
-                {/* Edit button */}
-                <button
-                  onClick={() => setEditFolderTarget(f)}
-                  className="absolute top-2 right-8 w-6 h-6 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-blue-600 transition-colors"
-                  title={t.recipes.editFolder}
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                {/* Delete button */}
-                <button
-                  onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
-                  className="absolute top-2 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex hover:bg-red-600 transition-colors"
-                >
-                  ×
-                </button>
-              </div>
-            );
-          })}
-
-          {/* Uncategorized */}
-          {state.recipes.some(r => !r.folder) && (
-            <button
-              onClick={() => setActiveFolder('uncategorized')}
-              className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-gray-400 transition-all gap-3 group"
-            >
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xl group-hover:bg-gray-200 transition-colors">
-                📁
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-gray-900">{t.recipes.uncategorized}</h3>
-                <p className="text-sm text-gray-500">{state.recipes.filter(r => !r.folder).length} {t.recipes.recipesCount}</p>
-              </div>
-            </button>
-          )}
-
-          {/* Add new folder card */}
-          <button
-            onClick={() => setShowAddFolder(true)}
-            className="flex flex-col items-center justify-center p-6 bg-white rounded-xl border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50/30 transition-all gap-3 group"
-          >
-            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 group-hover:bg-blue-100 group-hover:text-blue-500 transition-colors">
-              <FolderPlus className="w-6 h-6" />
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-gray-500 group-hover:text-blue-600 transition-colors">{t.recipes.newFolder}</h3>
-            </div>
-          </button>
-        </div>
+        <FolderGrid
+          folders={folders}
+          totalCount={state.recipes.length}
+          uncategorizedCount={state.recipes.filter(r => !r.folder).length}
+          folderCount={id => state.recipes.filter(r => r.folder === id).length}
+          countNoun={t.recipes.recipesCount}
+          labels={{ all: t.recipes.all, uncategorized: t.recipes.uncategorized, newFolder: t.recipes.newFolder }}
+          onPick={setActiveFolder}
+          onEdit={setEditFolderTarget}
+          onDelete={f => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
+          onNew={() => setShowAddFolder(true)}
+          editFolderTitle={t.recipes.editFolder}
+        />
       ) : (
         <>
           {/* ── Step 1: folder tabs + recipe list (search box is rendered above) ── */}
