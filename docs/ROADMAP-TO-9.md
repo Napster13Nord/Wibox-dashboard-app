@@ -236,7 +236,7 @@ still happen silently between writes. **Improve, do not rewrite.**
   translation OK log, `state/route.ts`). Keep `console.error` for real failures.
 - [x] **6.3 `work_time_min`**: already rounded in the UI (commit `cab34de`); confirm the
   column type and any report display matches integer minutes.
-- [ ] **6.4 Sweep remaining `any`** found during Phase 2 (routes like `dishes`, `ingredients`,
+- [x] **6.4 Sweep remaining `any`** found during Phase 2 (routes like `dishes`, `ingredients`,
   `folders`, `labels`, `backup`, `db/migrate`).
 
 ---

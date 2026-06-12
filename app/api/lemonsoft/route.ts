@@ -3,6 +3,17 @@ import { getSQL } from '@/lib/db';
 
 export const dynamic = 'force-dynamic';
 
+// Shape of the ingredient row selected below (snake_case, from Neon).
+type IngredientPriceRow = {
+  id: string;
+  name: string;
+  price_per_kg: string | number;
+  price_type: string;
+  supplier: string | null;
+  lemonsoft_id: string | null;
+  updated_at: string | null;
+};
+
 /**
  * GET /api/lemonsoft
  * Returns the ingredient price list in a format ready for Lemonsoft integration.
@@ -21,7 +32,7 @@ export async function GET() {
       ORDER BY name
     `;
 
-    const priceList = rows.map((r: any) => ({
+    const priceList = (rows as IngredientPriceRow[]).map((r) => ({
       // Wibox fields
       wibox_id: r.id,
       name: r.name,

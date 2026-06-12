@@ -2,8 +2,21 @@ import { NextResponse } from 'next/server';
 import { getSQL, ensureTables } from '@/lib/db';
 import { isManager } from '@/lib/auth';
 import { DEFAULT_VAT_RATE } from '@/lib/constants';
+import { Ingredient, Recipe, Dish, Folder, TrashedItem } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+
+// The legacy wibox_state.data JSONB blob. Recipes may carry the old
+// `hiddenCosts` field that the current Recipe type no longer has.
+type LegacyRecipe = Recipe & { hiddenCosts?: number };
+type LegacyBlob = {
+  ingredients?: Ingredient[];
+  recipes?: LegacyRecipe[];
+  dishes?: Dish[];
+  recipeFolders?: Folder[];
+  dishFolders?: Folder[];
+  trash?: TrashedItem[];
+};
 
 /**
  * POST /api/db/migrate
@@ -25,9 +38,9 @@ export async function POST() {
     await ensureTables();
 
     // 2. Read old blob
-    let rows: any[];
+    let rows: { data: LegacyBlob | null }[];
     try {
-      rows = await sql`SELECT data FROM wibox_state WHERE id = 1`;
+      rows = (await sql`SELECT data FROM wibox_state WHERE id = 1`) as { data: LegacyBlob | null }[];
     } catch {
       return NextResponse.json({
         ok: false,
@@ -35,15 +48,14 @@ export async function POST() {
       }, { status: 404 });
     }
 
-    if (rows.length === 0 || !rows[0].data) {
+    const blob = rows.length > 0 ? rows[0].data : null;
+    if (!blob) {
       return NextResponse.json({
         ok: true,
         message: 'No data in wibox_state to migrate. Tables created.',
         migrated: { ingredients: 0, recipes: 0, dishes: 0 },
       });
     }
-
-    const blob = rows[0].data;
     const stats = { ingredients: 0, recipes: 0, dishes: 0, folders: 0, trash: 0 };
 
     // 3. Migrate ingredients
@@ -153,16 +165,17 @@ export async function POST() {
 
     // 7. Migrate trash — re-insert items with deleted_at set
     for (const t of (blob.trash || [])) {
-      const d = t.data;
       const deletedAt = t.deletedAt || new Date().toISOString();
 
-      if (t.originalType === 'ingredient' && d) {
+      if (t.originalType === 'ingredient' && t.data) {
+        const d = t.data as Ingredient;
         await sql`
           INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${deletedAt})
           ON CONFLICT (id) DO NOTHING
         `;
-      } else if (t.originalType === 'recipe' && d) {
+      } else if (t.originalType === 'recipe' && t.data) {
+        const d = t.data as LegacyRecipe;
         await sql`
           INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, folder_id, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${d.folder || null}, ${deletedAt})
@@ -176,7 +189,8 @@ export async function POST() {
             ON CONFLICT (id) DO NOTHING
           `;
         }
-      } else if (t.originalType === 'dish' && d) {
+      } else if (t.originalType === 'dish' && t.data) {
+        const d = t.data as Dish;
         await sql`
           INSERT INTO dishes (id, name, selling_price, portions, price_includes_vat, vat_rate, folder_id, deleted_at)
           VALUES (${d.id}, ${d.name}, ${d.sellingPrice || 0}, ${d.portions || 1}, ${d.priceIncludesVat || false}, ${d.vatRate ?? DEFAULT_VAT_RATE}, ${d.folder || null}, ${deletedAt})
