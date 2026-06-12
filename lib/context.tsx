@@ -268,121 +268,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .finally(() => setIsSyncing(false));
   };
 
-  // ── Ingredients ──
-  const addIngredient = (ingredient: Ingredient) => {
-    const sourceLang = getLocale();
-    // Translation is handled server-side (POST route → translateAndSave); the new
-    // names refresh into state on the next load / focus reconcile.
-    doUpdate(
-      s => ({ ...s, ingredients: [...s.ingredients, ingredient] }),
-      () => apiPost('/api/ingredients', { ...ingredient, sourceLang }),
-    );
-  };
-
-  const updateIngredient = (id: string, ingredient: Partial<Ingredient>) => {
-    doUpdate(
-      s => ({
-        ...s,
-        ingredients: s.ingredients.map(i => i.id === id ? { ...i, ...ingredient } : i),
-      }),
-      () => apiPatch('/api/ingredients', { id, ...ingredient }),
-    );
-  };
-
-  const deleteIngredient = (id: string) => {
-    doUpdate(
+  // ── Entity CRUD factory ──
+  // Ingredients / recipes / dishes share the same add / update / delete shape:
+  // optimistic local change via doUpdate + a granular API write. The only
+  // differences are which collection to touch, the API path, and the trash
+  // `originalType`. `select`/`write` keep it fully typed (no dynamic-key casts).
+  // Translation on create is server-side (POST route → translateAndSave); new
+  // names refresh into state on the next load / focus reconcile.
+  const makeCrud = <T extends Ingredient | Recipe | Dish>(
+    select: (s: AppState) => T[],
+    write: (s: AppState, items: T[]) => AppState,
+    apiPath: string,
+    trashType: 'ingredient' | 'recipe' | 'dish',
+  ) => ({
+    // doUpdate intentionally reads stateRef.current synchronously (the same
+    // deliberate stale-closure-avoidance pattern flagged on `stateRef.current =
+    // state` above). The factory is invoked during render, so the rule trips
+    // here too — but the returned handlers are deferred event callbacks.
+    // eslint-disable-next-line react-hooks/refs
+    add: (item: T) => doUpdate(
+      s => write(s, [...select(s), item]),
+      () => apiPost(apiPath, { ...item, sourceLang: getLocale() }),
+    ),
+    update: (id: string, patch: Partial<T>) => doUpdate(
+      s => write(s, patchById(select(s), id, patch)),
+      () => apiPatch(apiPath, { id, ...patch }),
+    ),
+    remove: (id: string) => doUpdate(
       s => {
-        const item = s.ingredients.find(i => i.id === id);
+        const item = select(s).find(i => i.id === id);
         return {
-          ...s,
-          ingredients: s.ingredients.filter(i => i.id !== id),
-          trash: item ? [...s.trash, {
-            id: newId(),
-            originalType: 'ingredient' as const,
-            data: item,
-            deletedAt: new Date().toISOString(),
-          }] : s.trash,
+          ...write(s, select(s).filter(i => i.id !== id)),
+          trash: item
+            ? [...s.trash, { id: newId(), originalType: trashType, data: item, deletedAt: new Date().toISOString() }]
+            : s.trash,
         };
       },
-      () => apiDelete(`/api/ingredients?id=${id}`),
-    );
-  };
+      () => apiDelete(`${apiPath}?id=${id}`),
+    ),
+  });
 
-  // ── Recipes ──
-  const addRecipe = (recipe: Recipe) => {
-    const sourceLang = getLocale();
-    doUpdate(
-      s => ({ ...s, recipes: [...s.recipes, recipe] }),
-      () => apiPost('/api/recipes', { ...recipe, sourceLang }),
-    );
-  };
-
-  const updateRecipe = (id: string, recipe: Partial<Recipe>) => {
-    doUpdate(
-      s => ({
-        ...s,
-        recipes: s.recipes.map(r => r.id === id ? { ...r, ...recipe } : r),
-      }),
-      () => apiPatch('/api/recipes', { id, ...recipe }),
-    );
-  };
-
-  const deleteRecipe = (id: string) => {
-    doUpdate(
-      s => {
-        const item = s.recipes.find(r => r.id === id);
-        return {
-          ...s,
-          recipes: s.recipes.filter(r => r.id !== id),
-          trash: item ? [...s.trash, {
-            id: newId(),
-            originalType: 'recipe' as const,
-            data: item,
-            deletedAt: new Date().toISOString(),
-          }] : s.trash,
-        };
-      },
-      () => apiDelete(`/api/recipes?id=${id}`),
-    );
-  };
-
-  // ── Dishes ──
-  const addDish = (dish: Dish) => {
-    const sourceLang = getLocale();
-    doUpdate(
-      s => ({ ...s, dishes: [...s.dishes, dish] }),
-      () => apiPost('/api/dishes', { ...dish, sourceLang }),
-    );
-  };
-
-  const updateDish = (id: string, dish: Partial<Dish>) => {
-    doUpdate(
-      s => ({
-        ...s,
-        dishes: s.dishes.map(d => d.id === id ? { ...d, ...dish } : d),
-      }),
-      () => apiPatch('/api/dishes', { id, ...dish }),
-    );
-  };
-
-  const deleteDish = (id: string) => {
-    doUpdate(
-      s => {
-        const item = s.dishes.find(d => d.id === id);
-        return {
-          ...s,
-          dishes: s.dishes.filter(d => d.id !== id),
-          trash: item ? [...s.trash, {
-            id: newId(),
-            originalType: 'dish' as const,
-            data: item,
-            deletedAt: new Date().toISOString(),
-          }] : s.trash,
-        };
-      },
-      () => apiDelete(`/api/dishes?id=${id}`),
-    );
-  };
+  const { add: addIngredient, update: updateIngredient, remove: deleteIngredient } =
+    makeCrud<Ingredient>(s => s.ingredients, (s, ingredients) => ({ ...s, ingredients }), '/api/ingredients', 'ingredient');
+  const { add: addRecipe, update: updateRecipe, remove: deleteRecipe } =
+    makeCrud<Recipe>(s => s.recipes, (s, recipes) => ({ ...s, recipes }), '/api/recipes', 'recipe');
+  const { add: addDish, update: updateDish, remove: deleteDish } =
+    makeCrud<Dish>(s => s.dishes, (s, dishes) => ({ ...s, dishes }), '/api/dishes', 'dish');
 
   // ── Folders ──
   const addFolder = (type: 'recipe' | 'dish', folder: Folder) => {
