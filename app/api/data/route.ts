@@ -65,7 +65,6 @@ export async function POST(request: NextRequest) {
           updated_at = now()
     `;
 
-    console.log('[Wibox API] Data saved to Neon PostgreSQL');
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST error:', err);

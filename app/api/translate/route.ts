@@ -27,9 +27,7 @@ export async function PATCH(request: NextRequest) {
 
     const sql = getSQL();
     await ensureTables();
-    console.log(`[Wibox Translate] PATCH saving translations for ${entityType}/${entityId}:`, JSON.stringify(translations));
     await saveTranslations(sql, entityType, entityId, translations);
-    console.log(`[Wibox Translate] PATCH saved successfully for ${entityType}/${entityId}`);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

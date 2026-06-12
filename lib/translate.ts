@@ -124,9 +124,6 @@ export async function translateAndSave(
   try {
     const translations = await translateName(name, sourceLang);
     await saveTranslations(sql, entityType, entityId, translations);
-    console.log(
-      `[Wibox Translate] Translated "${name}" → ${JSON.stringify(translations)}`
-    );
   } catch (err) {
     console.error(
       `[Wibox Translate] translateAndSave failed for ${entityType}/${entityId}:`,

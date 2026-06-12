@@ -331,7 +331,6 @@ export async function POST(request: NextRequest) {
     // Run the whole batch atomically — all or nothing.
     await sql.transaction(queries);
 
-    console.log(`[Wibox API] Full state synced atomically (${queries.length} statements)`);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[Wibox API] POST /api/state error:', err);
