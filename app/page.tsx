@@ -11,6 +11,7 @@ import { TrashView } from '@/components/TrashView';
 import { ReportsView } from '@/components/ReportsView';
 import { LabelsView } from '@/components/LabelsView';
 import { SyncStatusBanner } from '@/components/SyncStatusBanner';
+import { LoadingScreen } from '@/components/LoadingScreen';
 import { useI18n } from '@/lib/i18n';
 import { useRole } from '@/hooks/useRole';
 import { Menu } from 'lucide-react';
@@ -25,18 +26,21 @@ export default function Home() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t } = useI18n();
-  const { isManager } = useRole();
+  const { isManager, isLoaded: roleLoaded } = useRole();
 
   useEffect(() => {
     localStorage.setItem('wibox-active-tab', activeTab);
   }, [activeTab]);
 
-  // If kitchen user somehow navigates to a manager-only tab, redirect to kitchen
+  // If a kitchen user lands on a manager-only tab, redirect to kitchen.
+  // Wait until the role has actually loaded — otherwise the brief
+  // `isManager === false` while Clerk resolves would wrongly bump a manager
+  // off the Dashboard onto the Kitchen view.
   useEffect(() => {
-    if (!isManager && activeTab !== 'kitchen') {
+    if (roleLoaded && !isManager && activeTab !== 'kitchen') {
       setActiveTab('kitchen');
     }
-  }, [isManager, activeTab]);
+  }, [roleLoaded, isManager, activeTab]);
 
   const handleSetActiveTab = (tab: string) => {
     setActiveTab(tab);
@@ -53,6 +57,10 @@ export default function Home() {
     kitchen: t.sidebar.kitchenScale,
     trash: t.sidebar.trash,
   };
+
+  // Hold the skeleton until the role is known so the first painted view is the
+  // correct one (Dashboard for managers) — never a Kitchen flash.
+  if (!roleLoaded) return <LoadingScreen />;
 
   return (
     <div className="flex h-screen bg-gray-50">

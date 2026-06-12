@@ -9,8 +9,8 @@ const Bar = ({ className = '' }: { className?: string }) => (
 /**
  * Full-screen loading placeholder shown while AppProvider fetches the initial
  * state (and rides out any serverless/DB cold-start retries). It mirrors the
- * real app shell — sidebar + folder-card grid — so the layout doesn't jump
- * when the data arrives, and the shimmer signals work-in-progress.
+ * real manager shell — sidebar + Dashboard (stat cards + status panel) — so the
+ * layout doesn't jump when the data arrives, and the shimmer signals progress.
  */
 export const LoadingScreen: React.FC = () => {
   return (
@@ -44,28 +44,46 @@ export const LoadingScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Main content skeleton */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-8">
-        <div className="space-y-2 mb-8">
-          <Bar className="h-7 w-48" />
-          <Bar className="h-4 w-72" />
-        </div>
+      {/* Main content skeleton — mirrors DashboardView */}
+      <main className="flex-1 overflow-y-auto p-4 pt-16 md:p-8">
+        <div className="space-y-6">
+          {/* Title + subtitle */}
+          <div className="space-y-2">
+            <Bar className="h-7 w-56" />
+            <Bar className="h-4 w-72" />
+          </div>
 
-        {/* Search bar placeholder */}
-        <Bar className="h-11 w-full max-w-md mb-6 rounded-lg" />
+          {/* Stat cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center gap-4"
+              >
+                <div className="skeleton w-14 h-14 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Bar className="h-4 w-24" />
+                  <Bar className="h-6 w-12" />
+                </div>
+              </div>
+            ))}
+          </div>
 
-        {/* Folder / entity card grid placeholder */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-gray-200 bg-white p-5 flex flex-col items-center gap-3"
-            >
-              <div className="skeleton w-12 h-12 rounded-xl" />
-              <Bar className="h-4 w-20" />
-              <Bar className="h-3 w-14" />
+          {/* System status panel */}
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <Bar className="h-5 w-40 mb-4" />
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`flex justify-between items-center py-3 ${i < 2 ? 'border-b border-gray-100' : ''}`}
+                >
+                  <Bar className="h-4 w-44" />
+                  <Bar className="h-6 w-16 rounded-full" />
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </main>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { Ingredient, Recipe, Dish, Folder, TrashedItem } from './types';
 import { newId } from './utils';
 import { DEFAULT_VAT_RATE } from './constants';
@@ -175,6 +176,12 @@ const MAX_UNDO = 20;
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Clerk auth gate — never load data or show the skeleton until the user is
+  // actually signed in, otherwise the provider (which wraps every page incl.
+  // /sign-in) would render the skeleton over the login form and burn its
+  // retries against redirected requests.
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
+
   const [state, setState] = useState<AppState>(defaultState);
   const [isLoaded, setIsLoaded] = useState(false);
   const [history, setHistory] = useState<AppState[]>([]);
@@ -203,6 +210,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // refresh. Retry the primary endpoint a few times with backoff so it
   // self-heals; the LoadingScreen keeps showing meanwhile.
   useEffect(() => {
+    // Wait until Clerk confirms an authenticated session before fetching —
+    // requests made while signed out are redirected to /sign-in (302 → HTML)
+    // and would needlessly exhaust the retry budget.
+    if (!authLoaded || !isSignedIn) return;
+
     let cancelled = false;
 
     const applyState = (next: AppState) => {
@@ -268,7 +280,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     load();
     return () => { cancelled = true; };
-  }, []);
+  }, [authLoaded, isSignedIn]);
 
   // ── Core update helper — computes new state, persists it, then sets it ──
   // apiAction: optional callback for the granular API call. If it returns a
@@ -658,23 +670,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  if (!isLoaded) return <LoadingScreen />;
+  const contextValue: AppContextType = {
+    state,
+    addIngredient, updateIngredient, deleteIngredient,
+    addRecipe, updateRecipe, deleteRecipe,
+    addDish, updateDish, deleteDish,
+    addFolder, updateFolder, deleteFolder,
+    restoreFromTrash, permanentlyDelete, emptyTrash,
+    updateTranslations,
+    undo, canUndo,
+    syncError, isSyncing, retrySync,
+  };
 
-  return (
-    <AppContext.Provider value={{
-      state,
-      addIngredient, updateIngredient, deleteIngredient,
-      addRecipe, updateRecipe, deleteRecipe,
-      addDish, updateDish, deleteDish,
-      addFolder, updateFolder, deleteFolder,
-      restoreFromTrash, permanentlyDelete, emptyTrash,
-      updateTranslations,
-      undo, canUndo,
-      syncError, isSyncing, retrySync,
-    }}>
-      {children}
-    </AppContext.Provider>
-  );
+  // While Clerk initialises, render nothing (avoids flashing the skeleton over
+  // the sign-in page). When signed out, the child is the public /sign-in page —
+  // render it through the provider without the loading gate. Only once signed
+  // in do we hold the skeleton until the user's data has loaded.
+  if (!authLoaded) return null;
+
+  let content: React.ReactNode = children;
+  if (isSignedIn && !isLoaded) content = <LoadingScreen />;
+
+  return <AppContext.Provider value={contextValue}>{content}</AppContext.Provider>;
 };
 
 export const useAppContext = () => {
