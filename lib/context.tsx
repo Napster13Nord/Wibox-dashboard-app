@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { Ingredient, Recipe, Dish, Folder, TrashedItem } from './types';
 import { newId } from './utils';
 import { DEFAULT_VAT_RATE } from './constants';
+import { LoadingScreen } from '@/components/LoadingScreen';
 
 type AppState = {
   ingredients: Ingredient[];
@@ -196,60 +197,77 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Keep ref in sync with state after every render
   stateRef.current = state;
 
-  // ── Load on mount: normalized tables → localStorage fallback ──
+  // ── Load on mount: normalized tables → legacy blob → localStorage ──
+  // The first request after a cold start can transiently fail (serverless and
+  // Neon warming up), which previously left the app blank until a manual
+  // refresh. Retry the primary endpoint a few times with backoff so it
+  // self-heals; the LoadingScreen keeps showing meanwhile.
   useEffect(() => {
-    const load = async () => {
-      let loaded = false;
+    let cancelled = false;
 
+    const applyState = (next: AppState) => {
+      if (cancelled) return;
+      setState(next);
+      stateRef.current = next;
+    };
+
+    // Returns the migrated state, or null on a reachable-but-empty response.
+    // Throws on a non-ok response / network error so the caller can retry.
+    const fetchPrimary = async (): Promise<AppState | null> => {
+      const res = await fetch('/api/state', { cache: 'no-store' });
+      if (!res.ok) throw new Error(`GET /api/state failed (${res.status})`);
+      const data = await res.json();
+      if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
+        return migrateState(data);
+      }
+      return null;
+    };
+
+    const load = async () => {
+      const RETRY_DELAYS = [400, 900, 1500]; // ms backoff between primary attempts
+
+      for (let attempt = 0; attempt <= RETRY_DELAYS.length && !cancelled; attempt++) {
+        try {
+          const primary = await fetchPrimary();
+          if (primary) {
+            applyState(primary);
+            if (!cancelled) setIsLoaded(true);
+            return;
+          }
+          break; // server reachable but no data → try the other sources
+        } catch {
+          // transient cold-start / network failure — back off and retry
+          if (attempt < RETRY_DELAYS.length) {
+            await new Promise(r => setTimeout(r, RETRY_DELAYS[attempt]));
+          }
+        }
+      }
+      if (cancelled) return;
+
+      // Fallback: legacy blob endpoint
       try {
-        // Try the new normalized endpoint first
-        const res = await fetch('/api/state', { cache: 'no-store' });
+        const res = await fetch('/api/data', { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
-            const migrated = migrateState(data);
-            setState(migrated);
-            stateRef.current = migrated;
-            loaded = true;
+            applyState(migrateState(data));
+            if (!cancelled) setIsLoaded(true);
+            return;
           }
         }
-      } catch {
-        // normalized endpoint not available — try legacy
-      }
-
-      // Fallback: try legacy blob endpoint
-      if (!loaded) {
-        try {
-          const res = await fetch('/api/data', { cache: 'no-store' });
-          if (res.ok) {
-            const data = await res.json();
-            if (data && typeof data === 'object' && (data.ingredients || data.recipes || data.dishes)) {
-              const migrated = migrateState(data);
-              setState(migrated);
-              stateRef.current = migrated;
-              loaded = true;
-            }
-          }
-        } catch { /* ignore */ }
-      }
+      } catch { /* ignore */ }
 
       // Last fallback: localStorage
-      if (!loaded) {
-        try {
-          const saved = localStorage.getItem('wibox-data');
-          if (saved) {
-            const parsed = JSON.parse(saved);
-            const migrated = migrateState(parsed);
-            setState(migrated);
-            stateRef.current = migrated;
-          }
-        } catch { /* ignore */ }
-      }
+      try {
+        const saved = localStorage.getItem('wibox-data');
+        if (saved) applyState(migrateState(JSON.parse(saved)));
+      } catch { /* ignore */ }
 
-      setIsLoaded(true);
+      if (!cancelled) setIsLoaded(true);
     };
 
     load();
+    return () => { cancelled = true; };
   }, []);
 
   // ── Core update helper — computes new state, persists it, then sets it ──
@@ -640,7 +658,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
-  if (!isLoaded) return null;
+  if (!isLoaded) return <LoadingScreen />;
 
   return (
     <AppContext.Provider value={{
