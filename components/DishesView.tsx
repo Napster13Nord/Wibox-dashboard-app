@@ -40,66 +40,6 @@ const getVatBreakdown = (sellingPrice: number, vatRate: number) => {
   return { priceWithoutVat, vatAmount, priceWithVat };
 };
 
-/* ─── Compact VAT display ─── */
-const VatRow = ({ sellingPrice, vatRate, onVatRateChange }: {
-  sellingPrice: number;
-  vatRate: number;
-  onVatRateChange?: (rate: number) => void;
-}) => {
-  const { priceWithoutVat, vatAmount, priceWithVat } = getVatBreakdown(sellingPrice, vatRate);
-  const [isEditingVat, setIsEditingVat] = useState(false);
-  const [tempVat, setTempVat] = useState(vatRate);
-
-  return (
-    <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 text-sm py-2 px-3 bg-gray-50 rounded-lg border border-gray-100">
-      <div className="flex items-center gap-1.5">
-        <span className="text-gray-500">Excl. VAT:</span>
-        <span className="font-semibold text-gray-800">€{priceWithoutVat.toFixed(2)}</span>
-      </div>
-      <span className="hidden sm:inline text-gray-300">|</span>
-      <div className="flex items-center gap-1.5">
-        <span className="text-gray-500">VAT</span>
-        {isEditingVat ? (
-          <div className="flex items-center gap-1">
-            <input
-              type="number"
-              step="0.1"
-              className="w-14 px-1.5 py-0.5 border border-gray-300 rounded text-xs text-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-              value={tempVat}
-              onChange={e => setTempVat(parseFloat(e.target.value) || 0)}
-              autoFocus
-              onBlur={() => {
-                if (onVatRateChange) onVatRateChange(tempVat);
-                setIsEditingVat(false);
-              }}
-              onKeyDown={e => {
-                if (e.key === 'Enter') {
-                  if (onVatRateChange) onVatRateChange(tempVat);
-                  setIsEditingVat(false);
-                }
-              }}
-            />
-            <span className="text-xs text-gray-400">%</span>
-          </div>
-        ) : (
-          <button
-            onClick={() => { setTempVat(vatRate); setIsEditingVat(true); }}
-            className="text-xs font-medium text-gray-600 hover:text-blue-600 underline decoration-dotted cursor-pointer"
-          >
-            ({vatRate}%)
-          </button>
-        )}
-        <span className="text-gray-400">:</span>
-        <span className="font-semibold text-gray-700">€{vatAmount.toFixed(2)}</span>
-      </div>
-      <span className="hidden sm:inline text-gray-300">|</span>
-      <div className="flex items-center gap-1.5">
-        <span className="text-gray-500">Incl. VAT:</span>
-        <span className="font-semibold text-gray-800">€{priceWithVat.toFixed(2)}</span>
-      </div>
-    </div>
-  );
-};
 
 /* ─── Margin calculator (neutral styling) ─── */
 const MarginCalculator = ({ costPerPortion }: { costPerPortion: number }) => {
