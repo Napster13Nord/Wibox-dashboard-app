@@ -187,13 +187,14 @@ The folder-grid + folder-tabs + entity-card list is copy-pasted across **Recipes
 This is the largest remaining "AI-slop" surface. **Do this carefully — it touches all three
 main screens, so verify each visually.**
 
-- [ ] **3.1 Extract `<FolderGrid>`** (the Step-0 landing grid of folder cards + "All" +
+- [x] **3.1 Extract `<FolderGrid>`** (the Step-0 landing grid of folder cards + "All" +
   "Uncategorized" + "New folder" card). Props: folders, counts, color/icon, onPick, onEdit,
   onDelete, labels. Use in all three views. Note KitchenView hides empty folders and has no
-  edit/delete — support via props/flags.
-- [ ] **3.2 Extract `<FolderTabs>`** (the in-folder tab row). Same idea.
-- [ ] **3.3 Extract `<PrintableRecipe>`** — the `print-only` summary+ingredients+presets+notes
-  block duplicated in `RecipesView.tsx` and `KitchenView.tsx`.
+  edit/delete — support via props/flags. → `components/shared/FolderGrid.tsx`.
+- [x] **3.2 Extract `<FolderTabs>`** (the in-folder tab row). Same idea.
+  → `components/shared/FolderTabs.tsx`.
+- [x] **3.3 Extract `<PrintableRecipe>`** — the `print-only` summary+ingredients+presets+notes
+  block duplicated in `RecipesView.tsx` and `KitchenView.tsx`. → `components/shared/PrintableRecipe.tsx`.
 - **Acceptance:** all three screens look and behave **identically** to before; `tsc`+tests green;
   manual smoke on Recipes, Dishes, Kitchen (folder nav, search, cards, print preview).
 - **Risk:** medium (shared UI). One component per commit; screenshot/compare before & after.
