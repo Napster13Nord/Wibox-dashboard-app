@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useAppContext } from '@/lib/context';
 import { useI18n } from '@/lib/i18n';
 import { useTranslatedName } from '@/hooks/useTranslatedName';
-import { Folder as FolderType } from '@/lib/types';
+import { Folder as FolderType, Dish, Recipe, Ingredient, DishRecipe, DishIngredient } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { newId } from '@/lib/utils';
 import { DEFAULT_VAT_RATE } from '@/lib/constants';
@@ -17,6 +17,20 @@ import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Calculator, Edit2, Save,
   Search, FolderPlus, EyeOff, Printer, Pencil, ArrowLeft,
 } from 'lucide-react';
+
+/** Payload emitted by DishModal.onSave — a Dish without server-managed fields
+ *  (id present only when editing an existing dish). */
+type DishFormData = {
+  id?: string;
+  name: string;
+  sellingPrice: number;
+  portions: number;
+  folder: string;
+  vatRate: number;
+  priceIncludesVat: boolean;
+  recipes: DishRecipe[];
+  directIngredients: DishIngredient[];
+};
 
 /* ── VAT helpers ── */
 const getVatBreakdown = (sellingPrice: number, vatRate: number) => {
@@ -153,11 +167,11 @@ const DishModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (dish: any) => void;
-  initialData?: any;
-  recipes: any[];
-  ingredients: any[];
-  folders: any[];
+  onSave: (dish: DishFormData) => void;
+  initialData?: Dish;
+  recipes: Recipe[];
+  ingredients: Ingredient[];
+  folders: FolderType[];
   isEditing: boolean;
   defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
@@ -173,12 +187,12 @@ const DishModal = ({
   const [vatRate, setVatRate] = useState(initialData?.vatRate ?? DEFAULT_VAT_RATE);
 
   // Recipe components
-  const [dishRecipes, setDishRecipes] = useState<any[]>(initialData?.recipes || []);
+  const [dishRecipes, setDishRecipes] = useState<DishRecipe[]>(initialData?.recipes || []);
   const [selectedRecipe, setSelectedRecipe] = useState('');
   const [recipeQty, setRecipeQty] = useState<number | ''>('');
 
   // Direct ingredients
-  const [dishDirectIngredients, setDishDirectIngredients] = useState<any[]>(initialData?.directIngredients || []);
+  const [dishDirectIngredients, setDishDirectIngredients] = useState<DishIngredient[]>(initialData?.directIngredients || []);
   const [selectedIngredient, setSelectedIngredient] = useState('');
   const [ingredientQty, setIngredientQty] = useState<number | ''>('');
 
@@ -239,7 +253,7 @@ const DishModal = ({
   };
 
   // Live cost calculation — reuse the shared metric formula (single source of truth)
-  const tempDish = { recipes: dishRecipes, directIngredients: dishDirectIngredients, sellingPrice, portions, vatRate, priceIncludesVat: false } as any;
+  const tempDish: Dish = { id: '', name: '', recipes: dishRecipes, directIngredients: dishDirectIngredients, sellingPrice, portions, vatRate, priceIncludesVat: false };
   const { costPerPortion, foodCostPercentage: foodCostPct, profitMargin: marginPct } =
     calculateDishMetrics(tempDish, recipes, ingredients);
 
@@ -375,8 +389,8 @@ const DishModal = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {dishRecipes.map((dr: any) => {
-                      const recipe = recipes.find((r: any) => r.id === dr.recipeId);
+                    {dishRecipes.map((dr) => {
+                      const recipe = recipes.find((r) => r.id === dr.recipeId);
                       const recipeTotalCost = recipe ? calculateRecipeCost(recipe, ingredients) : 0;
                       const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
                       const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
@@ -432,7 +446,7 @@ const DishModal = ({
               <div className="w-full">
                 <label className="block text-xs font-medium text-gray-500 mb-1">{t.dishes.addRecipeComponent || 'Add Recipe Component'}</label>
                 <RecipeCombobox
-                  recipes={recipes.map((r: any) => {
+                  recipes={recipes.map((r) => {
                     const tc = calculateRecipeCost(r, ingredients);
                     const tw = calculateRecipeWeight(r);
                     return { ...r, costPerKg: tw > 0 ? (tc / tw) * 1000 : 0 };
@@ -479,8 +493,8 @@ const DishModal = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {dishDirectIngredients.map((di: any) => {
-                      const ing = ingredients.find((i: any) => i.id === di.ingredientId);
+                    {dishDirectIngredients.map((di) => {
+                      const ing = ingredients.find((i) => i.id === di.ingredientId);
                       const cost = ing
                         ? ing.priceType === 'perUnit'
                           ? ing.pricePerKg * di.quantity
@@ -537,7 +551,7 @@ const DishModal = ({
               <div className="flex gap-2 items-end">
                 <div className="flex-1">
                   <label className="block text-xs font-medium text-gray-500 mb-1">
-                    {selectedIngredient && ingredients.find((i: any) => i.id === selectedIngredient)?.priceType === 'perUnit'
+                    {selectedIngredient && ingredients.find((i) => i.id === selectedIngredient)?.priceType === 'perUnit'
                       ? 'Qty (units)'
                       : 'Qty (g)'}
                   </label>
@@ -599,7 +613,7 @@ export const DishesView = () => {
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
 
-  const [editingDish, setEditingDish] = useState<any>(null);
+  const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [editModalKey, setEditModalKey] = useState(0);
 
   // Delete confirmation
@@ -609,7 +623,7 @@ export const DishesView = () => {
 
   const folders = state.dishFolders || [];
 
-  const handleAddDish = (data: any) => {
+  const handleAddDish = (data: DishFormData) => {
     addDish({
       id: data.id || newId(),
       name: data.name,
@@ -624,7 +638,7 @@ export const DishesView = () => {
     setIsAdding(false);
   };
 
-  const handleEditDish = (data: any) => {
+  const handleEditDish = (data: DishFormData) => {
     if (!editingDish) return;
     updateDish(editingDish.id, {
       name: data.name,
@@ -1061,8 +1075,8 @@ export const DishesView = () => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
-                            {dish.recipes.map((dr: any) => {
-                              const recipe = state.recipes.find((r: any) => r.id === dr.recipeId);
+                            {dish.recipes.map((dr) => {
+                              const recipe = state.recipes.find((r) => r.id === dr.recipeId);
                               const recipeTotalCost = recipe ? calculateRecipeCost(recipe, state.ingredients) : 0;
                               const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
                               const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
@@ -1104,8 +1118,8 @@ export const DishesView = () => {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-gray-100">
-                            {(dish.directIngredients || []).map((di: any) => {
-                              const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
+                            {(dish.directIngredients || []).map((di) => {
+                              const ing = state.ingredients.find((i) => i.id === di.ingredientId);
                               const isUnit = ing?.priceType === 'perUnit';
                               const cost = ing
                                 ? isUnit ? ing.pricePerKg * di.quantity : (ing.pricePerKg / 1000) * di.quantity
@@ -1264,8 +1278,8 @@ export const DishesView = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {dish.recipes.map((dr: any) => {
-                      const recipe = state.recipes.find((r: any) => r.id === dr.recipeId);
+                    {dish.recipes.map((dr) => {
+                      const recipe = state.recipes.find((r) => r.id === dr.recipeId);
                       const recipeTotalCost = recipe ? calculateRecipeCost(recipe, state.ingredients) : 0;
                       const recipeTotalWeight = recipe ? calculateRecipeWeight(recipe) : 0;
                       const costPerGram = recipeTotalWeight > 0 ? recipeTotalCost / recipeTotalWeight : 0;
@@ -1295,8 +1309,8 @@ export const DishesView = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {(dish.directIngredients || []).map((di: any) => {
-                      const ing = state.ingredients.find((i: any) => i.id === di.ingredientId);
+                    {(dish.directIngredients || []).map((di) => {
+                      const ing = state.ingredients.find((i) => i.id === di.ingredientId);
                       const cost = ing
                         ? ing.priceType === 'perUnit'
                           ? ing.pricePerKg * di.quantity
