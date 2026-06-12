@@ -229,12 +229,12 @@ still happen silently between writes. **Improve, do not rewrite.**
 
 ### Phase 6 — Polish
 
-- [ ] **6.1 Move DDL out of the read path.** `ensureTables()` (DDL + `ALTER`) runs on every
+- [x] **6.1 Move DDL out of the read path.** `ensureTables()` (DDL + `ALTER`) runs on every
   `GET /api/state` (`app/api/state/route.ts`). Make it run once (idempotent guard / a dedicated
   migrate route) instead of per-read. Don't break first-boot table creation.
-- [ ] **6.2 Remove stray `console.log`** from production paths (e.g. `context.tsx`
+- [x] **6.2 Remove stray `console.log`** from production paths (e.g. `context.tsx`
   translation OK log, `state/route.ts`). Keep `console.error` for real failures.
-- [ ] **6.3 `work_time_min`**: already rounded in the UI (commit `cab34de`); confirm the
+- [x] **6.3 `work_time_min`**: already rounded in the UI (commit `cab34de`); confirm the
   column type and any report display matches integer minutes.
 - [ ] **6.4 Sweep remaining `any`** found during Phase 2 (routes like `dishes`, `ingredients`,
   `folders`, `labels`, `backup`, `db/migrate`).

@@ -8,9 +8,26 @@ export function getSQL() {
 
 /**
  * Creates all normalized tables if they don't exist.
- * Safe to call multiple times (idempotent).
+ *
+ * Idempotent and cheap to call from anywhere: the actual DDL runs at most once
+ * per serverless instance (memoized below). Without this guard the full
+ * CREATE/ALTER batch fired on every request — including the `GET /api/state`
+ * read path. If the first attempt fails the cache is cleared so the next call
+ * retries (e.g. a transient DB error on cold start).
  */
-export async function ensureTables() {
+let ensureTablesPromise: Promise<void> | null = null;
+
+export function ensureTables(): Promise<void> {
+  if (!ensureTablesPromise) {
+    ensureTablesPromise = runEnsureTables().catch((err) => {
+      ensureTablesPromise = null;
+      throw err;
+    });
+  }
+  return ensureTablesPromise;
+}
+
+async function runEnsureTables() {
   const sql = getSQL();
 
   await sql`
