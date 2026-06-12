@@ -12,9 +12,10 @@ import { RecipeDetailModal } from './RecipeDetailModal';
 import { FolderDialog } from './FolderDialog';
 import { DishModal, DishFormData } from './dishes/DishModal';
 import { FolderGrid } from './shared/FolderGrid';
+import { FolderTabs } from './shared/FolderTabs';
 import {
   Plus, Trash2, ChevronDown, ChevronUp, X, Edit2,
-  Search, FolderPlus, Printer, Pencil, ArrowLeft,
+  Search, FolderPlus, Printer, ArrowLeft,
 } from 'lucide-react';
 
 
@@ -210,55 +211,18 @@ export const DishesView = () => {
           {/* ── Step 1: Tabs + Dish List (search box is rendered above) ── */}
           {/* Folder tabs — only inside a folder; hidden during a global search from the grid */}
           {activeFolder !== null && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <button
-              onClick={() => setActiveFolder('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {t.dishes.all} ({state.dishes.length})
-            </button>
-            <button
-              onClick={() => setActiveFolder('uncategorized')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {t.dishes.uncategorized} ({uncategorizedCount})
-            </button>
-            {folders.map(f => {
-              const count = state.dishes.filter(d => d.folder === f.id).length;
-              return (
-                <div key={f.id} className="group relative">
-                  <button
-                    onClick={() => setActiveFolder(f.id)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                      activeFolder === f.id ? 'text-white' : 'text-gray-700 hover:opacity-80'
-                    }`}
-                    style={{ backgroundColor: activeFolder === f.id ? f.color : `${f.color}20` }}
-                  >
-                    <span>{f.icon}</span>
-                    <span>{getTranslatedName(f)}</span>
-                    <span className="text-xs opacity-75">({count})</span>
-                  </button>
-                  <button
-                    onClick={() => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
-                    className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
-                  >
-                    ×
-                  </button>
-                  <button
-                    onClick={() => setEditFolderTarget(f)}
-                    className="absolute -top-1 right-4 w-4 h-4 bg-blue-500 text-white rounded-full text-xs items-center justify-center hidden group-hover:flex"
-                    title={t.dishes.editFolder}
-                  >
-                    <Pencil className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
+          <FolderTabs
+            folders={folders}
+            activeFolder={activeFolder}
+            totalCount={state.dishes.length}
+            uncategorizedCount={uncategorizedCount}
+            folderCount={id => state.dishes.filter(d => d.folder === id).length}
+            labels={{ all: t.dishes.all, uncategorized: t.dishes.uncategorized }}
+            onPick={setActiveFolder}
+            onEdit={setEditFolderTarget}
+            onDelete={f => setDeleteFolderTarget({ id: f.id, name: getTranslatedName(f) })}
+            editFolderTitle={t.dishes.editFolder}
+          />
           )}
         </>
       )}

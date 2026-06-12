@@ -8,6 +8,7 @@ import { useRole } from '@/hooks/useRole';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { FolderGrid } from './shared/FolderGrid';
+import { FolderTabs } from './shared/FolderTabs';
 
 export const KitchenView = () => {
   const { state } = useAppContext();
@@ -239,43 +240,16 @@ export const KitchenView = () => {
         <>
           {/* ── Folder tabs — only inside a folder; hidden during a global search from the grid ── */}
           {activeFolder !== null && (
-          <div className="flex items-center gap-2 flex-wrap print:hidden">
-            <button
-              onClick={() => setActiveFolder('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFolder === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {t.kitchen.all} ({state.recipes.length})
-            </button>
-            <button
-              onClick={() => setActiveFolder('uncategorized')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                activeFolder === 'uncategorized' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-            >
-              {t.kitchen.uncategorized} ({state.recipes.filter(r => !r.folder).length})
-            </button>
-            {folders.map(f => {
-              const count = state.recipes.filter(r => r.folder === f.id).length;
-              return (
-                <button
-                  key={f.id}
-                  onClick={() => setActiveFolder(f.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-                    activeFolder === f.id ? 'text-white' : 'text-gray-700 hover:opacity-80'
-                  }`}
-                  style={{
-                    backgroundColor: activeFolder === f.id ? f.color : `${f.color}20`,
-                  }}
-                >
-                  <span>{f.icon}</span>
-                  <span>{getTranslatedName(f)}</span>
-                  <span className="text-xs opacity-75">({count})</span>
-                </button>
-              );
-            })}
-          </div>
+          <FolderTabs
+            folders={folders}
+            activeFolder={activeFolder}
+            totalCount={state.recipes.length}
+            uncategorizedCount={state.recipes.filter(r => !r.folder).length}
+            folderCount={id => state.recipes.filter(r => r.folder === id).length}
+            labels={{ all: t.kitchen.all, uncategorized: t.kitchen.uncategorized }}
+            onPick={setActiveFolder}
+            className="print:hidden"
+          />
           )}
 
           {/* ── Recipe cards (consistent with Dishes/Recipes style) ── */}
