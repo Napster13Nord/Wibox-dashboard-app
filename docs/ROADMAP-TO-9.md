@@ -144,22 +144,22 @@ Recent hardening already shipped on `main` (most recent first):
 
 There are **zero** automated tests. For an app that computes price/cost/VAT this is the #1 risk.
 
-- [ ] **1.1 Add Vitest.** Install dev deps and a config.
+- [x] **1.1 Add Vitest.** Install dev deps and a config.
   ```powershell
   npm i -D vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom
   ```
   Add `vitest.config.ts` (jsdom env, path alias `@` → repo root) and scripts to `package.json`:
   `"test": "vitest"`, `"test:run": "vitest run"`, `"coverage": "vitest run --coverage"`.
   Make sure `@` alias matches `tsconfig.json` `paths`.
-- [ ] **1.2 Unit-test `lib/calculations.ts`** (pure, high value): `calculateRecipeCost`
+- [x] **1.2 Unit-test `lib/calculations.ts`** (pure, high value): `calculateRecipeCost`
   (perKg vs perUnit pricing), `calculateRecipeWeight` (yield %), `calculateDishCost`
   (recipe components cost-per-gram + direct ingredients), `calculateDishMetrics`
   (cost/portion, food-cost %, margin; portions=0 guard). Cover edge cases: missing
   ingredient/recipe ids, zero weight, empty arrays.
-- [ ] **1.3 Unit-test `lib/fuzzySearch.ts`**: diacritic folding (`Glögg`↔`glogg`),
+- [x] **1.3 Unit-test `lib/fuzzySearch.ts`**: diacritic folding (`Glögg`↔`glogg`),
   cross-language match (search EN finds SV/FI), multi-word AND, subsequence typo tolerance,
   ranking order, empty query returns all.
-- [ ] **1.4 (optional, if smooth) Component test** of `EntityCombobox` with
+- [x] **1.4 (optional, if smooth) Component test** of `EntityCombobox` with
   `@testing-library/react`: select → onChange fires; parent clears `value` → input clears.
 - **Acceptance:** `vitest run` green; calculations + fuzzySearch at high coverage.
 - **Risk:** none (additive). **This phase alone is ~+0.5.**
