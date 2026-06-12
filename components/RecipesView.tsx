@@ -6,7 +6,7 @@ import { calculateRecipeCost, calculateRecipeWeight } from '@/lib/calculations';
 import { IngredientCombobox } from './IngredientCombobox';
 import { ConfirmDialog } from './ConfirmDialog';
 import { TranslationEditor } from './TranslationEditor';
-import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType } from '@/lib/types';
+import { Recipe, RecipeIngredient, RecipePreset, Folder as FolderType, Ingredient } from '@/lib/types';
 import { fuzzyFilter } from '@/lib/fuzzySearch';
 import { newId } from '@/lib/utils';
 import { FolderDialog } from './FolderDialog';
@@ -16,6 +16,10 @@ import {
   GripVertical, ArrowLeft,
 } from 'lucide-react';
 import { RecipeDetailModal } from './RecipeDetailModal';
+
+/** Payload emitted by RecipeModal.onSave — a Recipe without a server-assigned
+ *  id (id present only when editing an existing recipe). */
+type RecipeFormData = Omit<Recipe, 'id'> & { id?: string };
 
 /* ── Recipe Modal ── */
 const RecipeModal = ({
@@ -31,10 +35,10 @@ const RecipeModal = ({
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (recipe: Omit<Recipe, 'id'> & { id?: string }) => void;
+  onSave: (recipe: RecipeFormData) => void;
   initialData?: Recipe;
-  ingredients: any[];
-  folders: any[];
+  ingredients: Ingredient[];
+  folders: FolderType[];
   isEditing: boolean;
   defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
@@ -178,7 +182,7 @@ const RecipeModal = ({
   };
 
   // Calculate live cost inside modal
-  const tempRecipe = { ingredients: recipeIngredients, yieldPercentage, notes } as any;
+  const tempRecipe: Recipe = { id: '', name: '', ingredients: recipeIngredients, yieldPercentage, workTimeMinutes, presets, notes };
   const liveCost = calculateRecipeCost(tempRecipe, ingredients);
   const liveWeight = calculateRecipeWeight(tempRecipe);
 
@@ -250,7 +254,7 @@ const RecipeModal = ({
                 onChange={e => setFolder(e.target.value)}
               >
                 <option value="">{t.recipes.noFolder}</option>
-                {folders.map((f: any) => (
+                {folders.map((f) => (
                   <option key={f.id} value={f.id}>{f.icon} {getTranslatedName(f)}</option>
                 ))}
               </select>
@@ -267,7 +271,7 @@ const RecipeModal = ({
           )}
 
           {/* ── Unknown ingredients warning ── */}
-          {recipeIngredients.some(ri => !ingredients.find((i: any) => i.id === ri.ingredientId)) && (
+          {recipeIngredients.some(ri => !ingredients.find((i) => i.id === ri.ingredientId)) && (
             <div className="flex items-center gap-2.5 px-4 py-3 bg-red-50 border border-red-200 rounded-lg">
               <AlertTriangle className="w-5 h-5 text-red-500 shrink-0" />
               <p className="text-sm text-red-700 font-medium">{t.recipes.hasUnknownIngredients}</p>
@@ -307,7 +311,7 @@ const RecipeModal = ({
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {recipeIngredients.map((ri, index) => {
-                  const ing = ingredients.find((i: any) => i.id === ri.ingredientId);
+                  const ing = ingredients.find((i) => i.id === ri.ingredientId);
                   const isUnknown = !ing;
                   const cost = ing
                     ? ing.priceType === 'perUnit'
@@ -521,7 +525,7 @@ export const RecipesView = () => {
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<{ id: string; name: string } | null>(null);
   const [editFolderTarget, setEditFolderTarget] = useState<FolderType | null>(null);
 
-  const handleSaveRecipe = (data: any) => {
+  const handleSaveRecipe = (data: RecipeFormData) => {
     if (data.id) {
       // Editing
       updateRecipe(data.id, {

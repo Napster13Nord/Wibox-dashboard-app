@@ -168,11 +168,11 @@ There are **zero** automated tests. For an app that computes price/cost/VAT this
 
 Types exist in `lib/types.ts` but are bypassed exactly where bugs hide.
 
-- [ ] **2.1 DB row mappers.** In `app/api/state/route.ts` (and any remaining route) the
+- [x] **2.1 DB row mappers.** In `app/api/state/route.ts` (and any remaining route) the
   `rows.map((r: any) => …)` lose all safety. Introduce small **row types** (snake_case
   shape returned by Neon) and typed mapper functions `rowToIngredient`, `rowToRecipe`,
   `rowToDish`, `rowToFolder`. Keep runtime behavior identical (still `Number(...)` coercions).
-- [ ] **2.2 Modal props.** `DishModal`/`DishRecipesEditor`/`DishIngredientsEditor` in
+- [x] **2.2 Modal props.** `DishModal`/`DishRecipesEditor`/`DishIngredientsEditor` in
   `DishesView.tsx` use `initialData?: any`, `recipes: any[]`, `onSave: (dish: any)`.
   Replace with `Dish`, `Recipe[]`, `Ingredient[]`, and a proper `onSave` payload type.
   Do the same for `RecipeModal` in `RecipesView.tsx`.
