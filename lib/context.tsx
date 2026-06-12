@@ -241,6 +241,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (cancelled) return;
       setState(next);
       stateRef.current = next;
+      // Cache the freshly-loaded state so the next refresh seeds from it and
+      // skips the skeleton (previously the cache was only written on edits).
+      saveToLocalStorage(next);
     };
 
     // Returns the migrated state, or null on a reachable-but-empty response.
