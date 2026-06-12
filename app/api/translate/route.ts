@@ -37,40 +37,6 @@ export async function PATCH(request: NextRequest) {
 }
 
 /**
- * PUT /api/translate
- * Translate a name synchronously and return the result.
- * Used by the frontend after adding a new entity to get translations immediately.
- * Body: { name: string, sourceLang?: 'en'|'sv'|'fi', entityType: string, entityId: string }
- */
-export async function PUT(request: NextRequest) {
-  try {
-    if (!(await isManager())) {
-      return NextResponse.json(
-        { ok: false, error: 'Forbidden: manager role required' },
-        { status: 403 }
-      );
-    }
-
-    const { name, sourceLang, entityType, entityId } = await request.json();
-    if (!name || !entityType || !entityId) {
-      return NextResponse.json({ ok: false, error: 'Missing name, entityType, or entityId' }, { status: 400 });
-    }
-
-    const sql = getSQL();
-    const translations = await translateName(name, sourceLang || undefined);
-
-    if (Object.keys(translations).length > 0) {
-      await saveTranslations(sql, entityType, entityId, translations);
-    }
-
-    return NextResponse.json({ ok: true, translations });
-  } catch (err) {
-    console.error('[Wibox Translate] PUT error:', err);
-    return NextResponse.json({ ok: false, error: String(err) }, { status: 500 });
-  }
-}
-
-/**
  * POST /api/translate
  * One-time migration: translates all existing ingredients, recipes, and dishes
  * that don't have translations yet.

@@ -220,7 +220,7 @@ still happen silently between writes. **Improve, do not rewrite.**
   window regains focus or the network comes back online (`visibilitychange` / `online`
   events), and reconcile — so a missed write self-corrects. Guard against clobbering
   in-flight local edits.
-- [ ] **5.2 De-duplicate translation work.** Creating an entity currently translates **twice**:
+- [x] **5.2 De-duplicate translation work.** Creating an entity currently translates **twice**:
   the granular `POST` route calls `translateAndSave` **and** the client calls
   `PUT /api/translate` (`autoTranslateEntity` in `context.tsx`). Pick one path (recommend
   keeping the server-side one and dropping the client PUT, or vice-versa) and remove the other.

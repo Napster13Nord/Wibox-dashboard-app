@@ -126,34 +126,6 @@ function getLocale(): string {
   return 'en';
 }
 
-/**
- * Auto-translate an entity name and return the translations.
- * Uses the PUT /api/translate endpoint which translates synchronously.
- */
-async function autoTranslateEntity(
-  entityType: string,
-  entityId: string,
-  name: string,
-  sourceLang: string
-): Promise<Record<string, string> | null> {
-  try {
-    const res = await fetch('/api/translate', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ entityType, entityId, name, sourceLang }),
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data.ok && data.translations) {
-        return data.translations;
-      }
-    }
-  } catch (err) {
-    console.error(`[Wibox] Auto-translate failed for ${entityType}/${entityId}:`, err);
-  }
-  return null;
-}
-
 async function syncFullState(data: AppState) {
   const res = await fetch('/api/state', {
     method: 'POST',
@@ -367,28 +339,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ── Ingredients ──
   const addIngredient = (ingredient: Ingredient) => {
     const sourceLang = getLocale();
+    // Translation is handled server-side (POST route → translateAndSave); the new
+    // names refresh into state on the next load / focus reconcile.
     doUpdate(
       s => ({ ...s, ingredients: [...s.ingredients, ingredient] }),
-      () => {
-        // Auto-translate is best-effort and feeds results back to state (not tracked)
-        autoTranslateEntity('ingredient', ingredient.id, ingredient.name, sourceLang)
-          .then(translations => {
-            if (translations) {
-              // Update local state with translations (no undo entry needed)
-              const current = stateRef.current;
-              const updated = {
-                ...current,
-                ingredients: current.ingredients.map(i =>
-                  i.id === ingredient.id ? { ...i, translations } : i
-                ),
-              };
-              stateRef.current = updated;
-              setState(updated);
-              saveToLocalStorage(updated);
-            }
-          });
-        return apiPost('/api/ingredients', { ...ingredient, sourceLang });
-      },
+      () => apiPost('/api/ingredients', { ...ingredient, sourceLang }),
     );
   };
 
@@ -426,25 +381,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const sourceLang = getLocale();
     doUpdate(
       s => ({ ...s, recipes: [...s.recipes, recipe] }),
-      () => {
-        // Auto-translate is best-effort and feeds results back to state (not tracked)
-        autoTranslateEntity('recipe', recipe.id, recipe.name, sourceLang)
-          .then(translations => {
-            if (translations) {
-              const current = stateRef.current;
-              const updated = {
-                ...current,
-                recipes: current.recipes.map(r =>
-                  r.id === recipe.id ? { ...r, translations } : r
-                ),
-              };
-              stateRef.current = updated;
-              setState(updated);
-              saveToLocalStorage(updated);
-            }
-          });
-        return apiPost('/api/recipes', { ...recipe, sourceLang });
-      },
+      () => apiPost('/api/recipes', { ...recipe, sourceLang }),
     );
   };
 
@@ -482,25 +419,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const sourceLang = getLocale();
     doUpdate(
       s => ({ ...s, dishes: [...s.dishes, dish] }),
-      () => {
-        // Auto-translate is best-effort and feeds results back to state (not tracked)
-        autoTranslateEntity('dish', dish.id, dish.name, sourceLang)
-          .then(translations => {
-            if (translations) {
-              const current = stateRef.current;
-              const updated = {
-                ...current,
-                dishes: current.dishes.map(d =>
-                  d.id === dish.id ? { ...d, translations } : d
-                ),
-              };
-              stateRef.current = updated;
-              setState(updated);
-              saveToLocalStorage(updated);
-            }
-          });
-        return apiPost('/api/dishes', { ...dish, sourceLang });
-      },
+      () => apiPost('/api/dishes', { ...dish, sourceLang }),
     );
   };
 
@@ -539,61 +458,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
     doUpdate(
       s => ({ ...s, [key]: [...(s[key] || []), folder] }),
-      () => {
-        // Auto-translate folder name (best-effort, not tracked)
-        autoTranslateEntity('folder', folder.id, folder.name, sourceLang)
-          .then(translations => {
-            if (translations) {
-              const current = stateRef.current;
-              const updated = {
-                ...current,
-                [key]: (current[key] || []).map((f: Folder) =>
-                  f.id === folder.id ? { ...f, translations } : f
-                ),
-              };
-              stateRef.current = updated;
-              setState(updated);
-              saveToLocalStorage(updated);
-            }
-          });
-        return apiPost('/api/folders', { type, sourceLang, ...folder });
-      },
+      () => apiPost('/api/folders', { type, sourceLang, ...folder }),
     );
   };
 
   const updateFolder = (type: 'recipe' | 'dish', id: string, folder: Partial<Folder>) => {
     const sourceLang = getLocale();
     const key = type === 'recipe' ? 'recipeFolders' : 'dishFolders';
-    // Snapshot the existing folder's raw name BEFORE any state mutations
-    const existing = stateRef.current[key]?.find((f: Folder) => f.id === id);
-    const existingName = existing?.name;
-    const nameChanged = folder.name !== undefined && !!existingName && existingName !== folder.name;
+    // Server re-translates on name change (PATCH /api/folders → translateAndSave).
     doUpdate(
       s => ({
         ...s,
         [key]: (s[key] || []).map((f: Folder) => f.id === id ? { ...f, ...folder } : f),
       }),
-      () => {
-        // Re-translate if name changed (best-effort, not tracked)
-        if (nameChanged && folder.name) {
-          autoTranslateEntity('folder', id, folder.name, sourceLang)
-            .then(translations => {
-              if (translations) {
-                const current = stateRef.current;
-                const updated = {
-                  ...current,
-                  [key]: (current[key] || []).map((f: Folder) =>
-                    f.id === id ? { ...f, translations } : f
-                  ),
-                };
-                stateRef.current = updated;
-                setState(updated);
-                saveToLocalStorage(updated);
-              }
-            });
-        }
-        return apiPatch('/api/folders', { id, sourceLang, ...folder });
-      },
+      () => apiPatch('/api/folders', { id, sourceLang, ...folder }),
     );
   };
 
