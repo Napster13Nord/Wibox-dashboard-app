@@ -203,9 +203,10 @@ main screens, so verify each visually.**
 `DishesView.tsx` (~1.6k) and `RecipesView.tsx` (~1.1k) mix modal, editors, dialogs and the
 main view in one file.
 
-- [ ] **4.1** Move `DishModal` + `DishRecipesEditor` + `DishIngredientsEditor` + `VatRow` +
+- [x] **4.1** Move `DishModal` + `DishRecipesEditor` + `DishIngredientsEditor` + `VatRow` +
   `MarginCalculator` into their own files under `components/dishes/`.
-- [ ] **4.2** Move `RecipeModal` into `components/recipes/`.
+  (DishRecipesEditor/DishIngredientsEditor/VatRow were dead code — removed instead.)
+- [x] **4.2** Move `RecipeModal` into `components/recipes/`.
 - **Acceptance:** pure file moves + imports; `tsc`+tests green; zero behavior change.
 - **Risk:** low (mechanical), but do it after Phase 2 so types travel with the code.
 
