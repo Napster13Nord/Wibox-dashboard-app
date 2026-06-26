@@ -42,6 +42,8 @@ export const DishesView = () => {
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
+  // Grams of the viewed recipe actually used in the dish — scales the popup
+  const [viewingRecipeScale, setViewingRecipeScale] = useState<number | undefined>(undefined);
   // Inline recipe edit (from the recipe popup opened inside Dish Building)
   const [editingRecipeInline, setEditingRecipeInline] = useState<Recipe | null>(null);
   const [recipeEditKey, setRecipeEditKey] = useState(0);
@@ -260,7 +262,7 @@ export const DishesView = () => {
           folders={folders}
           isEditing={true}
           onUpdateTranslations={(tr) => updateTranslations('dish', editingDish.id, tr)}
-          onViewRecipe={(recipeId) => setViewingRecipeId(recipeId)}
+          onViewRecipe={(recipeId, scale) => { setViewingRecipeId(recipeId); setViewingRecipeScale(scale); }}
         />
       )}
 
@@ -424,7 +426,7 @@ export const DishesView = () => {
                                   <td className="px-4 py-2 text-sm font-medium">
                                     {recipe ? (
                                       <button
-                                        onClick={() => setViewingRecipeId(recipe.id)}
+                                        onClick={() => { setViewingRecipeId(recipe.id); setViewingRecipeScale(dr.quantityInGrams); }}
                                         className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left"
                                       >
                                         {getTranslatedName(recipe)}
@@ -548,7 +550,8 @@ export const DishesView = () => {
         return (
           <RecipeDetailModal
             recipe={recipe}
-            onClose={() => setViewingRecipeId(null)}
+            scaleToGrams={viewingRecipeScale}
+            onClose={() => { setViewingRecipeId(null); setViewingRecipeScale(undefined); }}
             onEdit={() => { setRecipeEditKey(k => k + 1); setEditingRecipeInline(recipe); }}
           />
         );

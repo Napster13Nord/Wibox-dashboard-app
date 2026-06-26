@@ -49,7 +49,7 @@ export const DishModal = ({
   isEditing: boolean;
   defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
-  onViewRecipe?: (recipeId: string) => void;
+  onViewRecipe?: (recipeId: string, scaleToGrams?: number) => void;
 }) => {
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
@@ -274,7 +274,7 @@ export const DishModal = ({
                           <td className="p-2.5 text-sm">
                             {recipe ? (
                               <button
-                                onClick={() => onViewRecipe?.(recipe.id)}
+                                onClick={() => onViewRecipe?.(recipe.id, dr.quantityInGrams)}
                                 className="text-blue-600 hover:text-blue-800 hover:underline font-medium text-left"
                               >
                                 {getTranslatedName(recipe)}

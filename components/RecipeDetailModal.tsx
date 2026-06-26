@@ -11,21 +11,43 @@ interface RecipeDetailModalProps {
   onClose: () => void;
   onEdit?: () => void;
   onPrint?: () => void;
+  /** When set (opened from Dish Building), the recipe is displayed scaled to
+   *  this many grams as actually used in the dish — quantities and costs are
+   *  shown for that portion only. The stored recipe is never modified. */
+  scaleToGrams?: number;
 }
+
+/** Round to 1 decimal and drop a trailing ".0" so scaled quantities read
+ *  cleanly (e.g. 24 instead of 24.0, 36.5 stays 36.5). */
+const fmtQty = (n: number) => {
+  const r = Math.round(n * 10) / 10;
+  return Number.isInteger(r) ? String(r) : r.toFixed(1);
+};
 
 export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
   recipe,
   onClose,
   onEdit,
   onPrint,
+  scaleToGrams,
 }) => {
   const { state } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
 
-  const totalCost = calculateRecipeCost(recipe, state.ingredients);
-  const totalWeight = calculateRecipeWeight(recipe);
-  const costPerKg = totalWeight > 0 ? (totalCost / totalWeight) * 1000 : 0;
+  // Full (stored) recipe figures
+  const fullCost = calculateRecipeCost(recipe, state.ingredients);
+  const fullWeight = calculateRecipeWeight(recipe);
+
+  // Scale factor — yield-adjusted weight as denominator, matching how the dish
+  // attributes recipe cost (cost/gram × grams used).
+  const isScaled = typeof scaleToGrams === 'number' && scaleToGrams > 0 && fullWeight > 0;
+  const scaleFactor = isScaled ? (scaleToGrams as number) / fullWeight : 1;
+
+  const totalCost = fullCost * scaleFactor;
+  const totalWeight = isScaled ? (scaleToGrams as number) : fullWeight;
+  // Cost per kg is intensive — unchanged by scaling.
+  const costPerKg = fullWeight > 0 ? (fullCost / fullWeight) * 1000 : 0;
   const folders = [...(state.recipeFolders || [])];
   const folderInfo = folders.find(f => f.id === recipe.folder);
 
@@ -107,6 +129,17 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
         {/* Body */}
         <div className="overflow-y-auto flex-1 p-6 space-y-6">
 
+          {/* Scaled-view banner (opened from Dish Building) */}
+          {isScaled && (
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <Scale className="w-4 h-4 shrink-0" />
+              <span>
+                Scaled to <span className="font-semibold">{fmtQty(scaleToGrams as number)}g</span> used in this dish
+                {' · '}full recipe makes {fmtQty(fullWeight)}g
+              </span>
+            </div>
+          )}
+
           {/* Key metrics */}
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-indigo-50 rounded-xl p-4 text-center border border-indigo-200">
@@ -121,7 +154,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             </div>
             <div className="bg-gray-50 rounded-xl p-4 text-center">
               <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">{t.recipes.weight}</p>
-              <p className="text-lg font-bold text-gray-700">{totalWeight.toFixed(0)}g</p>
+              <p className="text-lg font-bold text-gray-700">{fmtQty(totalWeight)}g</p>
             </div>
           </div>
 
@@ -144,10 +177,11 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                     {recipe.ingredients.map(ri => {
                       const ing = state.ingredients.find(i => i.id === ri.ingredientId);
                       const isUnit = ing?.priceType === 'perUnit';
+                      const qty = ri.quantityInGrams * scaleFactor;
                       const cost = ing
                         ? isUnit
-                          ? ing.pricePerKg * ri.quantityInGrams
-                          : (ing.pricePerKg / 1000) * ri.quantityInGrams
+                          ? ing.pricePerKg * qty
+                          : (ing.pricePerKg / 1000) * qty
                         : 0;
                       return (
                         <tr key={ri.id} className="hover:bg-gray-50">
@@ -155,7 +189,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                             {ing ? getTranslatedName(ing) : <span className="text-red-400">Unknown ingredient</span>}
                           </td>
                           <td className="px-4 py-2.5 text-sm text-gray-600">
-                            {ri.quantityInGrams}{isUnit ? ' unit(s)' : 'g'}
+                            {fmtQty(qty)}{isUnit ? ' unit(s)' : 'g'}
                           </td>
                           <td className="px-4 py-2.5 text-sm text-gray-600">€{cost.toFixed(2)}</td>
                         </tr>
@@ -164,7 +198,7 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
                     {/* Totals row */}
                     <tr className="bg-gray-50 font-semibold border-t-2 border-gray-300">
                       <td className="px-4 py-2.5 text-sm text-gray-900">Total</td>
-                      <td className="px-4 py-2.5 text-sm text-gray-900">{totalWeight.toFixed(0)}g</td>
+                      <td className="px-4 py-2.5 text-sm text-gray-900">{fmtQty(totalWeight)}g</td>
                       <td className="px-4 py-2.5 text-sm text-blue-700">€{totalCost.toFixed(2)}</td>
                     </tr>
                   </tbody>
@@ -177,8 +211,8 @@ export const RecipeDetailModal: React.FC<RecipeDetailModalProps> = ({
             )}
           </div>
 
-          {/* Kitchen Presets */}
-          {(recipe.presets || []).length > 0 && (
+          {/* Kitchen Presets — hidden in scaled view (they describe the full batch) */}
+          {!isScaled && (recipe.presets || []).length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
                 🍳 Kitchen Presets
