@@ -11,6 +11,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { RecipeDetailModal } from './RecipeDetailModal';
 import { FolderDialog } from './FolderDialog';
 import { DishModal, DishFormData } from './dishes/DishModal';
+import { RecipeModal, RecipeFormData } from './recipes/RecipeModal';
 import { FolderGrid } from './shared/FolderGrid';
 import { FolderTabs } from './shared/FolderTabs';
 import {
@@ -31,7 +32,7 @@ const getVatBreakdown = (sellingPrice: number, vatRate: number) => {
 
 /* ─── Main view ─── */
 export const DishesView = () => {
-  const { state, addDish, updateDish, deleteDish, addFolder, updateFolder, deleteFolder, updateTranslations } = useAppContext();
+  const { state, addDish, updateDish, deleteDish, updateRecipe, addFolder, updateFolder, deleteFolder, updateTranslations } = useAppContext();
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -41,6 +42,9 @@ export const DishesView = () => {
   const [activeFolder, setActiveFolder] = useState<string | null>(null);
   const [showAddFolder, setShowAddFolder] = useState(false);
   const [viewingRecipeId, setViewingRecipeId] = useState<string | null>(null);
+  // Inline recipe edit (from the recipe popup opened inside Dish Building)
+  const [editingRecipeInline, setEditingRecipeInline] = useState<Recipe | null>(null);
+  const [recipeEditKey, setRecipeEditKey] = useState(0);
 
   const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [editModalKey, setEditModalKey] = useState(0);
@@ -79,6 +83,22 @@ export const DishesView = () => {
       vatRate: data.vatRate ?? DEFAULT_VAT_RATE,
     });
     setEditingDish(null);
+  };
+
+  /* Inline recipe edit — save without leaving Dish Building.
+     Updating state.recipes makes the open recipe popup and the dish's live
+     cost/margin metrics recalculate automatically (both read from state). */
+  const handleSaveInlineRecipe = (data: RecipeFormData) => {
+    if (!data.id) return;
+    updateRecipe(data.id, {
+      name: data.name,
+      yieldPercentage: data.yieldPercentage,
+      workTimeMinutes: data.workTimeMinutes,
+      notes: data.notes,
+      folder: data.folder,
+      ingredients: data.ingredients,
+      presets: data.presets,
+    });
   };
 
   /* Recipe helpers */
@@ -529,9 +549,29 @@ export const DishesView = () => {
           <RecipeDetailModal
             recipe={recipe}
             onClose={() => setViewingRecipeId(null)}
+            onEdit={() => { setRecipeEditKey(k => k + 1); setEditingRecipeInline(recipe); }}
           />
         );
       })()}
+
+      {/* ── Inline Recipe Editor (stacked above the recipe popup) ──
+          Lets the user tweak a recipe while analysing dish margins without
+          leaving Dish Building. On save the popup stays open and all
+          dish/recipe costs recalculate from the updated state. */}
+      {editingRecipeInline && (
+        <RecipeModal
+          key={`inline-recipe-${recipeEditKey}`}
+          isOpen={true}
+          onClose={() => setEditingRecipeInline(null)}
+          onSave={handleSaveInlineRecipe}
+          initialData={editingRecipeInline}
+          ingredients={state.ingredients}
+          folders={state.recipeFolders || []}
+          isEditing={true}
+          onUpdateTranslations={(tr) => updateTranslations('recipe', editingRecipeInline.id, tr)}
+          zClassName="z-[70]"
+        />
+      )}
 
       {/* ── Print-only view (current expanded dish) — always present ── */}
       {(() => {

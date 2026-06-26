@@ -23,6 +23,7 @@ export const RecipeModal = ({
   isEditing,
   defaultFolder,
   onUpdateTranslations,
+  zClassName = 'z-50',
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -33,6 +34,9 @@ export const RecipeModal = ({
   isEditing: boolean;
   defaultFolder?: string;
   onUpdateTranslations?: (translations: Record<string, string>) => void;
+  /** Tailwind z-index class for the overlay. Override when stacking above
+   *  another modal (e.g. inline recipe edit from Dish Building). */
+  zClassName?: string;
 }) => {
   const { t } = useI18n();
   const getTranslatedName = useTranslatedName();
@@ -178,7 +182,7 @@ export const RecipeModal = ({
   const liveWeight = calculateRecipeWeight(tempRecipe);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto">
+    <div className={`fixed inset-0 ${zClassName} flex items-start justify-center overflow-y-auto`}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl mx-4 my-8 overflow-hidden">
         {/* Header */}
