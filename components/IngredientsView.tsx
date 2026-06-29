@@ -116,8 +116,9 @@ export const IngredientsView = () => {
     pricePerKg: number;
     priceType: PriceType;
     supplier: string;
+    supplierProduct: string;
     lastUpdate: string;
-  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: todayIso() });
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', supplierProduct: '', lastUpdate: todayIso() });
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<{
@@ -125,8 +126,9 @@ export const IngredientsView = () => {
     pricePerKg: number;
     priceType: PriceType;
     supplier: string;
+    supplierProduct: string;
     lastUpdate: string;
-  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: '' });
+  }>({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', supplierProduct: '', lastUpdate: '' });
 
   // Delete confirmation state
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
@@ -150,9 +152,10 @@ export const IngredientsView = () => {
       pricePerKg: newIngredient.pricePerKg,
       priceType: newIngredient.priceType,
       supplier: newIngredient.supplier,
+      supplierProduct: newIngredient.supplierProduct,
       lastUpdate: newIngredient.lastUpdate,
     });
-    setNewIngredient({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', lastUpdate: todayIso() });
+    setNewIngredient({ name: '', pricePerKg: 0, priceType: 'perKg', supplier: '', supplierProduct: '', lastUpdate: todayIso() });
     setIsAdding(false);
   };
 
@@ -163,6 +166,7 @@ export const IngredientsView = () => {
       pricePerKg: ingredient.pricePerKg,
       priceType: ingredient.priceType ?? 'perKg',
       supplier: ingredient.supplier ?? '',
+      supplierProduct: ingredient.supplierProduct ?? '',
       lastUpdate: ingredient.lastUpdate ?? todayIso(),
     });
   };
@@ -183,6 +187,7 @@ export const IngredientsView = () => {
         ing.name.toLowerCase().includes(q) ||
         translatedName.includes(q) ||
         (ing.supplier ?? '').toLowerCase().includes(q) ||
+        (ing.supplierProduct ?? '').toLowerCase().includes(q) ||
         Object.values(ing.translations || {}).some(t => t && t.toLowerCase().includes(q))
       );
     });
@@ -312,11 +317,18 @@ export const IngredientsView = () => {
                 <td className="p-4">
                   <input
                     type="text"
-                    placeholder="e.g., Flour"
+                    placeholder={t.ingredients.namePlaceholder}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     value={newIngredient.name}
                     onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
                     autoFocus
+                  />
+                  <input
+                    type="text"
+                    placeholder={t.ingredients.supplierProductPlaceholder}
+                    className="w-full mt-2 px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={newIngredient.supplierProduct}
+                    onChange={(e) => setNewIngredient({ ...newIngredient, supplierProduct: e.target.value })}
                   />
                 </td>
                 <td className="p-4">
@@ -394,6 +406,14 @@ export const IngredientsView = () => {
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
                       />
+                      <input
+                        type="text"
+                        placeholder={t.ingredients.supplierProductPlaceholder}
+                        className="w-full mb-2 px-3 py-1.5 border border-gray-200 rounded-md text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={editForm.supplierProduct}
+                        onChange={(e) => setEditForm({ ...editForm, supplierProduct: e.target.value })}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); saveEdit(); } }}
+                      />
                       <TranslationEditor
                         compact
                         translations={ingredient.translations}
@@ -456,7 +476,12 @@ export const IngredientsView = () => {
                   </>
                 ) : (
                   <>
-                    <td className="p-4 font-medium text-gray-900">{getTranslatedName(ingredient)}</td>
+                    <td className="p-4">
+                      <div className="font-medium text-gray-900">{getTranslatedName(ingredient)}</div>
+                      {(ingredient as any).supplierProduct && (
+                        <div className="text-xs text-gray-400 mt-0.5">{(ingredient as any).supplierProduct}</div>
+                      )}
+                    </td>
                     <td className="p-4">
                       <PriceTypeBadge priceType={(ingredient as any).priceType ?? 'perKg'} />
                     </td>

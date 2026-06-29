@@ -59,8 +59,8 @@ export async function POST(request: NextRequest) {
     // Inline it here to avoid circular fetch
     for (const ing of (data.ingredients || [])) {
       await sql`
-        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
-        VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, now())
+        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, updated_at)
+        VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.supplierProduct || ''}, now())
       `;
     }
 
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       const d = t.data;
       const deletedAt = t.deletedAt || new Date().toISOString();
       if (t.originalType === 'ingredient' && d) {
-        await sql`INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, deleted_at) VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
+        await sql`INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, deleted_at) VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${d.supplierProduct || ''}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
       } else if (t.originalType === 'recipe' && d) {
         await sql`INSERT INTO recipes (id, name, yield_percentage, work_time_min, hidden_costs, deleted_at) VALUES (${d.id}, ${d.name}, ${d.yieldPercentage || 100}, ${d.workTimeMinutes || 0}, ${d.hiddenCosts || 0}, ${deletedAt}) ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}`;
       } else if (t.originalType === 'dish' && d) {

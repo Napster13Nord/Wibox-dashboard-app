@@ -9,7 +9,8 @@ export type Ingredient = {
   name: string;
   pricePerKg: number;
   priceType: 'perKg' | 'perUnit';
-  supplier?: string;
+  supplier?: string;          // supplier company name (e.g. "Arla")
+  supplierProduct?: string;   // exact purchasing product line (e.g. "Arla Sininen Maitojuoma 1L LF") — shown only in the ingredient list, never in recipes/scale
   lastUpdate?: string; // ISO date string
   lemonsoftId?: string; // Lemonsoft ERP article ID (for API sync)
   translations?: TranslationMap;

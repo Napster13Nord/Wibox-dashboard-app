@@ -14,7 +14,7 @@ export const revalidate = 0;
 // Numeric columns come back as strings over the HTTP driver, hence string | number.
 type IngredientRow = {
   id: string; name: string; price_per_kg: string | number; price_type: string;
-  supplier: string | null; lemonsoft_id: string | null;
+  supplier: string | null; supplier_product: string | null; lemonsoft_id: string | null;
   updated_at: string | null; deleted_at: string | null;
 };
 type RecipeRow = {
@@ -99,6 +99,7 @@ export async function GET() {
       pricePerKg: Number(r.price_per_kg),
       priceType: r.price_type as Ingredient['priceType'],
       supplier: r.supplier || '',
+      supplierProduct: r.supplier_product || '',
       lastUpdate: r.updated_at ? new Date(r.updated_at).toISOString().split('T')[0] : '',
       lemonsoftId: r.lemonsoft_id || undefined,
       translations: getTranslations('ingredient', r.id),
@@ -151,6 +152,7 @@ export async function GET() {
         data: {
           id: r.id, name: r.name, pricePerKg: Number(r.price_per_kg),
           priceType: r.price_type as Ingredient['priceType'], supplier: r.supplier || '',
+          supplierProduct: r.supplier_product || '',
           lastUpdate: '', translations: getTranslations('ingredient', r.id),
         },
         deletedAt: r.deleted_at || new Date().toISOString(),
@@ -235,8 +237,8 @@ export async function POST(request: NextRequest) {
     // ── Ingredients ──
     for (const ing of (data.ingredients || [])) {
       queries.push(sql`
-        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
-        VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.lastUpdate ? new Date(ing.lastUpdate).toISOString() : new Date().toISOString()})
+        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, updated_at)
+        VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.supplierProduct || ''}, ${ing.lastUpdate ? new Date(ing.lastUpdate).toISOString() : new Date().toISOString()})
       `);
       pushTranslations('ingredient', ing.id, ing.translations);
     }
@@ -300,8 +302,8 @@ export async function POST(request: NextRequest) {
       const deletedAt = t.deletedAt || new Date().toISOString();
       if (t.originalType === 'ingredient' && d) {
         queries.push(sql`
-          INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, deleted_at)
-          VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${deletedAt})
+          INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, deleted_at)
+          VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${d.supplierProduct || ''}, ${deletedAt})
           ON CONFLICT (id) DO UPDATE SET deleted_at = ${deletedAt}
         `);
       } else if (t.originalType === 'recipe' && d) {

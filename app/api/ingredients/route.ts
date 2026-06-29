@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
     const ing = await request.json();
     const sql = getSQL();
     await sql`
-      INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
-      VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, now())
+      INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, updated_at)
+      VALUES (${ing.id}, ${ing.name}, ${ing.pricePerKg || 0}, ${ing.priceType || 'perKg'}, ${ing.supplier || ''}, ${ing.supplierProduct || ''}, now())
     `;
 
     // Fire-and-forget translation (non-blocking for the response)
@@ -69,6 +69,9 @@ export async function PATCH(request: NextRequest) {
     }
     if (updates.supplier !== undefined) {
       await sql`UPDATE ingredients SET supplier = ${updates.supplier}, updated_at = now() WHERE id = ${id}`;
+    }
+    if (updates.supplierProduct !== undefined) {
+      await sql`UPDATE ingredients SET supplier_product = ${updates.supplierProduct}, updated_at = now() WHERE id = ${id}`;
     }
     if (updates.lemonsoftId !== undefined) {
       await sql`UPDATE ingredients SET lemonsoft_id = ${updates.lemonsoftId}, updated_at = now() WHERE id = ${id}`;

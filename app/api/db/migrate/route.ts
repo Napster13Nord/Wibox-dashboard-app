@@ -61,13 +61,14 @@ export async function POST() {
     // 3. Migrate ingredients
     for (const ing of (blob.ingredients || [])) {
       await sql`
-        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, updated_at)
+        INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, updated_at)
         VALUES (
           ${ing.id},
           ${ing.name},
           ${ing.pricePerKg || 0},
           ${ing.priceType || 'perKg'},
           ${ing.supplier || ''},
+          ${ing.supplierProduct || ''},
           ${ing.lastUpdate ? new Date(ing.lastUpdate).toISOString() : new Date().toISOString()}
         )
         ON CONFLICT (id) DO NOTHING
@@ -170,8 +171,8 @@ export async function POST() {
       if (t.originalType === 'ingredient' && t.data) {
         const d = t.data as Ingredient;
         await sql`
-          INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, deleted_at)
-          VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${deletedAt})
+          INSERT INTO ingredients (id, name, price_per_kg, price_type, supplier, supplier_product, deleted_at)
+          VALUES (${d.id}, ${d.name}, ${d.pricePerKg || 0}, ${d.priceType || 'perKg'}, ${d.supplier || ''}, ${d.supplierProduct || ''}, ${deletedAt})
           ON CONFLICT (id) DO NOTHING
         `;
       } else if (t.originalType === 'recipe' && t.data) {

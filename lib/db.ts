@@ -37,11 +37,19 @@ async function runEnsureTables() {
       price_per_kg NUMERIC(10,4) NOT NULL DEFAULT 0,
       price_type  TEXT NOT NULL DEFAULT 'perKg',
       supplier    TEXT DEFAULT '',
+      supplier_product TEXT DEFAULT '',
       lemonsoft_id TEXT,
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
       deleted_at  TIMESTAMPTZ
     )
   `;
+
+  // Migrate existing ingredients table: add the supplier product column
+  try {
+    await sql`ALTER TABLE ingredients ADD COLUMN IF NOT EXISTS supplier_product TEXT DEFAULT ''`;
+  } catch (err) {
+    // Column already exists or unsupported — safe to ignore
+  }
 
   await sql`
     CREATE TABLE IF NOT EXISTS folders (

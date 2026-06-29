@@ -29,7 +29,7 @@ export const defaultState: AppState = {
 type RawEntity<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 
 type RawState = {
-  ingredients?: RawEntity<Ingredient, 'priceType' | 'supplier' | 'lastUpdate'>[];
+  ingredients?: RawEntity<Ingredient, 'priceType' | 'supplier' | 'supplierProduct' | 'lastUpdate'>[];
   recipes?: (RawEntity<Recipe, 'presets' | 'folder'> & { hiddenCosts?: number })[];
   dishes?: RawEntity<Dish, 'directIngredients' | 'portions' | 'priceIncludesVat' | 'folder' | 'vatRate'>[];
   recipeFolders?: Folder[];
@@ -41,6 +41,7 @@ export const migrateState = (raw: RawState): AppState => ({
   ingredients: (raw.ingredients || []).map(i => ({
     priceType: 'perKg' as const,
     supplier: '',
+    supplierProduct: '',
     lastUpdate: '',
     ...i,
   })),
